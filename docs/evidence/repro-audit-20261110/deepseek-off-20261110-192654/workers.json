@@ -1,0 +1,481 @@
+{
+  "arm": "workers",
+  "runId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+  "status": "completed",
+  "error": null,
+  "elapsedMs": 130254,
+  "answer": "{\"findings\":[{\"id\":\"python\",\"status\":\"uncertain\",\"claim\":\"未能取得证据：本轮唯一的 delegate_readonly 调用中，负责 README.md 第69–74行与第138–152行、requirements-dev.txt 的 Worker（54e14a20-8ec8-4c93-90aa-f7b650ac7332）status=failed，blockers=INCOMPLETE_MODEL_OUTPUT，summary 为空且未返回任何带行号的原文引用；按任务约束不自行读取文件，故无法确认最低 Python 版本。\",\"evidence\":[]},{\"id\":\"test_setup\",\"status\":\"uncertain\",\"claim\":\"未能取得证据：同一 Worker 失败（INCOMPLETE_MODEL_OUTPUT）未返回 README.md 第138行起及 requirements-dev.txt 首两行的原文，无法确认安装开发依赖的命令。\",\"evidence\":[]},{\"id\":\"test_command\",\"status\":\"uncertain\",\"claim\":\"未能取得证据：该 Worker 未返回 README.md 测试相关段落中运行 pytest 的命令原文，无法确认具体命令。\",\"evidence\":[]},{\"id\":\"dependency_lock\",\"status\":\"uncertain\",\"claim\":\"未能取得证据：负责 requirements.txt 第1–15行与 docs/evidence/frontier-ci.json 第1–9行的 Worker（6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f）status=failed，blockers=WORKER_TIMEOUT，outputTokens=0，无 summary 与原文引用；因此无法判断依赖声明是否锁定全部精确版本。\",\"evidence\":[]},{\"id\":\"head_ci\",\"status\":\"uncertain\",\"claim\":\"未能取得证据：上述 Worker 超时失败，未返回 docs/evidence/frontier-ci.json 中任何提交哈希或 CI 状态字段原文，因此无法证明固定提交 0af2de6a9c8b129e174e3442b67c5f7cb4324db9a 的 CI 已通过（亦无法确认记录中的哈希是否与该提交一致）。\",\"evidence\":[]},{\"id\":\"paid_coverage\",\"status\":\"uncertain\",\"claim\":\"未能取得证据：README.md 第138–152行相关段落未被成功读取，无法确认 README 描述的 CI 是否覆盖付费在线实验及其范围表述。\",\"evidence\":[]}]}",
+  "workers": [
+    {
+      "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+      "parentRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+      "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+      "role": "analysis",
+      "goal": "在给定片段内为以下清单项提取带行号的原文证据并给出结论：(1) python = 项目要求的最低 Python 版本（看 README.md 第69行起的版本声明）；(2) test_setup = 安装开发依赖的命令（README.md 第138行起、requirements-dev.txt 首两行）；(3) test_command = 运行 pytest 的命令（README.md 第138行起）；(4) paid_coverage = README 描述的 CI 是否覆盖付费在线实验（README.md 第138行起相关段落，务必保留关于付费/在线实验范围的原文措辞）。逐项给出 status：verified（有直接证据）/missing（材料明确缺项）/uncertain（证据不足），并附 path、从1开始的原文件行号、该行连续原文引用（简短、准确保留大小写）。不得推测未读到的内容，不得运行任何程序。",
+      "inputs": [
+        {
+          "path": "README.md",
+          "offset": 68,
+          "limit": 6
+        },
+        {
+          "path": "README.md",
+          "offset": 137,
+          "limit": 15
+        },
+        {
+          "path": "requirements-dev.txt",
+          "offset": 0,
+          "limit": 2
+        }
+      ],
+      "acceptance": "输出四项（python、test_setup、test_command、paid_coverage）的 status、结论与至少一条带真实行号和连续原文的引用；引用必须在给定片段范围内，缺失项明确标 missing 或 uncertain 并说明原因。",
+      "model": "deepseek-v4.1-flash-1017",
+      "fileScope": "project_read",
+      "allowedTools": [
+        "read_file"
+      ],
+      "snapshotSha256": "578bb29dae02338b188bf03147e1e9b0e3c290ae1ef7de974f5961deaf86f28c",
+      "maxModelCalls": 1,
+      "timeoutMs": 45000,
+      "status": "failed",
+      "reads": [
+        {
+          "seq": 82,
+          "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+          "path": "README.md",
+          "ok": true,
+          "code": "OK",
+          "sha256": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+          "offset": 68,
+          "linesReturned": 6,
+          "totalLines": 187,
+          "truncated": true,
+          "excerpt": "\n需要 **Python 3.11+**。Windows 双击 **start.bat**；macOS / Linux 执行 **bash start.sh**。也可以手动启动：\n\n~~~bash\npython -m pip install -r requirements.txt\npython run.py --no-browser"
+        },
+        {
+          "seq": 88,
+          "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+          "path": "README.md",
+          "ok": true,
+          "code": "OK",
+          "sha256": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+          "offset": 137,
+          "linesReturned": 15,
+          "totalLines": 187,
+          "truncated": true,
+          "excerpt": "~~~bash\npython -m pip install -r requirements-dev.txt\npython -m pytest tests -q\npython verify.py\nnode tools/front_check.js\nnode tools/check_web.js\nnode tools/product_check.js\nnode tools/briefing_check.js\nnode tools/showcase_check.js\n# 以下需要服务已启动\npython tools/selfcheck.py\npython tools/full_audit.py\n~~~\n\nGitHub Actions 在 Windows / Linux、Python 3.11 / 3.12 上执行离线回归、组件验证和前端资源检查，另有 Linux Docker 执行隔离 smoke。CI 不配置模型密钥，不运行付费实验。10 月 13 日代码本地验证为 **1,086 项 Python 测试、31 项离线自检和 12 组 Node 检查通过**；最终提交状态见 [GitHub Actions](https://github.com/qing1989620/skillnet-demo/actions)。225 项及 206 项等旧记录分别保留在 [千级技能升级](docs/scale-upgrade.md) 和 [全产品优化与验收](docs/full-product-upgrade.md)，反映当时版本。"
+        },
+        {
+          "seq": 95,
+          "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+          "path": "requirements-dev.txt",
+          "ok": true,
+          "code": "OK",
+          "sha256": "cd9f45ee163b59c46663fadd89437a9645ab399370d4c59dbf3faffbdb36e608",
+          "offset": 0,
+          "linesReturned": 2,
+          "totalLines": 2,
+          "truncated": false,
+          "excerpt": "-r requirements.txt\npytest>=8.0,<10"
+        }
+      ],
+      "evidenceRefs": [
+        82,
+        88,
+        95
+      ],
+      "blockers": [
+        "INCOMPLETE_MODEL_OUTPUT"
+      ],
+      "summary": "",
+      "artifacts": [],
+      "usage": {
+        "modelCalls": 1,
+        "inputTokens": 1007,
+        "outputTokens": 1200,
+        "unknownModelUsage": 0
+      },
+      "taskId": "460ae6a8-7667-4b47-8820-54b9c834c943"
+    },
+    {
+      "id": "6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+      "parentRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+      "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+      "role": "analysis",
+      "goal": "在给定片段内为以下清单项提取带行号的原文证据并给出结论：(1) dependency_lock = 依赖声明是否锁定了全部精确版本（检查 requirements.txt 第1行起每行是否使用 == 等精确版本固定，是否有范围运算符、无版本项或注释说明）；(2) head_ci = 给定历史记录能否证明固定提交 0af2de6a9c8b129e174e3442b67c5f7cb4324db9a 的 CI 已通过（检查 docs/evidence/frontier-ci.json 第1行起，务必逐字保留其中出现的提交哈希、结论字段与状态字段原文）。给出 status：verified/missing/uncertain，并附 path、从1开始的原文件行号、该行连续原文引用（简短、准确保留大小写）。特别说明 JSON 中提交哈希是否与固定提交完全一致，不一致或缺失则明确说明。不得推测未读到的内容，不得运行任何程序。",
+      "inputs": [
+        {
+          "path": "requirements.txt",
+          "offset": 0,
+          "limit": 15
+        },
+        {
+          "path": "docs/evidence/frontier-ci.json",
+          "offset": 0,
+          "limit": 9
+        }
+      ],
+      "acceptance": "输出 dependency_lock 与 head_ci 两项的 status、结论与带真实行号和连续原文的引用；必须逐字给出 CI 记录中的提交哈希与状态字段原文，并判断是否等于 0af2de6a9c8b129e174e3442b67c5f7cb4324db9a。",
+      "model": "deepseek-v4.1-flash-1017",
+      "fileScope": "project_read",
+      "allowedTools": [
+        "read_file"
+      ],
+      "snapshotSha256": "578bb29dae02338b188bf03147e1e9b0e3c290ae1ef7de974f5961deaf86f28c",
+      "maxModelCalls": 1,
+      "timeoutMs": 45000,
+      "status": "failed",
+      "reads": [
+        {
+          "seq": 85,
+          "id": "6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+          "path": "requirements.txt",
+          "ok": true,
+          "code": "OK",
+          "sha256": "1615f66406407d41f10d77eab87bf57757558bba46271ecd50578b33882985e3",
+          "offset": 0,
+          "linesReturned": 15,
+          "totalLines": 15,
+          "truncated": false,
+          "excerpt": "# SkillNet-S1 Demo 依赖（Python >= 3.11）\n# 安装：pip install -r requirements.txt\nfastapi>=0.110,<1\nuvicorn>=0.29,<1\nhttpx>=0.27,<1\npydantic>=2.6,<3\nnumpy>=1.26,<3\n# Default execution paths produce tables, figures and spreadsheet artifacts.\npandas>=2.2,<3\nmatplotlib>=3.8,<4\nopenpyxl>=3.1,<4\nPyYAML>=6,<7\n# Full delivery uses the same multilingual CPU encoder as the local product.\nonnxruntime>=1.19,<2\ntokenizers>=0.20,<1"
+        },
+        {
+          "seq": 91,
+          "id": "6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+          "path": "docs/evidence/frontier-ci.json",
+          "ok": true,
+          "code": "OK",
+          "sha256": "aa84245a664b0b64c607fef10d8e7f8aa2a7bc78e92a768775fc14b53c3fd481",
+          "offset": 0,
+          "linesReturned": 9,
+          "totalLines": 83,
+          "truncated": true,
+          "excerpt": "{\n  \"observed_at\": \"2026-10-12T11:56:08.278639+00:00\",\n  \"scope\": \"Research kernel portability milestone bdcf10e; later frontend changes require their own exact-head CI.\",\n  \"local_tests\": 716,\n  \"runs\": [\n    {\n      \"conclusion\": \"success\",\n      \"headSha\": \"bdcf10e23283189f70448154d256db9900a2af82\",\n      \"jobs\": ["
+        }
+      ],
+      "evidenceRefs": [
+        85,
+        91
+      ],
+      "blockers": [
+        "WORKER_TIMEOUT"
+      ],
+      "summary": "",
+      "artifacts": [],
+      "usage": {
+        "modelCalls": 1,
+        "inputTokens": 0,
+        "outputTokens": 0,
+        "unknownModelUsage": 1
+      },
+      "taskId": "460ae6a8-7667-4b47-8820-54b9c834c943"
+    }
+  ],
+  "receipts": [
+    {
+      "seq": 82,
+      "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+      "path": "README.md",
+      "ok": true,
+      "code": "OK",
+      "sha256": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+      "offset": 68,
+      "linesReturned": 6,
+      "totalLines": 187,
+      "truncated": true,
+      "excerpt": "\n需要 **Python 3.11+**。Windows 双击 **start.bat**；macOS / Linux 执行 **bash start.sh**。也可以手动启动：\n\n~~~bash\npython -m pip install -r requirements.txt\npython run.py --no-browser"
+    },
+    {
+      "seq": 88,
+      "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+      "path": "README.md",
+      "ok": true,
+      "code": "OK",
+      "sha256": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+      "offset": 137,
+      "linesReturned": 15,
+      "totalLines": 187,
+      "truncated": true,
+      "excerpt": "~~~bash\npython -m pip install -r requirements-dev.txt\npython -m pytest tests -q\npython verify.py\nnode tools/front_check.js\nnode tools/check_web.js\nnode tools/product_check.js\nnode tools/briefing_check.js\nnode tools/showcase_check.js\n# 以下需要服务已启动\npython tools/selfcheck.py\npython tools/full_audit.py\n~~~\n\nGitHub Actions 在 Windows / Linux、Python 3.11 / 3.12 上执行离线回归、组件验证和前端资源检查，另有 Linux Docker 执行隔离 smoke。CI 不配置模型密钥，不运行付费实验。10 月 13 日代码本地验证为 **1,086 项 Python 测试、31 项离线自检和 12 组 Node 检查通过**；最终提交状态见 [GitHub Actions](https://github.com/qing1989620/skillnet-demo/actions)。225 项及 206 项等旧记录分别保留在 [千级技能升级](docs/scale-upgrade.md) 和 [全产品优化与验收](docs/full-product-upgrade.md)，反映当时版本。"
+    },
+    {
+      "seq": 95,
+      "id": "54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+      "path": "requirements-dev.txt",
+      "ok": true,
+      "code": "OK",
+      "sha256": "cd9f45ee163b59c46663fadd89437a9645ab399370d4c59dbf3faffbdb36e608",
+      "offset": 0,
+      "linesReturned": 2,
+      "totalLines": 2,
+      "truncated": false,
+      "excerpt": "-r requirements.txt\npytest>=8.0,<10"
+    },
+    {
+      "seq": 85,
+      "id": "6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+      "path": "requirements.txt",
+      "ok": true,
+      "code": "OK",
+      "sha256": "1615f66406407d41f10d77eab87bf57757558bba46271ecd50578b33882985e3",
+      "offset": 0,
+      "linesReturned": 15,
+      "totalLines": 15,
+      "truncated": false,
+      "excerpt": "# SkillNet-S1 Demo 依赖（Python >= 3.11）\n# 安装：pip install -r requirements.txt\nfastapi>=0.110,<1\nuvicorn>=0.29,<1\nhttpx>=0.27,<1\npydantic>=2.6,<3\nnumpy>=1.26,<3\n# Default execution paths produce tables, figures and spreadsheet artifacts.\npandas>=2.2,<3\nmatplotlib>=3.8,<4\nopenpyxl>=3.1,<4\nPyYAML>=6,<7\n# Full delivery uses the same multilingual CPU encoder as the local product.\nonnxruntime>=1.19,<2\ntokenizers>=0.20,<1"
+    },
+    {
+      "seq": 91,
+      "id": "6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+      "path": "docs/evidence/frontier-ci.json",
+      "ok": true,
+      "code": "OK",
+      "sha256": "aa84245a664b0b64c607fef10d8e7f8aa2a7bc78e92a768775fc14b53c3fd481",
+      "offset": 0,
+      "linesReturned": 9,
+      "totalLines": 83,
+      "truncated": true,
+      "excerpt": "{\n  \"observed_at\": \"2026-10-12T11:56:08.278639+00:00\",\n  \"scope\": \"Research kernel portability milestone bdcf10e; later frontend changes require their own exact-head CI.\",\n  \"local_tests\": 716,\n  \"runs\": [\n    {\n      \"conclusion\": \"success\",\n      \"headSha\": \"bdcf10e23283189f70448154d256db9900a2af82\",\n      \"jobs\": ["
+    }
+  ],
+  "budget": {
+    "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+    "limits": {
+      "maxSeconds": 900,
+      "maxToolCalls": 128,
+      "maxConcurrent": 2,
+      "maxInputTokens": 1200000,
+      "maxOutputTokens": 98304,
+      "contextTokens": 131072,
+      "historyTokens": 16000,
+      "toolResultBytes": 8192,
+      "imageTokens": 4096,
+      "maxModelCalls": 6
+    },
+    "elapsedMs": 130253,
+    "modelCalls": 4,
+    "toolCalls": 5,
+    "engineCalls": 1,
+    "retries": 0,
+    "inFlight": 0,
+    "estimatedInputTokens": 28456,
+    "actualInputTokens": 6658,
+    "actualOutputTokens": 2942,
+    "chargedInputTokens": 9659,
+    "chargedOutputTokens": 4142,
+    "unknownModelUsage": 1,
+    "entries": [
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 1,
+        "kind": "model",
+        "phase": "chat",
+        "attempt": 1,
+        "model": "deepseek-v4.1-flash-1017",
+        "estimatedInputTokens": 8644,
+        "outputReserved": 4096,
+        "contextSha256": "28f0740d728c1e2dae267228937c49ab1933ddf49847ed3e2dffeeee56d571bd",
+        "startedAt": 1794310111066,
+        "status": "completed",
+        "elapsedMs": 71534,
+        "inputTokens": 2240,
+        "outputTokens": 947,
+        "reportedModel": "deepseek-v4.1-flash-1017",
+        "finishReason": "tool_calls",
+        "httpStatus": null
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 2,
+        "kind": "engine",
+        "phase": "chat",
+        "name": "delegate_readonly",
+        "startedAt": 1794310182601,
+        "status": "completed",
+        "elapsedMs": 45011
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 3,
+        "kind": "tool",
+        "phase": "worker:54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+        "name": "read_file",
+        "startedAt": 1794310182602,
+        "status": "completed",
+        "elapsedMs": 4
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 4,
+        "kind": "tool",
+        "phase": "worker:6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+        "name": "read_file",
+        "startedAt": 1794310182602,
+        "status": "completed",
+        "elapsedMs": 5
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 5,
+        "kind": "tool",
+        "phase": "worker:54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+        "name": "read_file",
+        "startedAt": 1794310182606,
+        "status": "completed",
+        "elapsedMs": 4
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 6,
+        "kind": "tool",
+        "phase": "worker:6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+        "name": "read_file",
+        "startedAt": 1794310182607,
+        "status": "completed",
+        "elapsedMs": 4
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 7,
+        "kind": "tool",
+        "phase": "worker:54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+        "name": "read_file",
+        "startedAt": 1794310182610,
+        "status": "completed",
+        "elapsedMs": 5
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 8,
+        "kind": "model",
+        "phase": "worker:6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f",
+        "attempt": 1,
+        "model": "deepseek-v4.1-flash-1017",
+        "estimatedInputTokens": 3001,
+        "outputReserved": 1200,
+        "contextSha256": "68ceaffbaa2cdec04d5aa31ddbfc2a0905902aceafd4149999eaa1358d7c5734",
+        "startedAt": 1794310182611,
+        "status": "timeout",
+        "elapsedMs": 45000,
+        "inputTokens": null,
+        "outputTokens": null,
+        "reportedModel": null,
+        "finishReason": null,
+        "httpStatus": null
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 9,
+        "kind": "model",
+        "phase": "worker:54e14a20-8ec8-4c93-90aa-f7b650ac7332",
+        "attempt": 1,
+        "model": "deepseek-v4.1-flash-1017",
+        "estimatedInputTokens": 3548,
+        "outputReserved": 1200,
+        "contextSha256": "4aad5b2763268ca846c28b74f93bd412d501c79ee93491dd027f31eb0d1f821f",
+        "startedAt": 1794310182615,
+        "status": "completed",
+        "elapsedMs": 32910,
+        "inputTokens": 1007,
+        "outputTokens": 1200,
+        "reportedModel": "deepseek-v4.1-flash-1017",
+        "finishReason": "length",
+        "httpStatus": null
+      },
+      {
+        "rootRunId": "ba877cd0-854c-480f-b7a3-98c30a35823d",
+        "id": 10,
+        "kind": "model",
+        "phase": "chat",
+        "attempt": 1,
+        "model": "deepseek-v4.1-flash-1017",
+        "estimatedInputTokens": 13263,
+        "outputReserved": 4096,
+        "contextSha256": "e9d41409fe88c2b6cdd6d5b0d5a65b73d9bb2214b0702804b462e79bd6811d13",
+        "startedAt": 1794310227612,
+        "status": "completed",
+        "elapsedMs": 13705,
+        "inputTokens": 3411,
+        "outputTokens": 795,
+        "reportedModel": "deepseek-v4.1-flash-1017",
+        "finishReason": "stop",
+        "httpStatus": null
+      }
+    ]
+  },
+  "model": "deepseek-v4.1-flash-1017",
+  "reportedModels": [
+    "deepseek-v4.1-flash-1017"
+  ],
+  "quality": {
+    "passed": 0,
+    "total": 6,
+    "missingItems": 0,
+    "validCitations": 0,
+    "totalCitations": 0,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": false,
+        "item": {
+          "id": "python",
+          "status": "uncertain",
+          "claim": "未能取得证据：本轮唯一的 delegate_readonly 调用中，负责 README.md 第69–74行与第138–152行、requirements-dev.txt 的 Worker（54e14a20-8ec8-4c93-90aa-f7b650ac7332）status=failed，blockers=INCOMPLETE_MODEL_OUTPUT，summary 为空且未返回任何带行号的原文引用；按任务约束不自行读取文件，故无法确认最低 Python 版本。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "test_setup",
+        "passed": false,
+        "item": {
+          "id": "test_setup",
+          "status": "uncertain",
+          "claim": "未能取得证据：同一 Worker 失败（INCOMPLETE_MODEL_OUTPUT）未返回 README.md 第138行起及 requirements-dev.txt 首两行的原文，无法确认安装开发依赖的命令。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "test_command",
+        "passed": false,
+        "item": {
+          "id": "test_command",
+          "status": "uncertain",
+          "claim": "未能取得证据：该 Worker 未返回 README.md 测试相关段落中运行 pytest 的命令原文，无法确认具体命令。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "dependency_lock",
+        "passed": false,
+        "item": {
+          "id": "dependency_lock",
+          "status": "uncertain",
+          "claim": "未能取得证据：负责 requirements.txt 第1–15行与 docs/evidence/frontier-ci.json 第1–9行的 Worker（6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f）status=failed，blockers=WORKER_TIMEOUT，outputTokens=0，无 summary 与原文引用；因此无法判断依赖声明是否锁定全部精确版本。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "head_ci",
+        "passed": false,
+        "item": {
+          "id": "head_ci",
+          "status": "uncertain",
+          "claim": "未能取得证据：上述 Worker 超时失败，未返回 docs/evidence/frontier-ci.json 中任何提交哈希或 CI 状态字段原文，因此无法证明固定提交 0af2de6a9c8b129e174e3442b67c5f7cb4324db9a 的 CI 已通过（亦无法确认记录中的哈希是否与该提交一致）。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "paid_coverage",
+        "passed": false,
+        "item": {
+          "id": "paid_coverage",
+          "status": "uncertain",
+          "claim": "未能取得证据：README.md 第138–152行相关段落未被成功读取，无法确认 README 描述的 CI 是否覆盖付费在线实验及其范围表述。",
+          "evidence": []
+        }
+      }
+    ]
+  }
+}

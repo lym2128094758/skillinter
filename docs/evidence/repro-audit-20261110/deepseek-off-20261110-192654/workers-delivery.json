@@ -1,0 +1,40 @@
+{
+  "findings": [
+    {
+      "id": "python",
+      "status": "uncertain",
+      "claim": "未能取得证据：本轮唯一的 delegate_readonly 调用中，负责 README.md 第69–74行与第138–152行、requirements-dev.txt 的 Worker（54e14a20-8ec8-4c93-90aa-f7b650ac7332）status=failed，blockers=INCOMPLETE_MODEL_OUTPUT，summary 为空且未返回任何带行号的原文引用；按任务约束不自行读取文件，故无法确认最低 Python 版本。",
+      "evidence": []
+    },
+    {
+      "id": "test_setup",
+      "status": "uncertain",
+      "claim": "未能取得证据：同一 Worker 失败（INCOMPLETE_MODEL_OUTPUT）未返回 README.md 第138行起及 requirements-dev.txt 首两行的原文，无法确认安装开发依赖的命令。",
+      "evidence": []
+    },
+    {
+      "id": "test_command",
+      "status": "uncertain",
+      "claim": "未能取得证据：该 Worker 未返回 README.md 测试相关段落中运行 pytest 的命令原文，无法确认具体命令。",
+      "evidence": []
+    },
+    {
+      "id": "dependency_lock",
+      "status": "uncertain",
+      "claim": "未能取得证据：负责 requirements.txt 第1–15行与 docs/evidence/frontier-ci.json 第1–9行的 Worker（6c9dcf4e-3b53-49f8-8ab0-bf03f1793b9f）status=failed，blockers=WORKER_TIMEOUT，outputTokens=0，无 summary 与原文引用；因此无法判断依赖声明是否锁定全部精确版本。",
+      "evidence": []
+    },
+    {
+      "id": "head_ci",
+      "status": "uncertain",
+      "claim": "未能取得证据：上述 Worker 超时失败，未返回 docs/evidence/frontier-ci.json 中任何提交哈希或 CI 状态字段原文，因此无法证明固定提交 0af2de6a9c8b129e174e3442b67c5f7cb4324db9a 的 CI 已通过（亦无法确认记录中的哈希是否与该提交一致）。",
+      "evidence": []
+    },
+    {
+      "id": "paid_coverage",
+      "status": "uncertain",
+      "claim": "未能取得证据：README.md 第138–152行相关段落未被成功读取，无法确认 README 描述的 CI 是否覆盖付费在线实验及其范围表述。",
+      "evidence": []
+    }
+  ]
+}

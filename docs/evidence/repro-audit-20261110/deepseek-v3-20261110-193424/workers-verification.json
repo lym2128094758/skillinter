@@ -1,0 +1,145 @@
+{
+  "accepted": false,
+  "rawQuality": {
+    "passed": 0,
+    "total": 6,
+    "missingItems": 0,
+    "validCitations": 0,
+    "totalCitations": 0,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": false,
+        "item": {
+          "id": "python",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断最低 Python 版本是否满足。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "test_setup",
+        "passed": false,
+        "item": {
+          "id": "test_setup",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断开发依赖安装命令是否具备。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "test_command",
+        "passed": false,
+        "item": {
+          "id": "test_command",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断 pytest 运行命令是否具备。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "dependency_lock",
+        "passed": false,
+        "item": {
+          "id": "dependency_lock",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断依赖声明是否锁定全部精确版本。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "head_ci",
+        "passed": false,
+        "item": {
+          "id": "head_ci",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断历史记录能否证明该固定提交 CI 通过。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "paid_coverage",
+        "passed": false,
+        "item": {
+          "id": "paid_coverage",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断 README 所述 CI 是否覆盖付费在线实验。",
+          "evidence": []
+        }
+      }
+    ]
+  },
+  "deliveredQuality": {
+    "passed": 0,
+    "total": 6,
+    "missingItems": 0,
+    "validCitations": 0,
+    "totalCitations": 0,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": false,
+        "item": {
+          "id": "python",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断最低 Python 版本是否满足。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "test_setup",
+        "passed": false,
+        "item": {
+          "id": "test_setup",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断开发依赖安装命令是否具备。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "test_command",
+        "passed": false,
+        "item": {
+          "id": "test_command",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断 pytest 运行命令是否具备。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "dependency_lock",
+        "passed": false,
+        "item": {
+          "id": "dependency_lock",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断依赖声明是否锁定全部精确版本。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "head_ci",
+        "passed": false,
+        "item": {
+          "id": "head_ci",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断历史记录能否证明该固定提交 CI 通过。",
+          "evidence": []
+        }
+      },
+      {
+        "id": "paid_coverage",
+        "passed": false,
+        "item": {
+          "id": "paid_coverage",
+          "status": "uncertain",
+          "claim": "Worker 读取失败（WORKER_TIMEOUT），未获片段证据，无法判断 README 所述 CI 是否覆盖付费在线实验。",
+          "evidence": []
+        }
+      }
+    ]
+  },
+  "corrections": [],
+  "issues": []
+}

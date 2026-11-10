@@ -1,0 +1,20 @@
+{
+  "harnessCommit": "b13057f32059ebefa5a1ee9d6a5a97410f355ea5",
+  "sourceFiles": {
+    "scripts/check-repro-audit.mjs": "38c65d4d4d635b6614964b208c6569e2b0eff0431285d4e5ae5f0adea5acf2d8",
+    "src/runner.mjs": "a62978a5834306eefcd5b64c4fecdc9d1d633b4982ebaea7feeefc5561895155",
+    "src/run-budget.mjs": "d984c7ebb01ddd3084ab1814b4b9ede7670cc46a7da5f5bf792f84129cf620b4",
+    "src/context-manager.mjs": "44f1d1bd25b0cf7b7a8c447831c93a9dd5cd9c620d42723860335e56abd89d50",
+    "src/readonly-workers.mjs": "77fa80b15d0fa83d7752399dc21a9cc54af7ac264e5dc0fdbfad1defcb2651ca",
+    "src/tools.mjs": "164cef19b7e277ae90c7b956d47db85c5b81578b2c15155397dd00d3362c05cd",
+    "src/settings.mjs": "1aa38e054a2137f8dbffd5eef5560ceef08b6eb43a2aefb9d58b8375c224fc59",
+    "config.yaml": "402293e391df34e02f4bd48ddc02d544808758022441adc61e55e5e8e1d09853"
+  },
+  "sourceCommit": "0af2de6a9c8b129e174e3442b67c5f7cb4324db9a",
+  "inputSha256": {
+    "README.md": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+    "requirements-dev.txt": "cd9f45ee163b59c46663fadd89437a9645ab399370d4c59dbf3faffbdb36e608",
+    "requirements.txt": "1615f66406407d41f10d77eab87bf57757558bba46271ecd50578b33882985e3",
+    "docs/evidence/frontier-ci.json": "aa84245a664b0b64c607fef10d8e7f8aa2a7bc78e92a768775fc14b53c3fd481"
+  }
+}

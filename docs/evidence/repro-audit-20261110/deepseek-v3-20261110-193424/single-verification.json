@@ -1,0 +1,246 @@
+{
+  "accepted": true,
+  "rawQuality": {
+    "passed": 2,
+    "total": 6,
+    "missingItems": 0,
+    "validCitations": 2,
+    "totalCitations": 6,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": false,
+        "item": {
+          "id": "python",
+          "status": "verified",
+          "claim": "README 要求 Python 3.11+，requirements.txt 头部注释同样标注 Python >= 3.11。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 69,
+              "quote": "需要 **Python 3.11+**。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_setup",
+        "passed": false,
+        "item": {
+          "id": "test_setup",
+          "status": "verified",
+          "claim": "README 给出开发依赖安装命令 pip install -r requirements-dev.txt，该文件含 -r requirements.txt 与 pytest。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 138,
+              "quote": "python -m pip install -r requirements-dev.txt"
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_command",
+        "passed": false,
+        "item": {
+          "id": "test_command",
+          "status": "verified",
+          "claim": "README 给出离线运行 pytest 的命令 python -m pytest tests -q。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 139,
+              "quote": "python -m pytest tests -q"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dependency_lock",
+        "passed": true,
+        "item": {
+          "id": "dependency_lock",
+          "status": "missing",
+          "claim": "requirements.txt 全部为 >=、< 区间约束，未锁定精确版本，不能保证复跑依赖可复现。",
+          "evidence": [
+            {
+              "path": "requirements.txt",
+              "line": 3,
+              "quote": "fastapi>=0.110,<1"
+            }
+          ]
+        }
+      },
+      {
+        "id": "head_ci",
+        "passed": true,
+        "item": {
+          "id": "head_ci",
+          "status": "uncertain",
+          "claim": "仓库内 CI 记录只对应 bdcf10e，非本次固定提交 0af2de6，无法证明该提交 CI 结果。",
+          "evidence": [
+            {
+              "path": "docs/evidence/frontier-ci.json",
+              "line": 8,
+              "quote": "\"headSha\": \"bdcf10e23283189f70448154d256db9900a2af82\","
+            }
+          ]
+        }
+      },
+      {
+        "id": "paid_coverage",
+        "passed": false,
+        "item": {
+          "id": "paid_coverage",
+          "status": "missing",
+          "claim": "README 明确 CI 不配置模型密钥、不运行付费实验，故不含付费在线实验覆盖。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 151,
+              "quote": "CI 不配置模型密钥，不运行付费实验。"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "deliveredQuality": {
+    "passed": 6,
+    "total": 6,
+    "missingItems": 0,
+    "validCitations": 6,
+    "totalCitations": 6,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": true,
+        "item": {
+          "id": "python",
+          "status": "verified",
+          "claim": "README 要求 Python 3.11+，requirements.txt 头部注释同样标注 Python >= 3.11。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 70,
+              "quote": "需要 **Python 3.11+**。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_setup",
+        "passed": true,
+        "item": {
+          "id": "test_setup",
+          "status": "verified",
+          "claim": "README 给出开发依赖安装命令 pip install -r requirements-dev.txt，该文件含 -r requirements.txt 与 pytest。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 139,
+              "quote": "python -m pip install -r requirements-dev.txt"
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_command",
+        "passed": true,
+        "item": {
+          "id": "test_command",
+          "status": "verified",
+          "claim": "README 给出离线运行 pytest 的命令 python -m pytest tests -q。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 140,
+              "quote": "python -m pytest tests -q"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dependency_lock",
+        "passed": true,
+        "item": {
+          "id": "dependency_lock",
+          "status": "missing",
+          "claim": "requirements.txt 全部为 >=、< 区间约束，未锁定精确版本，不能保证复跑依赖可复现。",
+          "evidence": [
+            {
+              "path": "requirements.txt",
+              "line": 3,
+              "quote": "fastapi>=0.110,<1"
+            }
+          ]
+        }
+      },
+      {
+        "id": "head_ci",
+        "passed": true,
+        "item": {
+          "id": "head_ci",
+          "status": "uncertain",
+          "claim": "仓库内 CI 记录只对应 bdcf10e，非本次固定提交 0af2de6，无法证明该提交 CI 结果。",
+          "evidence": [
+            {
+              "path": "docs/evidence/frontier-ci.json",
+              "line": 8,
+              "quote": "\"headSha\": \"bdcf10e23283189f70448154d256db9900a2af82\","
+            }
+          ]
+        }
+      },
+      {
+        "id": "paid_coverage",
+        "passed": true,
+        "item": {
+          "id": "paid_coverage",
+          "status": "missing",
+          "claim": "README 明确 CI 不配置模型密钥、不运行付费实验，故不含付费在线实验覆盖。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 152,
+              "quote": "CI 不配置模型密钥，不运行付费实验。"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "corrections": [
+    {
+      "id": "python",
+      "path": "README.md",
+      "quote": "需要 **Python 3.11+**。",
+      "originalLine": 69,
+      "resolvedLine": 70
+    },
+    {
+      "id": "test_setup",
+      "path": "README.md",
+      "quote": "python -m pip install -r requirements-dev.txt",
+      "originalLine": 138,
+      "resolvedLine": 139
+    },
+    {
+      "id": "test_command",
+      "path": "README.md",
+      "quote": "python -m pytest tests -q",
+      "originalLine": 139,
+      "resolvedLine": 140
+    },
+    {
+      "id": "paid_coverage",
+      "path": "README.md",
+      "quote": "CI 不配置模型密钥，不运行付费实验。",
+      "originalLine": 151,
+      "resolvedLine": 152
+    }
+  ],
+  "issues": []
+}

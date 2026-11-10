@@ -1,0 +1,148 @@
+{
+  "version": 3,
+  "source": "https://github.com/qing1989620/skillnet-demo",
+  "commit": "0af2de6a9c8b129e174e3442b67c5f7cb4324db9a",
+  "checks": [
+    {
+      "id": "python",
+      "task": "最低 Python 版本",
+      "status": "verified",
+      "anchors": [
+        [
+          "README.md",
+          70
+        ],
+        [
+          "requirements.txt",
+          1
+        ]
+      ],
+      "includes": [
+        "3.11"
+      ]
+    },
+    {
+      "id": "test_setup",
+      "task": "安装开发依赖的命令",
+      "status": "verified",
+      "anchors": [
+        [
+          "README.md",
+          139
+        ]
+      ],
+      "includes": [
+        "pip install -r requirements-dev.txt"
+      ]
+    },
+    {
+      "id": "test_command",
+      "task": "运行 pytest 的命令",
+      "status": "verified",
+      "anchors": [
+        [
+          "README.md",
+          140
+        ]
+      ],
+      "includes": [
+        "pytest tests -q"
+      ]
+    },
+    {
+      "id": "dependency_lock",
+      "task": "给定依赖声明是否锁定了全部精确版本",
+      "status": "missing",
+      "anchors": [
+        [
+          "requirements-dev.txt",
+          2
+        ],
+        [
+          "requirements.txt",
+          3
+        ]
+      ],
+      "includes": []
+    },
+    {
+      "id": "head_ci",
+      "task": "给定历史记录能否证明本次固定提交的 CI 已通过",
+      "status": "uncertain",
+      "anchors": [
+        [
+          "docs/evidence/frontier-ci.json",
+          3
+        ],
+        [
+          "docs/evidence/frontier-ci.json",
+          8
+        ]
+      ],
+      "includes": [
+        "bdcf10e"
+      ]
+    },
+    {
+      "id": "paid_coverage",
+      "task": "README 描述的 CI 是否覆盖付费在线实验",
+      "status": "missing",
+      "anchors": [
+        [
+          "README.md",
+          152
+        ]
+      ],
+      "includes": [
+        "付费"
+      ]
+    }
+  ],
+  "groups": [
+    [
+      {
+        "path": "README.md",
+        "offset": 68,
+        "limit": 6
+      },
+      {
+        "path": "README.md",
+        "offset": 137,
+        "limit": 15
+      },
+      {
+        "path": "requirements-dev.txt",
+        "offset": 0,
+        "limit": 2
+      }
+    ],
+    [
+      {
+        "path": "requirements.txt",
+        "offset": 0,
+        "limit": 15
+      },
+      {
+        "path": "docs/evidence/frontier-ci.json",
+        "offset": 0,
+        "limit": 9
+      }
+    ]
+  ],
+  "harnessCommit": "b13057f32059ebefa5a1ee9d6a5a97410f355ea5",
+  "modelCallsPerArm": 6,
+  "secondsPerArm": 900,
+  "effort": "default",
+  "inputSha256": {
+    "README.md": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+    "requirements-dev.txt": "cd9f45ee163b59c46663fadd89437a9645ab399370d4c59dbf3faffbdb36e608",
+    "requirements.txt": "1615f66406407d41f10d77eab87bf57757558bba46271ecd50578b33882985e3",
+    "docs/evidence/frontier-ci.json": "aa84245a664b0b64c607fef10d8e7f8aa2a7bc78e92a768775fc14b53c3fd481"
+  },
+  "prompt": "复现核对：根据指定公开项目材料，给出能否复跑离线 pytest 的准备清单。核对的是材料证据，请勿运行实验。\n当前材料固定提交为 0af2de6a9c8b129e174e3442b67c5f7cb4324db9a。结论只限读到的片段，不查网络。\n清单项目：python = 最低 Python 版本；test_setup = 安装开发依赖的命令；test_command = 运行 pytest 的命令；dependency_lock = 给定依赖声明是否锁定了全部精确版本；head_ci = 给定历史记录能否证明本次固定提交的 CI 已通过；paid_coverage = README 描述的 CI 是否覆盖付费在线实验。\nstatus 表示该项复现条件是否具备：verified = 条件已满足；missing = 材料明确说明该条件缺失或未覆盖；uncertain = 不能判断条件是否满足。\n即使“缺失”有明确原文证据，status 仍写 missing，而不是 verified。不可把“结论可核实”和“条件已满足”混用。\nmissing 要有直接证据否定本项条件；未提供本次证据或证据只对应其他对象，应写 uncertain。历史版本的成功记录不能判定当前版本成功或失败。\n每项 claim 最多 100 字，evidence 只引最相关的一行，quote 最多 80 字。不得复述过程。\n引用前自检：read_file 的 offset 从 0 起，content 第 i 行的原文件行号 = offset + i（i 从 1 起）。空行也占行号。逐项对齐原文后再输出。\n最终只返回 JSON {\"findings\":[{\"id\":\"…\",\"status\":\"…\",\"claim\":\"…\",\"evidence\":[{\"path\":\"…\",\"line\":1,\"quote\":\"该行的连续原文\"}]}]}。line 为从 1 开始的原文件行号。引用简短原文并准确保留大小写。",
+  "modes": {
+    "single": "请用一批 read_file 读取以下五段，再自行汇总。参数：[{\"path\":\"README.md\",\"offset\":68,\"limit\":6},{\"path\":\"README.md\",\"offset\":137,\"limit\":15},{\"path\":\"requirements-dev.txt\",\"offset\":0,\"limit\":2},{\"path\":\"requirements.txt\",\"offset\":0,\"limit\":15},{\"path\":\"docs/evidence/frontier-ci.json\",\"offset\":0,\"limit\":9}]",
+    "workers": "请调用一次 delegate_readonly，创建两个独立 Worker。不要自行读取。把 status 定义原样交给 Worker：verified=复现条件已满足，missing=直接证据否定本项条件，uncertain=证据不足或证据只对应其他对象。每个 Worker 只返回相关项的 id、status、40 字内结论及一条 path/line/quote 引用，quote 最多 60 字，整个回复最多 450 字，不写过程。Worker 引用行号必须按 offset + content 行序核对（包括空行）。保留 CI 的提交哈希和付费范围。Worker 失败时主任务仍输出全部 findings，各项标 uncertain 和空 evidence，不询问用户。输入清单（按组分给两个 Worker）：[[{\"path\":\"README.md\",\"offset\":68,\"limit\":6},{\"path\":\"README.md\",\"offset\":137,\"limit\":15},{\"path\":\"requirements-dev.txt\",\"offset\":0,\"limit\":2}],[{\"path\":\"requirements.txt\",\"offset\":0,\"limit\":15},{\"path\":\"docs/evidence/frontier-ci.json\",\"offset\":0,\"limit\":9}]]"
+  },
+  "requestedModel": "deepseek-v4.1-flash-1017"
+}

@@ -1,0 +1,76 @@
+{
+  "findings": [
+    {
+      "id": "python",
+      "status": "verified",
+      "claim": "README 明确要求最低 Python 3.11+，因此可据此确定运行环境版本下限。",
+      "evidence": [
+        {
+          "path": "README.md",
+          "line": 70,
+          "quote": "需要 **Python 3.11+**。"
+        }
+      ]
+    },
+    {
+      "id": "test_setup",
+      "status": "verified",
+      "claim": "README 给出安装开发依赖命令 pip install -r requirements-dev.txt，该文件引用基础依赖并加 pytest。",
+      "evidence": [
+        {
+          "path": "README.md",
+          "line": 139,
+          "quote": "python -m pip install -r requirements-dev.txt"
+        }
+      ]
+    },
+    {
+      "id": "test_command",
+      "status": "verified",
+      "claim": "README 明确给出离线运行 pytest 的命令 python -m pytest tests -q。",
+      "evidence": [
+        {
+          "path": "README.md",
+          "line": 140,
+          "quote": "python -m pytest tests -q"
+        }
+      ]
+    },
+    {
+      "id": "dependency_lock",
+      "status": "missing",
+      "claim": "依赖声明均为区间约束，如 fastapi>=0.110,<1、pytest>=8.0,<10，未锁定全部精确版本。",
+      "evidence": [
+        {
+          "path": "requirements.txt",
+          "line": 3,
+          "quote": "fastapi>=0.110,<1"
+        }
+      ]
+    },
+    {
+      "id": "head_ci",
+      "status": "missing",
+      "claim": "CI 记录仅覆盖 bdcf10e 里程碑，并注明后续前端改动需各自精确提交的 CI，未证明本次固定提交 0af2de6 已通过。",
+      "evidence": [
+        {
+          "path": "docs/evidence/frontier-ci.json",
+          "line": 3,
+          "quote": "\"scope\": \"Research kernel portability milestone bdcf10e; later frontend changes require their own exact-head CI.\","
+        }
+      ]
+    },
+    {
+      "id": "paid_coverage",
+      "status": "missing",
+      "claim": "README 明确说明 CI 不配置模型密钥、不运行付费实验，故不覆盖付费在线实验。",
+      "evidence": [
+        {
+          "path": "README.md",
+          "line": 152,
+          "quote": "CI 不配置模型密钥，不运行付费实验。"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+{
+  "arm": "single",
+  "runId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+  "status": "completed",
+  "error": null,
+  "elapsedMs": 31924,
+  "answer": "{\"findings\":[{\"id\":\"python\",\"status\":\"verified\",\"claim\":\"README 明确要求最低 Python 3.11+，因此可据此确定运行环境版本下限。\",\"evidence\":[{\"path\":\"README.md\",\"line\":70,\"quote\":\"需要 **Python 3.11+**。\"}]},{\"id\":\"test_setup\",\"status\":\"verified\",\"claim\":\"README 给出安装开发依赖命令 pip install -r requirements-dev.txt，该文件引用基础依赖并加 pytest。\",\"evidence\":[{\"path\":\"README.md\",\"line\":139,\"quote\":\"python -m pip install -r requirements-dev.txt\"}]},{\"id\":\"test_command\",\"status\":\"verified\",\"claim\":\"README 明确给出离线运行 pytest 的命令 python -m pytest tests -q。\",\"evidence\":[{\"path\":\"README.md\",\"line\":140,\"quote\":\"python -m pytest tests -q\"}]},{\"id\":\"dependency_lock\",\"status\":\"missing\",\"claim\":\"依赖声明均为区间约束，如 fastapi>=0.110,<1、pytest>=8.0,<10，未锁定全部精确版本。\",\"evidence\":[{\"path\":\"requirements.txt\",\"line\":3,\"quote\":\"fastapi>=0.110,<1\"}]},{\"id\":\"head_ci\",\"status\":\"missing\",\"claim\":\"CI 记录仅覆盖 bdcf10e 里程碑，并注明后续前端改动需各自精确提交的 CI，未证明本次固定提交 0af2de6 已通过。\",\"evidence\":[{\"path\":\"docs/evidence/frontier-ci.json\",\"line\":3,\"quote\":\"\\\"scope\\\": \\\"Research kernel portability milestone bdcf10e; later frontend changes require their own exact-head CI.\\\",\"}]},{\"id\":\"paid_coverage\",\"status\":\"missing\",\"claim\":\"README 明确说明 CI 不配置模型密钥、不运行付费实验，故不覆盖付费在线实验。\",\"evidence\":[{\"path\":\"README.md\",\"line\":152,\"quote\":\"CI 不配置模型密钥，不运行付费实验。\"}]}]}",
+  "workers": [],
+  "receipts": [
+    {
+      "seq": 30,
+      "path": "README.md",
+      "sha256": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+      "offset": 68,
+      "linesReturned": 6,
+      "excerpt": "\n需要 **Python 3.11+**。Windows 双击 **start.bat**；macOS / Linux 执行 **bash start.sh**。也可以手动启动：\n\n~~~bash\npython -m pip install -r requirements.txt\npython run.py --no-browser",
+      "truncated": true
+    },
+    {
+      "seq": 34,
+      "path": "README.md",
+      "sha256": "136c2d7f162a5682920771412937408d5e13717a69645a9e993fae45c92dcccf",
+      "offset": 137,
+      "linesReturned": 15,
+      "excerpt": "~~~bash\npython -m pip install -r requirements-dev.txt\npython -m pytest tests -q\npython verify.py\nnode tools/front_check.js\nnode tools/check_web.js\nnode tools/product_check.js\nnode tools/briefing_check.js\nnode tools/showcase_check.js\n# 以下需要服务已启动\npython tools/selfcheck.py\npython tools/full_audit.py\n~~~\n\nGitHub Actions 在 Windows / Linux、Python 3.11 / 3.12 上执行离线回归、组件验证和前端资源检查，另有 Linux Docker 执行隔离 smoke。CI 不配置模型密钥，不运行付费实验。10 月 13 日代码本地验证为 **1,086 项 Python 测试、31 项离线自检和 12 组 Node 检查通过**；最终提交状态见 [GitHub Actions](https://github.com/qing1989620/skillnet-demo/actions)。225 项及 206 项等旧记录分别保留在 [千级技能升级](docs/scale-upgrade.md) 和 [全产品优化与验收](docs/full-product-upgrade.md)，反映当时版本。",
+      "truncated": true
+    },
+    {
+      "seq": 38,
+      "path": "requirements-dev.txt",
+      "sha256": "cd9f45ee163b59c46663fadd89437a9645ab399370d4c59dbf3faffbdb36e608",
+      "offset": 0,
+      "linesReturned": 2,
+      "excerpt": "-r requirements.txt\npytest>=8.0,<10",
+      "truncated": false
+    },
+    {
+      "seq": 42,
+      "path": "requirements.txt",
+      "sha256": "1615f66406407d41f10d77eab87bf57757558bba46271ecd50578b33882985e3",
+      "offset": 0,
+      "linesReturned": 15,
+      "excerpt": "# SkillNet-S1 Demo 依赖（Python >= 3.11）\n# 安装：pip install -r requirements.txt\nfastapi>=0.110,<1\nuvicorn>=0.29,<1\nhttpx>=0.27,<1\npydantic>=2.6,<3\nnumpy>=1.26,<3\n# Default execution paths produce tables, figures and spreadsheet artifacts.\npandas>=2.2,<3\nmatplotlib>=3.8,<4\nopenpyxl>=3.1,<4\nPyYAML>=6,<7\n# Full delivery uses the same multilingual CPU encoder as the local product.\nonnxruntime>=1.19,<2\ntokenizers>=0.20,<1",
+      "truncated": false
+    },
+    {
+      "seq": 46,
+      "path": "docs/evidence/frontier-ci.json",
+      "sha256": "aa84245a664b0b64c607fef10d8e7f8aa2a7bc78e92a768775fc14b53c3fd481",
+      "offset": 0,
+      "linesReturned": 9,
+      "excerpt": "{\n  \"observed_at\": \"2026-10-12T11:56:08.278639+00:00\",\n  \"scope\": \"Research kernel portability milestone bdcf10e; later frontend changes require their own exact-head CI.\",\n  \"local_tests\": 716,\n  \"runs\": [\n    {\n      \"conclusion\": \"success\",\n      \"headSha\": \"bdcf10e23283189f70448154d256db9900a2af82\",\n      \"jobs\": [",
+      "truncated": true
+    }
+  ],
+  "budget": {
+    "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+    "limits": {
+      "maxSeconds": 900,
+      "maxToolCalls": 128,
+      "maxConcurrent": 2,
+      "maxInputTokens": 1200000,
+      "maxOutputTokens": 98304,
+      "contextTokens": 131072,
+      "historyTokens": 16000,
+      "toolResultBytes": 8192,
+      "imageTokens": 4096,
+      "maxModelCalls": 6
+    },
+    "elapsedMs": 31923,
+    "modelCalls": 2,
+    "toolCalls": 5,
+    "engineCalls": 0,
+    "retries": 0,
+    "inFlight": 0,
+    "estimatedInputTokens": 21912,
+    "actualInputTokens": 5869,
+    "actualOutputTokens": 1706,
+    "chargedInputTokens": 5869,
+    "chargedOutputTokens": 1706,
+    "unknownModelUsage": 0,
+    "entries": [
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 1,
+        "kind": "model",
+        "phase": "chat",
+        "attempt": 1,
+        "model": "deepseek-v4.1-flash-1017",
+        "estimatedInputTokens": 8152,
+        "outputReserved": 4096,
+        "contextSha256": "103c9f9c55734ed8bbf838a4f66e10a2efab9427a0487591c569db0a3fe34c04",
+        "startedAt": 1794310276000,
+        "status": "completed",
+        "elapsedMs": 9952,
+        "inputTokens": 2091,
+        "outputTokens": 329,
+        "reportedModel": "deepseek-v4.1-flash-1017",
+        "finishReason": "tool_calls",
+        "httpStatus": null
+      },
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 2,
+        "kind": "tool",
+        "phase": "chat",
+        "name": "read_file",
+        "startedAt": 1794310285952,
+        "status": "completed",
+        "elapsedMs": 8
+      },
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 3,
+        "kind": "tool",
+        "phase": "chat",
+        "name": "read_file",
+        "startedAt": 1794310285961,
+        "status": "completed",
+        "elapsedMs": 4
+      },
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 4,
+        "kind": "tool",
+        "phase": "chat",
+        "name": "read_file",
+        "startedAt": 1794310285966,
+        "status": "completed",
+        "elapsedMs": 3
+      },
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 5,
+        "kind": "tool",
+        "phase": "chat",
+        "name": "read_file",
+        "startedAt": 1794310285969,
+        "status": "completed",
+        "elapsedMs": 4
+      },
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 6,
+        "kind": "tool",
+        "phase": "chat",
+        "name": "read_file",
+        "startedAt": 1794310285973,
+        "status": "completed",
+        "elapsedMs": 5
+      },
+      {
+        "rootRunId": "de42eee1-e2c6-4001-8a56-216d150ac368",
+        "id": 7,
+        "kind": "model",
+        "phase": "chat",
+        "attempt": 1,
+        "model": "deepseek-v4.1-flash-1017",
+        "estimatedInputTokens": 13760,
+        "outputReserved": 4096,
+        "contextSha256": "dbeb61debafc9ab8ff7ec0214ce54efb2e03146e50225dcf0fef5366f5ba534f",
+        "startedAt": 1794310285978,
+        "status": "completed",
+        "elapsedMs": 21942,
+        "inputTokens": 3778,
+        "outputTokens": 1377,
+        "reportedModel": "deepseek-v4.1-flash-1017",
+        "finishReason": "stop",
+        "httpStatus": null
+      }
+    ]
+  },
+  "model": "deepseek-v4.1-flash-1017",
+  "reportedModels": [
+    "deepseek-v4.1-flash-1017"
+  ],
+  "quality": {
+    "passed": 5,
+    "total": 6,
+    "missingItems": 0,
+    "validCitations": 6,
+    "totalCitations": 6,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": true,
+        "item": {
+          "id": "python",
+          "status": "verified",
+          "claim": "README 明确要求最低 Python 3.11+，因此可据此确定运行环境版本下限。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 70,
+              "quote": "需要 **Python 3.11+**。"
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_setup",
+        "passed": true,
+        "item": {
+          "id": "test_setup",
+          "status": "verified",
+          "claim": "README 给出安装开发依赖命令 pip install -r requirements-dev.txt，该文件引用基础依赖并加 pytest。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 139,
+              "quote": "python -m pip install -r requirements-dev.txt"
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_command",
+        "passed": true,
+        "item": {
+          "id": "test_command",
+          "status": "verified",
+          "claim": "README 明确给出离线运行 pytest 的命令 python -m pytest tests -q。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 140,
+              "quote": "python -m pytest tests -q"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dependency_lock",
+        "passed": true,
+        "item": {
+          "id": "dependency_lock",
+          "status": "missing",
+          "claim": "依赖声明均为区间约束，如 fastapi>=0.110,<1、pytest>=8.0,<10，未锁定全部精确版本。",
+          "evidence": [
+            {
+              "path": "requirements.txt",
+              "line": 3,
+              "quote": "fastapi>=0.110,<1"
+            }
+          ]
+        }
+      },
+      {
+        "id": "head_ci",
+        "passed": false,
+        "item": {
+          "id": "head_ci",
+          "status": "missing",
+          "claim": "CI 记录仅覆盖 bdcf10e 里程碑，并注明后续前端改动需各自精确提交的 CI，未证明本次固定提交 0af2de6 已通过。",
+          "evidence": [
+            {
+              "path": "docs/evidence/frontier-ci.json",
+              "line": 3,
+              "quote": "\"scope\": \"Research kernel portability milestone bdcf10e; later frontend changes require their own exact-head CI.\","
+            }
+          ]
+        }
+      },
+      {
+        "id": "paid_coverage",
+        "passed": true,
+        "item": {
+          "id": "paid_coverage",
+          "status": "missing",
+          "claim": "README 明确说明 CI 不配置模型密钥、不运行付费实验，故不覆盖付费在线实验。",
+          "evidence": [
+            {
+              "path": "README.md",
+              "line": 152,
+              "quote": "CI 不配置模型密钥，不运行付费实验。"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,5 +1,7 @@
 # Skillinter
 
+本轮审查请从 [当前状态与已验证范围](docs/review-status.md) 开始，再读 [DeepSeek 单 Agent / Worker 三轮实测](docs/evidence/repro-audit-20261110/README.md)。
+
 Skillinter 是面向科研和工程项目的任务工作台。用户在会话里提供目标、材料和权限，工作台记录执行路径、来源与产物，并支持从对话创建、验证和发布可复用技能。技能图谱使用 my-skill-library 的平面／球体界面，浏览 SIH 已安装的技能，也可定位本次实际执行的步骤及依赖。
 
 项目主线是“任务发现方法 → 条件与关系约束执行 → 结果留证 → 经验隔离为候选 → 冻结对照 → 审核后版本复用”。各页面的作用、当前能力与后续核心工作见 [技能网络闭环](docs/skill-network.md)。
@@ -62,9 +64,9 @@ npm run eval
 
 安装了 Make 的环境可以运行 `make setup && make demo`。示例和评测分别写入 `.skillinter/demo` 与 `.skillinter/evaluation`。默认 demo 使用固定的规划响应夹具。下载真实预检任务生成的 `replay.json` 后，运行 `npm run demo -- <回放文件路径>` 可离线重跑受支持的执行，并校验输入哈希、模型请求哈希与结果指纹。回放包包含原始 CSV 和模型所见上下文。带实时引导、取消或运行错误的执行保留轨迹供查阅。
 
-双击 `start.bat` 或运行 `npm start`，打开 [本机工作台](http://127.0.0.1:3091/)。添加文件后即可在输入框旁发起材料预检。在「设置 → 模型」连接服务后，可以使用主聊天规划其他检查，并将完成的做法保存为技能。
+双击 `start.bat` 或运行 `npm start`，打开 [本机工作台](http://127.0.0.1:3095/)。添加文件后即可在输入框旁发起材料预检。在「设置 → 模型」连接服务后，可以使用主聊天规划其他检查，并将完成的做法保存为技能。
 
-同一端口提供 `GET /api/health`、`POST /api/demo`、`GET /api/tools/contract`、`GET /api/audit/contract` 和 `GET /api/audit/skills`。`POST /api/demo` 返回任务与执行 ID，`variant` 可选 `replan`、`missing-unit`、`unit`、`plain`，默认 `replan`。3091 的演示不依赖 3090 服务。样例、测量口径和复现环境见 [验收说明](docs/validation.md)，技能选择与复用门槛见 [技能设计](docs/skill-design.md)。
+同一端口提供 `GET /api/health`、`POST /api/demo`、`GET /api/tools/contract`、`GET /api/audit/contract` 和 `GET /api/audit/skills`。`POST /api/demo` 返回任务与执行 ID，`variant` 可选 `replan`、`missing-unit`、`unit`、`plain`，默认 `replan`。演示使用同一工作台服务。样例、测量口径和复现环境见 [验收说明](docs/validation.md)，技能选择与复用门槛见 [技能设计](docs/skill-design.md)。
 
 ### 在主聊天中使用技能
 
@@ -180,7 +182,7 @@ npm start
 npm test
 ```
 
-要求 Node.js 24.9 或更新版本。默认端口 3091，可以传入 `npm start -- --port 3092` 改端口。
+要求 Node.js 24.9 或更新版本。默认端口为 `config.yaml` 中的 3095，启动时会打印工作台地址。
 
 - `src/store.mjs` 保存任务、每轮执行和按序事件。SQLite 数据在 `.skillinter/native/tasks.sqlite`。
 - `src/runner.mjs` 负责模型请求、工具调度、停止与执行步数限制。

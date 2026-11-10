@@ -1,0 +1,85 @@
+{
+  "accepted": false,
+  "rawQuality": {
+    "passed": 0,
+    "total": 6,
+    "missingItems": 6,
+    "validCitations": 0,
+    "totalCitations": 0,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "test_setup",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "test_command",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "dependency_lock",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "head_ci",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "paid_coverage",
+        "passed": false,
+        "item": null
+      }
+    ]
+  },
+  "deliveredQuality": {
+    "passed": 0,
+    "total": 6,
+    "missingItems": 6,
+    "validCitations": 0,
+    "totalCitations": 0,
+    "extraItems": 0,
+    "rows": [
+      {
+        "id": "python",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "test_setup",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "test_command",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "dependency_lock",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "head_ci",
+        "passed": false,
+        "item": null
+      },
+      {
+        "id": "paid_coverage",
+        "passed": false,
+        "item": null
+      }
+    ]
+  },
+  "corrections": [],
+  "issues": []
+}

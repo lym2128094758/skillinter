@@ -1,5 +1,7 @@
 # 只读核验入口
 
+最新的复现材料审查见 [DeepSeek 单 Agent / Worker 三轮对照](repro-audit-20261110/README.md)。第三轮单 Agent 原始严格得分 2/6，四条行号经真实读取回执唯一定位后交付为 6/6；三轮 Worker 均未通过。引用校准目前只在复测脚本中。代码与已验证范围见 [本轮审查入口](../review-status.md)。
+
 在 SIH 的「项目只读」会话中，工作区是 `D:\gpt\projects`。请用相对工作区的路径读取。例如 `请用 read_file 读取 skillinter/docs/evidence/README.md`。代码对应 `skillinter/src/workflow.mjs` 和 `skillnet-demo/docs/architecture-review.md`。以下公开数据与测试记录已放入项目内，便于在该权限下核验。
 
 本轮核验先读 [verification-summary.json](verification-summary.json)。新增一次真实 Chrome 附件上传、主输入框发送、真实 MiniMax-M3 服务、报告和图谱显示的完整联调，未打开预检表单。4 次真实模型请求的服务端响应均报告 `minimax-m3`，换算为 g → mg，3 行检出 3 个预设问题，原始列统计和图谱高亮与该次实际执行一致。输入明确为合成接口样例。
