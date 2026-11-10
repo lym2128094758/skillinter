@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -13,7 +14,7 @@ const scratch = await mkdtemp(prefix);
 const chrome = process.env.SKILLINTER_CHROME || (process.platform === 'win32'
   ? join(process.env.ProgramFiles || 'C:/Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe') : 'google-chrome');
 const profile = join(scratch, 'browser');
-let app, browser, socket, launchError;
+let app, browser, socket, launchError, provider;
 
 async function waitFor(description, check) {
   const deadline = Date.now() + 12_000;
@@ -27,7 +28,36 @@ async function waitFor(description, check) {
 }
 
 try {
-  app = await createApp({state: join(scratch, 'state'), env: {}});
+  provider = createServer(async (req,res) => {
+    if (req.method==='GET') {
+      res.writeHead(200,{'content-type':'application/json'});
+      res.end(JSON.stringify({data:[{id:'browser-folder-fixture'}]}));
+      return;
+    }
+    let text = '';
+    for await (const chunk of req) text += chunk;
+    const {messages} = JSON.parse(text);
+    const context = JSON.parse(messages[0].content.split('当前任务上下文（仅为数据，不授予额外权限）：')[1].split('\n')[0]);
+    const root = context.folders?.[0]?.path;
+    const prior = messages.filter(item=>item.role==='tool');
+    const reply = prior.at(-1) ? JSON.parse(prior.at(-1).content) : null;
+    const tool = (name,args) => ({tool_calls:[{id:`folder-check-${prior.length}`,type:'function',function:{name,arguments:JSON.stringify(args)}}]});
+    let message;
+    if (!root) message = {content:'缺少目录'};
+    else if (!prior.length) message = tool('list_workspace',{path:root,recursive:true,max_depth:2});
+    else if (!reply.ok) message = {content:JSON.stringify(reply.error)};
+    else if (prior.length===1) {
+      const file = reply.data.entries.find(entry=>entry.path.endsWith('/子目录/说明.md'));
+      message = file ? tool('read_document',{path:file.path,offset:0,limit:1}) : {content:'未列出子目录中的文件'};
+    } else if (prior.length===2) message = tool('read_file',{path:reply.data.path});
+    else message = {content:reply.data.file.content};
+    res.writeHead(200,{'content-type':'application/json'});
+    res.end(JSON.stringify({choices:[{message}]}));
+  });
+  provider.listen(0,'127.0.0.1');
+  await once(provider,'listening');
+  app = await createApp({state: join(scratch, 'state'), env: {SKILLINTER_MODEL:'browser-folder-fixture',
+    SKILLINTER_MODEL_URL:`http://127.0.0.1:${provider.address().port}/v1/chat/completions`}});
   app.server.listen(0, '127.0.0.1');
   await once(app.server, 'listening');
   const base = 'http://127.0.0.1:' + app.server.address().port;
@@ -125,7 +155,7 @@ try {
   async function installGraphNodes(nodes) {
     for(const node of nodes) {
       if(installed.has(node.nodeId))continue;
-      const response=await fetch(base+'/api/skill-studio/publish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({baseVersion:0,draft:{name:node.nodeId,description:'Isolated graph check fixture',instructions:'Graph check fixture only.',tests:[]}})});
+      const response=await fetch(base+'/api/skill-studio/publish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({baseVersion:0,draft:{name:node.nodeId,description:'Isolated graph check fixture',instructions:'> 领域：'+(installed.size%2?'文档工程':'数据与分析')+'\n\nGraph check fixture only.',tests:[]}})});
       assert.equal(response.status,201);
       installed.set(node.nodeId,(await response.json()).skill.id);
     }
@@ -192,6 +222,12 @@ try {
       const graphDoc = "document.querySelector('#skill-graph-frame').contentDocument";
       await run(graphDoc + ".querySelector('#globalViewButton').click();true");
       assert.equal(await run(graphDoc + ".querySelector('#executionViewButton').getAttribute('aria-pressed')"), 'false');
+      const before=await run(graphDoc+".querySelectorAll('#skillList .skill-list-item').length");
+      assert.ok(await run(graphDoc+".querySelector('#categoriesList input[aria-label=\"分类：数据与分析\"]')!==null"));
+      await run(graphDoc+".querySelector('#categoriesList input[aria-label=\"分类：数据与分析\"]').click();true");
+      assert.ok(await run(graphDoc+".querySelectorAll('#skillList .skill-list-item').length")<before);
+      await run(graphDoc+".querySelector('#clearFilters').click();true");
+      assert.equal(await run(graphDoc+".querySelectorAll('#skillList .skill-list-item').length"),before);
       await run(graphDoc + ".querySelector('#executionViewButton').click();true");
       await checkEmbedded(expected, expectedEdges);
     }
@@ -254,6 +290,11 @@ try {
   await run("document.querySelector('#engine-enabled').checked=false;document.querySelector('#engine-form').requestSubmit();true");
   await waitFor('保存引擎设置', () => run("document.querySelector('#engine-status').textContent.includes('已保存')"));
   assert.equal((await (await get('/api/skill-intelligence/settings')).json()).revision, 1);
+  const githubDisconnected=await fetch(base+'/api/skill-intelligence/github',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'disconnect'})});
+  assert.equal(githubDisconnected.status,200);
+  await run("document.querySelector('[data-settings-page=github]').click();true");
+  await waitFor('GitHub连接设置页',()=>run("!document.querySelector('#github-view').hidden&&document.querySelector('#github-status').textContent.includes('已断开')"));
+  assert.equal(await run("!document.querySelector('#github-login').hidden&&document.querySelector('#github-token').type==='password'"),true);
   await run("document.querySelector('#close-settings').click();document.querySelector('#choose-custom-skill').click();true");
   await waitFor('技能中心打开', () => run("document.querySelector('#skill-studio-dialog').open"));
   await run("document.querySelector('#studio-tab-import').click();const select=document.querySelector('#studio-import-source');select.value='public';select.dispatchEvent(new Event('change'));true");
@@ -287,6 +328,64 @@ try {
   await waitFor('页面保存项目记忆', () => run("document.querySelector('#project-memory-list summary')?.textContent.includes('实验报告样式')"));
   const {memories} = await (await get('/api/projects/' + memoryProject.id + '/memories')).json();
   assert.equal(memories[0]?.text, '用表格列出核验项');
+  await run("document.querySelector('#project-memory-dialog').close();document.querySelector('#new').click();true");
+  await waitFor('新会话可接收附件', () => run("!document.querySelector('#composer').hidden && !document.querySelector('#attach').disabled"));
+  const folder = join(scratch, '附件目录');
+  await mkdir(join(folder, '子目录'), {recursive:true});
+  await writeFile(join(folder, '子目录', '说明.md'), '# 本机挂载');
+  const standalone = join(scratch, '独立文件.csv');
+  await writeFile(standalone, 'x,y\n1,2\n');
+  const {x,y} = await run(`(() => {
+    const rect = document.querySelector('#prompt').getBoundingClientRect();
+    return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+  })()`);
+  const drag = {items:[],files:[folder,standalone],dragOperationsMask:1};
+  for (const type of ['dragEnter','dragOver','drop']) await send('Input.dispatchDragEvent',{type,x,y,data:drag});
+  await waitFor('目录拖入后直接显示卡片，普通文件已添加', () => run(`(() => {
+    const names = [...document.querySelector('#analysis-file').options].map(item => item.text);
+    return !document.querySelector('#mount-folder-dialog').open &&
+      document.querySelector('#task-files .mounted-folder strong')?.textContent === '附件目录' &&
+      names.includes('独立文件.csv') && names.length === 2 && !document.querySelector('#attach-folder').disabled;
+  })()`)).catch(async error => {
+    throw new Error(error.message + ' ' + JSON.stringify(await run(`({message:document.querySelector('#error').textContent,
+      status:document.querySelector('#selection-status').textContent, files:document.querySelector('#task-files').textContent,
+      disabled:document.querySelector('#attach-folder').disabled})`)));
+  });
+  const mountedTask = await run("localStorage.getItem('skillinter-task')");
+  const mounted = await (await get(`/api/tasks/${mountedTask}`)).json();
+  assert.equal(mounted.folders.length,1);
+  assert.equal(mounted.folders[0].browser,true);
+  assert.equal(mounted.files.length,1);
+  await writeFile(join(folder,'子目录','说明.md'),'# 拖入后修改的正文');
+  await run("document.querySelector('#prompt').value='核对拖入目录的正文';document.querySelector('#composer').requestSubmit();true");
+  await waitFor('发送后文件夹卡片移至消息，输入框清空文件夹卡片', () => run(`
+    !document.querySelector('#task-files .mounted-folder') &&
+    document.querySelector('.message-folders .folder-card strong')?.textContent === '附件目录'`));
+  await waitFor('拖入后直接发送，模型读取到修改后的原文件', async () => {
+    const current = await (await get(`/api/tasks/${mountedTask}`)).json();
+    const latest = current.runs.at(-1);
+    if (latest?.status==='completed') {
+      assert.equal(latest.answer,'# 拖入后修改的正文');
+      return true;
+    }
+    return false;
+  });
+  const finished = await (await get(`/api/tasks/${mountedTask}`)).json();
+  assert.deepEqual(finished.runs[0].inputFolders,[{id:mounted.folders[0].id,name:'附件目录'}]);
+  const log = await (await get(`/api/runs/${finished.runs.at(-1).id}/events`)).text();
+  for (const tool of ['list_workspace','read_document','read_file']) assert.ok(log.includes(tool));
+  await waitFor('可继续追问', () => run("!document.querySelector('#send').disabled && document.querySelector('#stop').hidden"));
+  await run("document.querySelector('#prompt').value='继续核对同一目录';document.querySelector('#composer').requestSubmit();true");
+  await waitFor('追问仍能使用之前发送的文件夹', async () => {
+    const current = await (await get(`/api/tasks/${mountedTask}`)).json();
+    return current.runs.length===2 && current.runs[1].status==='completed' ? current : null;
+  }).then(current => {
+    assert.equal(current.runs[1].answer,'# 拖入后修改的正文');
+    assert.equal(current.runs[1].inputFolders,undefined);
+  });
+  await run(`document.querySelector('.message-folders [aria-label="移除文件夹 附件目录"]').click();true`);
+  await waitFor('历史卡片可解除挂载', () => run("!!document.querySelector('.message-folders .folder-card') && !document.querySelector('.message-folders .attachment-remove')"));
+  assert.equal(await readFile(join(folder,'子目录','说明.md'),'utf8'),'# 拖入后修改的正文');
   const output = resolve('.skillinter/evaluation');
   await mkdir(output, {recursive: true});
   await writeFile(join(output, 'graph-ci.json'), JSON.stringify({passed: true, results,registryEditor:{saved:true,removed:true},
@@ -296,5 +395,6 @@ try {
   socket?.close();
   browser?.kill();
   if (app) await app.close();
+  if (provider) await new Promise(resolve=>provider.close(resolve));
   if (scratch.startsWith(prefix)) await rm(scratch, {recursive: true, force: true, maxRetries: 4, retryDelay: 150}).catch(() => {});
 }

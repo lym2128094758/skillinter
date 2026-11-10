@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {canDraftFromRun, summarizeRun} from './src/run-outcome.mjs';
 import {test} from 'node:test';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -13,6 +14,7 @@ import {routeSkills} from './src/skill-routing.mjs';
 import {toolsForScope,executeTool} from './src/tools.mjs';
 import {validate} from './src/schema.mjs';
 import {executeRun} from './src/runner.mjs';
+import {readCitationReceipts, verifyCitations} from './src/citation-verifier.mjs';
 
 const check = (kind,pointer,expected) => ({kind,pointer,expected});
 const contract = () => ({version:1,preserve_inputs:['input.json'],artifacts:[{path:'report.json',format:'json',require_change:true,checks:[
@@ -107,6 +109,7 @@ test('main chat host finalization exposes unmet acceptance even when a model ski
   const model={label:'fixture',async invoke(){calls++;return calls===1?{tool_calls:[{id:'read',type:'function',function:{name:'read_file',arguments:'{"path":"input.json"}'}}]}:{content:'已完成，报告正确。'};}};
   await executeRun({id:f.run,task:f.task,prompt:'verified-summary 复算',store:f.store,workspace:f.root,model,signal:f.signal,scope:f.scope,skillAccess:true,localSkills:[f.skill],maxSteps:3});
   const run=f.store.task(f.task).runs[0];assert.equal(run.status,'completed');assert.match(run.answer,/SIH 产物验收/);assert.match(run.answer,/未通过/);assert.equal(run.skillDeliveries.at(-1).status,'failed');
+  assert.equal(run.outcome.status,'failed');assert.match(run.outcome.label,/交付未通过/);
 });
 
 test('main chat receipt index and verifier advertise the same real operations, excluding verification calls',async t=>{
@@ -143,4 +146,105 @@ test('candidate provenance contains host file acceptance rather than only the as
   assert.match(evidence.at(-1).files.find(file=>file.role==='artifact').sha256,/^[a-f0-9]{64}$/);
   assert.match(evidence.at(-1).verifierSha256,/^[a-f0-9]{64}$/);
   assert.deepEqual(candidate.draft.delivery,f.skill.delivery);
+});
+
+test('main chat preserves the original reply and calibrates a uniquely grounded citation before completing', async t => {
+  const f = await fixture(t);
+  await writeFile(join(f.root, 'evidence.md'), 'Heading\n\nPython 3.11 required\n');
+  const original = {findings: [{id: 'python', status: 'verified', claim: '最低 Python 3.11',
+    evidence: [{path: 'evidence.md', line: 2, quote: 'Python 3.11 required'}]}]};
+  let calls = 0;
+  const model = {label: 'fixture', async invoke() {
+    return ++calls === 1 ? {tool_calls: [{id: 'read', type: 'function',
+      function: {name: 'read_file', arguments: '{"path":"evidence.md"}'}}]} : {content: JSON.stringify(original)};
+  }};
+  await executeRun({id: f.run, task: f.task, prompt: '核对版本并引用原文', store: f.store, workspace: f.root,
+    scope: f.scope, model, signal: f.signal, maxSteps: 3});
+  const saved = f.store.task(f.task).runs[0];
+  assert.equal(saved.status, 'completed');
+  assert.equal(JSON.parse(saved.answer).findings[0].evidence[0].line, 3);
+  assert.equal(saved.citationVerification.status, 'passed');
+  assert.equal(saved.citationVerification.corrections[0].originalLine, 2);
+  const artifact = f.store.file(f.task, saved.citationVerification.artifact.id);
+  assert.deepEqual(JSON.parse(JSON.parse(Buffer.from(artifact.bytes).toString()).originalAnswer), original);
+});
+
+test('a cited JSON block inside prose cannot bypass main-chat schema verification', async t => {
+  const f = await fixture(t);
+  const wrong = {findings: [{id: 'x', status: 'verified', claim: 'Unverified claim',
+    evidence: [{file: 'input.json', lines: '1-1', quote: '[2,4]'}]}]};
+  const model = {label: 'fixture', async invoke() {
+    return {content: 'All done.\n' + String.fromCharCode(96).repeat(3) + 'json\n' + JSON.stringify(wrong) +
+      '\n' + String.fromCharCode(96).repeat(3)};
+  }};
+  await executeRun({id: f.run, task: f.task, prompt: '核对引用', store: f.store, workspace: f.root,
+    scope: f.scope, model, signal: f.signal, maxSteps: 2});
+  const saved = f.store.task(f.task).runs[0];
+  assert.equal(saved.status, 'failed');
+  assert.equal(saved.citationVerification.issues[0].code, 'CITATION_SCHEMA');
+});
+
+test('citation verification rejects unread ranges, ambiguous quotes and sources changed since the read', async t => {
+  const f = await fixture(t);
+  const content = 'Repeated statement\nRepeated statement\nOutside read range\n';
+  await writeFile(join(f.root, 'evidence.md'), content);
+  const output = await executeTool({function: {name: 'read_file',
+    arguments: '{"path":"evidence.md","offset":0,"limit":2}'}}, f.root, f.signal, f.scope);
+  const receipts = readCitationReceipts([{seq: 1, type: 'tool_result', payload: {name: 'read_file', output}}]);
+  const verify = (path, quote, line = 10) => verifyCitations([{id: 'x', status: 'verified', claim: 'Evidence',
+    evidence: [{path, line, quote}]}], {receipts, signal: f.signal,
+    loadSource: async path => ({bytes: Buffer.from(path === 'evidence.md' ? content : '')})});
+  assert.equal((await verify('other.md', 'Repeated statement')).issues[0].code, 'SOURCE_NOT_READ');
+  assert.equal((await verify('evidence.md', 'Repeated statement')).issues[0].code, 'AMBIGUOUS_CITATION');
+  assert.equal((await verify('evidence.md', 'Outside read range', 3)).issues[0].code, 'CITATION_NOT_FOUND');
+  const changed = await verifyCitations([{id: 'x', status: 'verified', claim: 'Evidence',
+    evidence: [{path: 'evidence.md', line: 1, quote: 'Repeated statement'}]}],
+    {receipts, loadSource: async () => ({bytes: Buffer.from(content + 'changed')}), signal: f.signal});
+  assert.equal(changed.issues[0].code, 'CITATION_SOURCE_CHANGED');
+});
+
+test('file delivery requires correct citation bytes and rechecks the source using this run receipts', async t => {
+  const f = await fixture(t);
+  await writeFile(join(f.root, 'source.md'), 'Title\nExact source evidence\n');
+  const declaration = {version: 1, preserve_inputs: ['source.md'], artifacts: [{path: 'cited.json',
+    format: 'json', require_change: true, checks: [check('json_citations', '/findings', '')]}]};
+  assert.ok(validDelivery(declaration));
+  const frozen = await freezeDelivery({contract: declaration, scope: f.scope, signal: f.signal});
+  const output = await executeTool({function: {name: 'read_file', arguments: '{"path":"source.md"}'}}, f.root, f.signal, f.scope);
+  const readReceipts = readCitationReceipts([{seq: 1, type: 'tool_result', payload: {name: 'read_file', output}}]);
+  const report = {findings: [{id: 'source', status: 'verified', claim: 'Evidence',
+    evidence: [{path: 'source.md', line: 1, quote: 'Exact source evidence'}]}]};
+  await writeFile(join(f.root, 'cited.json'), JSON.stringify(report));
+  const verify = () => verifyDelivery({frozen, scope: f.scope, signal: f.signal, readReceipts});
+  const wrong = await verify();
+  assert.equal(wrong.status, 'failed');
+  assert.ok(wrong.checks.some(item => item.code === 'CITATION_LINE_MISMATCH'));
+  report.findings[0].evidence[0].line = 2;
+  await writeFile(join(f.root, 'cited.json'), JSON.stringify(report));
+  assert.equal((await verify()).status, 'passed');
+  await writeFile(join(f.root, 'source.md'), 'Title\nReplaced source evidence\n');
+  assert.equal((await verify()).status, 'failed');
+});
+
+test('run outcome uses latest real checks, separates reply completion and declared delivery, and never certifies an unfinished chain', () => {
+  const run={status:'completed',skillRoute:{candidates:[{id:'a'}]},skillApplications:[{id:'a',status:'applied'}],
+    skillDeliveries:[{id:'a',status:'failed'},{id:'a',status:'passed'}]};
+  assert.equal(summarizeRun(run).status,'verified');
+  run.skillDeliveries.push({id:'a',status:'failed'});
+  assert.equal(summarizeRun(run).status,'failed');
+  assert.match(summarizeRun(run).label,/交付未通过/);
+  run.skillDeliveries.push({id:'a',status:'unknown'});
+  assert.equal(summarizeRun(run).status,'unverified');
+  run.skillDeliveries.push({id:'a',status:'passed'});
+  run.plan={steps:[{status:'in_progress'}]};
+  assert.equal(summarizeRun(run).status,'incomplete');
+  run.plan.steps[0].status='completed';run.skillApplications.push({id:'a',status:'failed'});
+  assert.equal(summarizeRun(run).counts.unappliedSkills,1);
+  run.status='stopped';assert.equal(summarizeRun(run).status,'stopped');
+  assert.equal(summarizeRun({status:'completed'}).status,'unverified');
+  assert.equal(summarizeRun({status:'completed',citationVerification:{status:'failed'}}).status,'failed');
+  assert.equal(canDraftFromRun({status:'failed',error:'原文核验失败'}),true);
+  assert.equal(canDraftFromRun({status:'stopped',skillDeliveries:[{status:'failed'}]}),true);
+  assert.equal(canDraftFromRun({status:'running',answer:'部分输出'}),false);
+  assert.equal(canDraftFromRun({status:'stopped'}),false);
 });

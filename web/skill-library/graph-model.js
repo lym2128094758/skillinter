@@ -4,9 +4,9 @@
     return parts.every((part) => {
       const negative = part.startsWith("-");
       if (negative) part = part.slice(1);
-      const field = /^(name|path|source):/.exec(part);
+      const field = /^(name|path|source|category):/.exec(part);
       const value = (field ? part.slice(field[0].length) : part).replace(/^"|"$/g, "").toLowerCase();
-      const text = field ? node[field[1]] || "" : [node.name, node.description, node.path, node.source].join(" ");
+      const text = field ? node[field[1]] || "" : [node.name, node.description, node.path, node.source, node.category].join(" ");
       const found = text.toLowerCase().includes(value);
       return negative ? !found : found;
     });
@@ -27,7 +27,8 @@
     return [...pairs.values()];
   }
   function filterGraph(nodes, rawEdges, options) {
-    let filtered = nodes.filter((node) => !options.hiddenGroups.has(node.group) && matches(node, options.query));
+    let filtered = nodes.filter((node) => !options.hiddenGroups.has(node.group) &&
+      !options.hiddenCategories?.has(node.category || '未分类') && matches(node, options.query));
     let ids = new Set(filtered.map((node) => node.id));
     let edges = mergeEdges(rawEdges, ids, options.kinds);
     if (options.mode === "local") {

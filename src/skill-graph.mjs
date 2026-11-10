@@ -1,13 +1,24 @@
 import {RequestError} from './store.mjs';
 import {skillMarkdown} from './skill-files.mjs';
 import {createSkillRegistry} from './skill-registry.mjs';
+import {readFileSync} from 'node:fs';
 
 const normalized = text => text.normalize('NFKC').toLowerCase();
 const pairKey = (a, b) => [a, b].sort().join(':');
 const meaningful = new Set('skill skills user users use using help when with from that this your then file files'.split(' '));
+const catalogueCategories=new Map(JSON.parse(readFileSync(new URL('../web/catalog/graph.json',import.meta.url),'utf8')).nodes
+  .filter(node=>node.domain).map(node=>[node.id,node.domain]));
 function terms(text) {
   return new Set([...new Intl.Segmenter('zh', {granularity:'word'}).segment(normalized(text))]
     .filter(item => item.isWordLike && item.segment.length >= 2 && !meaningful.has(item.segment)).map(item => item.segment));
+}
+
+// Imported SkillNet packages retain this explicit declaration in their body.
+// Catalogue names supply display labels only; UUID identity and execution
+// relationships still require their explicit registry binding.
+function categoryFor(skill) {
+  const declared = /^\s*(?:>\s*)?(?:领域|分类|Domain|Category)\s*[:：]\s*([^|｜\r\n]+)/im.exec((skill.instructions ?? '').slice(0, 4000));
+  return declared?.[1].trim().split('　')[0].trim().slice(0, 100) || catalogueCategories.get(skill.name) || '未分类';
 }
 
 export function createSkillGraph({store, studio, projectFor,registry=createSkillRegistry({store,studio,projectFor})}) {
@@ -34,6 +45,7 @@ export function createSkillGraph({store, studio, projectFor,registry=createSkill
     if (cachedGraph && cachedKey === key) return {...cachedGraph,edges:[...cachedGraph.edges,...manualEdges(cachedGraph.nodes)],issues:studio.issues()};
     const nodes = installed.map(skill => ({id:skill.id, name:skill.name, slug:skill.name,
       description:skill.description, version:skill.version, path:skill.storagePath ?? '',
+      category:categoryFor(skill),
       source:skill.projectId ? '项目技能' : '用户技能', group:skill.projectId ? '当前项目' : '用户技能'}));
     const aliases = new Map();
     for (const skill of installed) {

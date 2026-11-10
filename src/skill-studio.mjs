@@ -265,7 +265,7 @@ export function createSkillStudio(store, fileOptions = {}) {
     const tools = store.query(`SELECT type, coalesce(json_extract(payload, '$.name'), json_extract(payload, '$.tool')) AS tool,
       CASE WHEN json_extract(payload, '$.output.data.kind') = 'material_preflight'
         THEN json_extract(payload, '$.output.data.status') = 'completed'
-        WHEN json_extract(payload, '$.output.data.kind') = 'project_tests'
+        WHEN json_extract(payload, '$.output.data.kind') IN ('project_tests','python_execution')
         THEN json_extract(payload, '$.output.data.status') = 'passed'
         ELSE coalesce(json_extract(payload, '$.output.ok'), json_extract(payload, '$.result.ok')) END AS ok,
       json_extract(payload, '$.output.data.status') AS projectTestStatus,
@@ -282,6 +282,8 @@ export function createSkillStudio(store, fileOptions = {}) {
     const applications = store.query("SELECT payload FROM events WHERE run=? AND type='skill_application' ORDER BY seq", 'all', runId).map(row => JSON.parse(row.payload));
     const applicability = store.query("SELECT payload FROM events WHERE run=? AND type='skill_applicability' ORDER BY seq", 'all', runId).map(row => JSON.parse(row.payload));
     const deliveries = store.query("SELECT payload FROM events WHERE run=? AND type='skill_delivery' ORDER BY seq", 'all', runId).map(row => JSON.parse(row.payload));
+    const citations = store.query("SELECT seq,payload FROM events WHERE run=? AND type='citation_verification' ORDER BY seq", 'all', runId)
+      .map(row => ({seq: row.seq, ...JSON.parse(row.payload)}));
     return {
       preceding: preceding.map(row => ({id: row.id, prompt: evidenceText(row.prompt, 1200), answer: evidenceText(row.answer, 1200), status: row.status})),
       selected: {id: selected.id, prompt: evidenceText(selected.prompt, 4000), answer: evidenceText(selected.answer, 6000),
@@ -291,6 +293,9 @@ export function createSkillStudio(store, fileOptions = {}) {
       tools: tools.map(row => ({...row, tool: row.tool ? evidenceText(row.tool, 80) : null})),
       attachment: attachment ? {...attachment, name: evidenceText(attachment.name, 240)} : null,
       artifacts: artifacts.map(file => ({...file, name: evidenceText(file.name, 240)})),
+      citationVerification: citations.map(({seq, status, corrections, issues, sources}) => ({seq, status,
+        corrections: corrections.map(item => ({...item, quote: evidenceText(item.quote, 400)})),
+        issues: issues.map(item => ({...item, message: evidenceText(item.message, 400)})), sources})),
       ...(decision ? {capabilityFit: {goal: decision.goal, source: decision.source, status: decision.status,
         selected: decision.selected, summary: evidenceText(decision.summary, 400)}} : {}),
       skillRoute: skillRoute ? (() => { const route = JSON.parse(skillRoute.payload); return {

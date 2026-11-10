@@ -25,7 +25,7 @@
     }catch{}
   }
   loadSettings();
-  const state = {nodes:[],edges:[],mode:"global",selectedId:null,hoverId:null,hiddenGroups:new Set(),
+  const state = {nodes:[],edges:[],mode:"global",selectedId:null,hoverId:null,hiddenGroups:new Set(),hiddenCategories:new Set(),
     nodeCache:new Map(),listLimit:100,listNodes:[],visibleNodes:[],visibleEdges:[],degree:new Map(),adjacency:new Map(),
     colorMap:new Map(),transform:d3.zoomIdentity,connect:false,first:null,dragging:false,request:0,
     detailController:null,width:0,height:0};
@@ -38,7 +38,7 @@
       if (!state.nodes.some(node=>node.id===id)) return;
       if (executionView && !executionStates.has(id)) setExecutionView(false);
       if (!executionView) {
-        $("searchInput").value='';state.hiddenGroups.clear();state.mode='global';rebuild(true);
+        $("searchInput").value='';state.hiddenGroups.clear();state.hiddenCategories.clear();buildGroups();state.mode='global';rebuild(true);
       }
       selectNode(id);
     },
@@ -72,7 +72,7 @@
     return {x:Math.max(0,w-overlap)/2,y:h/2};
   },onHover:(node,point)=>{
     if(!node){sphereTip.hidden=true;return;}
-    sphereTip.textContent=node.name+" · "+node.group;sphereTip.hidden=false;
+    sphereTip.textContent=node.name+" · "+(node.category||'未分类')+" · "+node.group;sphereTip.hidden=false;
     sphereTip.style.left=Math.max(12,Math.min(sphereCanvas.clientWidth-230,point.x+14))+"px";
     sphereTip.style.top=Math.max(12,Math.min(sphereCanvas.clientHeight-42,point.y+14))+"px";
   },onSelect:node=>{if(!node||node.id===state.selectedId)clearSelection();else selectNode(node.id);},
@@ -150,11 +150,12 @@
       }
     }
   }
-  function color(node) { return settings.colorBySource ? (customColors[node.group] || state.colorMap.get(node.group) || themeColor("--muted")) : themeColor("--muted"); }
+  const category = node => node.category || '未分类';
+  function color(node) { return settings.colorBySource ? (customColors[category(node)] || state.colorMap.get(category(node)) || themeColor("--muted")) : themeColor("--muted"); }
   function radius(node) { return settings.nodeSize * (settings.scaleNodes ? Math.min(9,3.5+Math.sqrt(state.degree.get(node.id)||0)*.85) : 4); }
   function visibleRadius(node) { return Math.max(radius(node), 3 * settings.nodeSize / state.transform.k); }
   function options() {
-    return {hiddenGroups:state.hiddenGroups,query:$("searchInput").value.trim(),mode:state.mode,selectedId:state.selectedId,
+    return {hiddenGroups:state.hiddenGroups,hiddenCategories:state.hiddenCategories,query:$("searchInput").value.trim(),mode:state.mode,selectedId:state.selectedId,
       depth:settings.depth,showOrphans:settings.showOrphans,maxNodes:settings.maxNodes,pinnedIds:[...executionStates.keys()],
       kinds:new Set([settings.showMentions&&"mention",settings.showTopics&&"topic",settings.showManual&&"manual"].filter(Boolean))};
   }
@@ -195,7 +196,8 @@
       if (version !== state.request) return;
       state.nodes = data.nodes; state.edges = data.edges;
       if (!state.nodes.some((n)=>n.id===state.selectedId)) { state.selectedId=null;state.mode="global";$("detailPanel").hidden=true; }
-      [...new Set(state.nodes.map((n)=>n.group))].sort().forEach((group,index)=>state.colorMap.set(group,palette[index%palette.length]));
+      state.colorMap.clear();
+      [...new Set(state.nodes.map(category))].sort().forEach((group,index)=>state.colorMap.set(group,palette[index%palette.length]));
       $("skillCount").textContent = state.nodes.length;
       const discovery = data.discovery;
       const agentLabel = discovery?.agent_label;
@@ -210,6 +212,18 @@
     finally { if (version === state.request) $("refreshButton").disabled=false; }
   }
   function buildGroups() {
+    const categories = new Map();
+    state.nodes.forEach(node => categories.set(category(node),(categories.get(category(node))||0)+1));
+    $("categoriesList").replaceChildren();
+    for(const [name,count] of [...categories].sort((a,b)=>a[0].localeCompare(b[0],"zh-CN"))) {
+      const label=document.createElement('label');label.className='group-item';
+      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=!state.hiddenCategories.has(name);checkbox.setAttribute('aria-label','分类：'+name);
+      checkbox.onchange=()=>{if(checkbox.checked)state.hiddenCategories.delete(name);else state.hiddenCategories.add(name);rebuild(true);};
+      const dot=document.createElement('span');dot.className='group-color';dot.style.background=customColors[name]||state.colorMap.get(name);
+      const title=document.createElement('span');title.className='group-label';title.textContent=name;title.title=name;
+      const num=document.createElement('span');num.className='group-num';num.textContent=count;
+      label.append(checkbox,dot,title,num);$("categoriesList").append(label);
+    }
     const groups = new Map();
     state.nodes.forEach((n)=>groups.set(n.group,(groups.get(n.group)||0)+1));
     $("groupsList").replaceChildren();
@@ -217,7 +231,7 @@
       const label=document.createElement("label");label.className="group-item";
       const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.checked=!state.hiddenGroups.has(group);checkbox.setAttribute("aria-label","显示"+group);
       checkbox.addEventListener("change",()=>{ if(checkbox.checked)state.hiddenGroups.delete(group);else state.hiddenGroups.add(group);rebuild(true); });
-      const dot=document.createElement("span");dot.className="group-color";dot.style.background=customColors[group]||state.colorMap.get(group);
+      const dot=document.createElement("span");dot.className="group-color";dot.style.background=palette[group==='当前项目'?0:1];
       const title=document.createElement("span");title.className="group-label";title.textContent=group;
       const num=document.createElement("span");num.className="group-num";num.textContent=count;
       label.append(checkbox,dot,title,num);$("groupsList").append(label);
@@ -270,7 +284,7 @@
     $("emptyState").querySelector("p").textContent=executionView?"可以切换到全局查看技能库。":local?"当前 Skill 被筛选条件排除。清除筛选或返回全局图。":"调整搜索词或来源筛选。";
     if(graphDimension==="sphere"&&sphere){
       const catalogue=executionView?executionGraph():model.filterGraph(state.nodes,state.edges,{...options(),mode:"global",pinnedIds:[...executionStates.keys(),...state.visibleNodes.map(node=>node.id)]});
-      sphere.setData({nodes:catalogue.nodes.map(n=>({...n,domain:n.group,degree:catalogue.degree.get(n.id)||0,color:colorMapSphere(n)})),
+      sphere.setData({nodes:catalogue.nodes.map(n=>({...n,domain:category(n),degree:catalogue.degree.get(n.id)||0,color:colorMapSphere(n)})),
         edges:withExecutionEdges(catalogue).map(e=>({source:e.source,target:e.target,type:e.kind,key:e.key}))});
       const visibleIds=new Set(state.visibleNodes.map(n=>n.id));
       sphere.setFilter(n=>visibleIds.has(n.id));
@@ -279,7 +293,7 @@
       syncSphereAppearance();
     }
   }
-  function colorMapSphere(node){return settings.colorBySource?(customColors[node.group]||state.colorMap.get(node.group)||themeColor("--accent")):themeColor("--accent");}
+  function colorMapSphere(node){return settings.colorBySource?(customColors[category(node)]||state.colorMap.get(category(node))||themeColor("--accent")):themeColor("--accent");}
   function syncSphereAppearance(){
     sphere.appearance(settings);
     sphere.labels(settings.showLabels);
@@ -450,7 +464,7 @@
     else if(executionView&&graphDimension==="plane")fitGraph(false);
     syncHeader();updateAppearance();buildSkillList();
     const n=state.nodes.find((n)=>n.id===id);
-    $("detailName").textContent=n.name;$("detailGroup").textContent=n.group;
+    $("detailName").textContent=n.name;$("detailGroup").textContent=category(n)+' · '+n.group;
     $("detailDescription").textContent=n.description;$("detailSource").textContent=n.source;$("detailPath").textContent=n.path;
     const ids=new Set(state.nodes.map((n)=>n.id)),edges=model.mergeEdges(state.edges,ids,options().kinds);
     const adjacent=edges.filter((e)=>e.source===id||e.target===id);
@@ -562,7 +576,7 @@
   $("planeViewButton").addEventListener("click",()=>setDimension("plane"));
   $("sphereViewButton").addEventListener("click",()=>setDimension("sphere"));
   $("showLocalButton").addEventListener("click",()=>{$("detailPanel").hidden=true;setMode("local");});
-  $("clearFilters").addEventListener("click",()=>{state.hiddenGroups.clear();$("searchInput").value="";buildGroups();rebuild(true);});
+  $("clearFilters").addEventListener("click",()=>{state.hiddenGroups.clear();state.hiddenCategories.clear();$("searchInput").value="";buildGroups();rebuild(true);});
   $("copyPathButton").addEventListener("click",async()=>{
     try{await navigator.clipboard.writeText($("detailPath").textContent);$("copyPathButton").textContent="已复制";}
     catch{$("copyPathButton").textContent="请选中路径复制";}

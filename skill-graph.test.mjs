@@ -19,12 +19,16 @@ test('installed-skill graph has deterministic mentions, scoped persistent manual
   const path=join(root,'project');await mkdir(path);const project=store.addProject(path,'test');
   const scope={projectId:project.id};
   const document=(name,instructions)=>({name,description:'文献引用核对和独立证据整理',instructions,tests:[]});
-  const first=studio.publish({taskId:null,baseVersion:0,draft:document('source-review','Read documented material.')});
-  const next=studio.publish({taskId:scope,targetScope:'project',baseVersion:0,draft:document('report-writer','先使用 source-review，再整理产物。')});
+  const first=studio.publish({taskId:null,baseVersion:0,draft:document('source-review','> 领域：文献与研究　|　来源：seed\n\nRead documented material.')});
+  const next=studio.publish({taskId:scope,targetScope:'project',baseVersion:0,draft:document('report-writer','> 领域：文档工程\n\n先使用 source-review，再整理产物。')});
   const samePrefix=studio.publish({taskId:null,baseVersion:0,draft:document('source-review-extra','Mention only source-review-extra.')});
   const data=graph.snapshot(scope);
   assert.deepEqual(graph.snapshot(scope),data);
   assert.equal(data.nodes.length,3);
+  assert.equal(data.nodes.find(node=>node.id===first.id).category,'文献与研究');
+  assert.equal(data.nodes.find(node=>node.id===first.id).group,'用户技能');
+  assert.equal(data.nodes.find(node=>node.id===next.id).category,'文档工程');
+  assert.equal(data.nodes.find(node=>node.id===samePrefix.id).category,'未分类');
   const mention=data.edges.find(edge=>edge.kind==='mention');
   assert.deepEqual(new Set([mention.source,mention.target]),new Set([first.id,next.id]));
   assert.equal(data.edges.filter(edge=>edge.kind==='mention').length,1);
@@ -44,6 +48,9 @@ test('installed-skill graph has deterministic mentions, scoped persistent manual
   assert.equal(graph.detail(next.id,scope).version,2);
   assert.match(graph.detail(next.id,scope).content,/New source-review method/);
   assert(graph.snapshot(scope).nodes.some(node=>node.id===samePrefix.id));
+  const catalogueLabel=studio.publish({taskId:null,baseVersion:0,draft:document('literature-review','Read literature.')});
+  assert.equal(graph.snapshot(scope).nodes.find(node=>node.id===catalogueLabel.id).category,'文献与研究');
+  assert.equal(store.query('SELECT count(*) AS n FROM skill_external_refs','get').n,0,'分类标签不自动绑定或合并技能身份');
 });
 
 test('embedded repository assets and graph APIs use the SIH origin and refuse unavailable skills',async t=>{
@@ -85,4 +92,10 @@ test('bounded graph keeps project and executed skills, searches the full library
   const selected=model.filterGraph(nodes,edges,{...options,selectedId:'1800'});assert(selected.nodes.some(n=>n.id==='1800'));
   const local=model.filterGraph(nodes,edges,{...options,mode:'local',selectedId:'1000',depth:1});
   assert.equal(local.nodes.length,3);
+  const categorized=[{id:'a',name:'reader',source:'用户技能',group:'用户技能',category:'文献与研究'},
+    {id:'b',name:'writer',source:'用户技能',group:'用户技能',category:'文档工程'},
+    {id:'c',name:'project-reader',source:'项目技能',group:'当前项目',category:'文献与研究'}];
+  assert.equal(model.filterGraph(categorized,[],{...options,hiddenCategories:new Set(['文档工程'])}).nodes.length,2);
+  assert.equal(model.filterGraph(categorized,[],{...options,hiddenCategories:new Set(['文档工程']),hiddenGroups:new Set(['当前项目'])}).nodes[0].id,'a');
+  assert.equal(model.filterGraph(categorized,[],{...options,query:'category:文档工程'}).nodes[0].id,'b');
 });

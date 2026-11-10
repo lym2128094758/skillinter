@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { analyzeCsv } from './skills.mjs';
+import { analyzeCsv, csvAnalysisMaxBytes, csvAnalysisSizeMessage } from './skills.mjs';
 import { config } from './config.mjs';
 import { auditLimits, auditWorkflow, digest } from './workflow.mjs';
 import { alignedSchema, issueSchema, requestSchema, validateRequest } from './audit-tools.mjs';
@@ -11,9 +11,10 @@ import { projectTestTool } from './project-tests.mjs';
 import { executePreflight, materialSkills, preflightInput } from './preflight.mjs';
 import { deliverySchema } from './skill-delivery.mjs';
 import {retrieveSkills} from './skill-retrieval.mjs';
+import {taskCapabilityTools} from './task-capabilities.mjs';
 
 const errors = {...sessionErrors, INVALID_ARGUMENT: '技能工具参数无效。', ATTACHMENT_NOT_FOUND: '附件不属于当前会话或不存在。',
-  CSV_REQUIRED: '请选择或上传当前会话的 CSV 附件。', INVALID_CSV: 'CSV 格式无效。',
+  CSV_REQUIRED: '请选择或上传当前会话的 CSV 附件。', INVALID_CSV: 'CSV 格式无效。', CSV_TOO_LARGE:csvAnalysisSizeMessage,
   PRECHECK_ALREADY_RUN: '本轮已经执行另一项预检，请在下一轮提交新目标。',
   MATERIAL_PREFLIGHT_ALREADY_RUN: '本轮已有材料检查报告，请在下一轮提交另一目标。',
   SKILL_NOT_FOUND: '技能不存在或不属于当前项目。',
@@ -67,7 +68,7 @@ export const chatSkillRegistry = [...definitions.map(({data, ...tool}) => ({...t
     ? '服务端绑定当前会话及其项目，加载本轮开始时冻结的已发布版本，不扩大工具和文件权限。'
     : '服务端绑定当前会话。数据工具仅接受该会话上传的原始 CSV；不能修改源文件或扩大文件访问权限。',
   timeoutMode: tool.name === 'material_preflight' ? '继承本轮停止信号和本地材料检查时限。' : tool.name === 'precheck_table' ? '复用预检总时限、停止信号和本轮共享模型调用额度。' : '本地有界同步操作，执行后检查耗时。',
-})), taskPlanTool, ...skillSessionRegistry, projectTestTool];
+})), taskPlanTool, ...skillSessionRegistry, projectTestTool, ...taskCapabilityTools];
 export const chatSkillModelTools = chatSkillRegistry.map(({name, description, parameters}) => ({type: 'function', function: {name, description, parameters}}));
 
 function orderedData(value) {
@@ -128,7 +129,8 @@ export function createChatSkills({store, task, run, model, signal, entry, localS
   function csv(id) {
     let file;
     try { file = store.file(task, id); } catch { throw Object.assign(new Error(), {code: 'ATTACHMENT_NOT_FOUND'}); }
-    if (file.run || file.kind !== 'csv') throw Object.assign(new Error(), {code: 'CSV_REQUIRED'});
+    if (file.run || file.detached || file.kind !== 'csv') throw Object.assign(new Error(), {code: 'CSV_REQUIRED'});
+    if (file.size > csvAnalysisMaxBytes) throw Object.assign(new Error(), {code:'CSV_TOO_LARGE'});
     return file;
   }
   return {async execute(call) {

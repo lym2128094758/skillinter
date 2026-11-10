@@ -1,12 +1,11 @@
 import { createServer } from 'node:http';
 import { rmSync } from 'node:fs';
-import { mkdir, readFile, writeFile, lstat } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+import { mkdir, readFile } from 'node:fs/promises';
 import { basename, join, resolve } from 'node:path';
 import { RequestError, Store } from './store.mjs';
 import { demoModel, executeRun } from './runner.mjs';
 import { createSettings } from './settings.mjs';
-import { selectSkill, utf8, parseCsv } from './skills.mjs';
+import { selectSkill, utf8, parseCsv, csvAnalysisMaxBytes, csvAnalysisSizeMessage } from './skills.mjs';
 import { validateRequest, auditTools } from './audit-tools.mjs';
 import { auditLimits, executeAudit, planSchema, reportSchema } from './workflow.mjs';
 import { config as appConfig } from './config.mjs';
@@ -33,14 +32,19 @@ import {createSkillnetConnection} from './skillnet-provider.mjs';
 import {createSkillDiscovery, publicCapabilityTags} from './skill-discovery.mjs';
 import {createProjectMemory} from './project-memory.mjs';
 import {readRunWorkers, workerTool} from './readonly-workers.mjs';
+import {createGithubAccess} from './github-access.mjs';
+import {receiveAttachment,fileHead,sendAttachment,materializeAttachment,removeMaterializedAttachment,pickLocalFolder} from './attachments.mjs';
+import {createBrowserFolders,browserFolderId} from './browser-folders.mjs';
 
 const assets = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'],
+  '/browser-folders.js': ['browser-folders.js', 'text/javascript'],
   '/skill-studio.js': ['skill-studio.js', 'text/javascript'],
   '/skill-engine.js': ['skill-engine.js', 'text/javascript'],
   '/skill-runtime.js': ['skill-runtime.js', 'text/javascript'],
   '/skill-execution.js': ['skill-execution.js', 'text/javascript'],
   '/skill-experiences.js': ['skill-experiences.js', 'text/javascript'],
   '/task-plan.js': ['task-plan.js', 'text/javascript'],
+  '/run-outcome.js': ['../src/run-outcome.mjs', 'text/javascript'],
   '/prompt-optimizer.js': ['prompt-optimizer.js', 'text/javascript'],
   '/catalog/sphere.js': ['catalog/sphere.js', 'text/javascript'], '/catalog/graph.json': ['catalog/graph.json', 'application/json']};
 for (const name of ['app.js','theme.js','sphere.js','view-morph.js','graph-model.js','liquid-controls.js','sih-bridge.js','vendor/d3.min.js']) {
@@ -70,21 +74,6 @@ async function input(req, limit = 80_000) {
   const bytes = await bytesFrom(req, limit, '消息过长');
   try { return JSON.parse(bytes.toString('utf8')); }
   catch { throw new RequestError(400, '无效 JSON'); }
-}
-
-async function upload(req, name) {
-  const extension = /\.(csv|txt|png|jpe?g|webp|gif)$/i.exec(name)?.[1].toLowerCase();
-  const kind = extension && !['csv', 'txt'].includes(extension) ? 'image' : extension || 'material';
-  if (!name || name.length > 180 || /[\u0000-\u001f\u007f/\\]/.test(name)) throw new RequestError(422, '附件名称无效');
-  if (req.headers['content-type'] !== 'application/octet-stream') throw new RequestError(415, '需要二进制文件上传');
-  const limit = 2 * 1024 * 1024;
-  if (Number(req.headers['content-length']) > limit) { req.resume(); throw new RequestError(413, '附件最大为 2 MB'); }
-  const bytes = await bytesFrom(req, limit, '附件最大为 2 MB');
-  if (kind === 'image') {
-    const expected = {png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif'}[extension];
-    if (imageMime(bytes) !== expected) throw new RequestError(422, '图片内容与格式不符，请使用有效的 PNG、JPG、WebP 或 GIF 文件');
-  }
-  return {kind, bytes};
 }
 
 function taskChanges(body) {
@@ -159,12 +148,17 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
   };
   const skillRegistry=createSkillRegistry({store,studio:skillStudio,projectFor:registryProjectFor});
   const skillGraph = createSkillGraph({store,studio:skillStudio,projectFor:registryProjectFor,registry:skillRegistry});
-  const settings = await createSettings({store, env});
-  const skillnet = createSkillnetConnection({store, state, env});
+  const previousConnection = await readFile(join(state,'previous-model-connection.json'),'utf8')
+    .then(JSON.parse).catch(()=>null);
+  const settings = await createSettings({store, env, previousConnection});
+  const githubAccess=createGithubAccess({env,store});
+  const skillnet = createSkillnetConnection({store, state, env,githubFetch:githubAccess.fetch});
   const discoveries = createSkillDiscovery({store, studio: skillStudio});
   const projectMemories = createProjectMemory(store, state);
+  const browserFolders = createBrowserFolders();
   let studioController;
   let optimizerController;
+  let folderPickerController;
   const active = new Map();
   const server = createServer(async (req, res) => {
     res.setHeader('cache-control', 'no-store');
@@ -188,6 +182,17 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
       if(pathname==='/api/skill-registry/contract'&&req.method==='GET')return json(res,200,registryContract);
       if (pathname === '/api/skill-intelligence/contract' && req.method === 'GET') return json(res, 200, skillIntelligenceContract);
       if (pathname === '/api/skill-intelligence/settings' && req.method === 'GET') return json(res, 200, skillnet.view());
+      if(pathname==='/api/skill-intelligence/github') {
+        if(req.method==='GET')return json(res,200,await githubAccess.status(AbortSignal.timeout(10000),{refresh:searchParams.get('refresh')==='1'}));
+        if(req.method==='POST') {
+          const body=await input(req,6000);
+          if(body?.action==='login')return json(res,202,{device:githubAccess.startLogin()});
+          if(body?.action==='reuse')return json(res,200,await githubAccess.reuseLocal(AbortSignal.timeout(10000)));
+          if(body?.action==='token')return json(res,200,await githubAccess.saveToken(body.token,AbortSignal.timeout(10000)));
+          if(body?.action==='disconnect')return json(res,200,await githubAccess.disconnect());
+          throw new RequestError(422,'GitHub连接操作无效。');
+        }
+      }
       if (pathname === '/api/skill-intelligence/tags' && req.method === 'GET') return json(res, 200, {tags: publicCapabilityTags});
       if (pathname === '/api/skill-intelligence/discover' && req.method === 'POST') {
         const body = await input(req, 8000);
@@ -288,7 +293,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
         if (!model) throw new RequestError(409, '请先在设置中连接模型。');
         if (optimizerController) throw new RequestError(409, '已有提示词优化在进行，请稍后重试。');
         const context = task ? {project: task.project_id ? store.project(task.project_id).name : null,
-          fileAccess: task.file_access, attachments: task.files.map(({name, kind}) => ({name, kind})),
+          fileAccess: task.file_access, attachmentCount:task.files.length, attachments: task.files.slice(0,40).map(({name, kind, relativePath}) => ({name, kind, relativePath})),
           recent: store.history(task.id).slice(-2).map(item => ({prompt: item.prompt.slice(0, 1000), answer: item.answer.slice(0, 1000)}))} : {};
         const controller = optimizerController = new AbortController();
         const cancel = () => controller.abort();
@@ -302,6 +307,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
         if (req.method === 'PATCH') return json(res, 200, settings.saveBudget(await input(req)));
       }
       if (pathname === '/api/settings/test' && req.method === 'POST') return json(res, 200, await settings.test(await input(req)));
+      if (pathname === '/api/settings/switch' && req.method === 'POST') return json(res, 200, await settings.switchConnection(await input(req)));
       if (pathname === '/api/models' && req.method === 'GET') return json(res, 200, await settings.models(searchParams.get('refresh') === '1'));
       if (req.method === 'GET' && pathname === '/api/skill-studio') {
         const taskId = skillContext(searchParams.get('task') || null, searchParams.get('project'));
@@ -519,6 +525,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
       const evidence = /^\/api\/tasks\/([a-f\d-]{36})\/files\/([a-f\d-]{36})\/evidence$/.exec(pathname);
       if (evidence && req.method === 'GET') {
         const file = store.file(evidence[1], evidence[2]);
+        if (file.size > csvAnalysisMaxBytes) throw new RequestError(422,csvAnalysisSizeMessage);
         if (file.kind !== 'csv') throw new RequestError(422, '仅 CSV 支持记录定位');
         let table;
         try { table = parseCsv(utf8(file.bytes)); } catch { throw new RequestError(422, 'CSV 格式无效'); }
@@ -536,31 +543,32 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
       if (fileRoute) {
         const [, task, id, preview] = fileRoute;
         if (!id && req.method === 'POST') {
-          const name = searchParams.get('name')?.trim() ?? '';
-          const {kind, bytes} = await upload(req, name);
-          return json(res, 201, store.addAttachment(task, name, kind, bytes));
+          const name = searchParams.get('name') ?? '';
+          return json(res,201,await receiveAttachment(req,{state,task,name,store,
+            relativePath:searchParams.get('path')??name,...(searchParams.has('batch')?{batch:searchParams.get('batch')}:{})}));
         }
         if (id && req.method === 'GET') {
           const file = store.file(task, id);
           if (preview) {
-            const mime = file.kind === 'image' ? imageMime(file.bytes) : null;
+            const mime = file.kind === 'image' ? imageMime(await fileHead(file)) : null;
             if (!mime) throw new RequestError(422, '该附件不支持图片预览');
-            res.writeHead(200, {'content-type': mime, 'content-length': file.bytes.length,
+            res.writeHead(200, {'content-type': mime, 'content-length': file.size,
               'x-content-type-options': 'nosniff', 'cache-control': 'private, no-store'});
-            res.end(file.bytes);
+            await sendAttachment(res,file);
             return;
           }
           res.writeHead(200, {'content-type': 'application/octet-stream',
             'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.name).replaceAll("'", '%27')}`,
-            'content-length': file.bytes.length, 'x-content-sha256': file.sha256});
-          res.end(file.bytes);
+            'content-length': file.size, 'x-content-sha256': file.sha256});
+          await sendAttachment(res,file);
           return;
         }
         if (id && !preview && req.method === 'DELETE') {
-          await input(req);
-          return json(res, 200, store.removeAttachment(task, id, file => {
-            rmSync(join(workspace, task, `${file.id}.${file.kind}`), {force: true});
-          }));
+          const body = await input(req);
+          return json(res, 200, store.removeAttachment(task, id, (file, keepHistory) => {
+            removeMaterializedAttachment(join(workspace,task),file);
+            if(file.disk_path && !keepHistory)rmSync(file.disk_path,{force:true});
+          }, body?.detachUsed === true));
         }
       }
       if (pathname === '/api/projects') {
@@ -573,6 +581,46 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             throw new RequestError(422, '请选择可访问的真实本机目录，不能使用符号链接或网络路径');
           });
           return json(res, 201, store.addProject(path, basename(path) || path));
+        }
+      }
+      if (pathname === '/api/local-folder-picker' && req.method === 'POST') {
+        await input(req);
+        if (folderPickerController) throw new RequestError(409,'文件夹选择窗口已打开');
+        const controller = folderPickerController = new AbortController();
+        const cancel = () => controller.abort();
+        res.once('close',cancel);
+        try {return json(res,200,{path:await pickLocalFolder(controller.signal)});}
+        finally {res.off('close',cancel);folderPickerController=undefined;}
+      }
+      const folderRoute = /^\/api\/tasks\/([a-f\d-]{36})\/folders(?:\/([a-f\d-]{36}))?$/.exec(pathname);
+      const browserFolderRoute = /^\/api\/browser-folders\/([a-f\d-]{36})(?:\/([a-f\d-]{36}))?$/.exec(pathname);
+      if (browserFolderRoute) {
+        const [,channel,id] = browserFolderRoute;
+        if (!browserFolderId.test(channel)) throw new RequestError(404,'无效目录连接');
+        if (!id && req.method==='GET') return browserFolders.connect(channel,res);
+        if (id && req.method==='POST') {
+          await browserFolders.reply(channel,id,req,input);
+          res.writeHead(204);res.end();return;
+        }
+      }
+      if (folderRoute) {
+        const [,task,id] = folderRoute;
+        if (!id && req.method==='POST') {
+          const body=await input(req);
+          if (body?.browser === true) {
+            store.checkAttachmentTarget(task);
+            return json(res,201,browserFolders.add(task,body));
+          }
+          if (typeof body?.path!=='string' || !body.path.trim()) throw new RequestError(422,'请选择本机文件夹');
+          const path=await projectDirectory(body.path.trim(),state).catch(()=>{throw new RequestError(422,'请选择可读取的本机目录。符号链接、网络位置和应用私有目录无法挂载');});
+          return json(res,201,store.addTaskFolder(task,basename(path)||path,path));
+        }
+        if (id && req.method==='DELETE') {
+          await input(req);
+          store.checkAttachmentTarget(task);
+          if (store.query("SELECT id FROM runs WHERE task=? AND status='running'",'get',task)) throw new RequestError(409,'请结束当前执行后再移除目录');
+          if (browserFolders.remove(task,id)) return json(res,200,{id,deleted:true});
+          return json(res,200,store.removeTaskFolder(task,id));
         }
       }
       const memoryRoute = /^\/api\/projects\/([a-f\d-]{36})\/memories(?:\/([a-f\d-]{36})(\/verify)?)?$/.exec(pathname);
@@ -604,6 +652,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
         const [, task, runs] = taskRoute;
         if (!runs && req.method === 'GET') {
           const current=store.task(task);
+          current.folders.push(...browserFolders.list(task));
           for(const run of current.runs) if(run.status!=='running'){
             const id=skillStudio.experiences.collect(run.id);
             run.experience=id?{id,signals:skillStudio.experiences.get(id,task).signals}:null;
@@ -658,7 +707,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
           if (diagnostic && fileId) throw new RequestError(422, '工具试跑使用本地工作区，不接收附件');
           const attachment = fileId ? store.file(task, fileId) : null;
           if (!prompt && (attachment?.kind !== 'image' || diagnostic || body.workflow)) throw new RequestError(422, '请输入消息或添加图片');
-          if (attachment?.run) throw new RequestError(422, '请选择任务附件作为输入');
+          if (attachment?.run || attachment?.detached) throw new RequestError(422, '请选择当前任务附件作为输入');
           const workflow = body.workflow ?? null;
           if (body.expandedBudget !== undefined && typeof body.expandedBudget !== 'boolean') throw new RequestError(422, '重试预算选项无效');
           if (body.expandedBudget && !workflow) throw new RequestError(422, '扩大预算仅适用于数据预检');
@@ -678,21 +727,13 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             throw new RequestError(422, '技能版本无效');
           }
           const skill = workflow || skillId || settings.snapshot().model ? null : selectSkill(prompt, attachment);
+          if ((workflow || skill) && attachment?.size > csvAnalysisMaxBytes) throw new RequestError(422,csvAnalysisSizeMessage);
           const taskWorkspace = join(workspace, task);
           if (!workflow) await mkdir(taskWorkspace, {recursive: true});
-          const materials = workflow ? [] : currentTask.files.map(file => ({id: file.id, name: file.name, path: `${file.id}.${file.kind}`, sha256: file.sha256, size: file.size}));
+          const materials = workflow ? [] : currentTask.files.map(file => ({id: file.id, name: file.name, kind:file.kind, relativePath:file.relativePath??file.name, path: file.workspacePath??`${file.id}.${file.kind}`, sha256: file.sha256, size: file.size}));
           for (const material of materials) {
             const file = store.file(task, material.id);
-            if (file.kind === 'image') continue;
-            const path = join(taskWorkspace, material.path);
-            try { await writeFile(path, file.bytes, {flag: 'wx'}); }
-            catch (error) {
-              if (error.code !== 'EEXIST') throw error;
-              const stat = await lstat(path);
-              if (!stat.isFile() || stat.isSymbolicLink()) throw new RequestError(409, '工作区附件路径异常，已停止执行');
-              const digest = createHash('sha256').update(await readFile(path)).digest('hex');
-              if (digest !== file.sha256) throw new RequestError(409, '工作区附件已变化，请新建任务重新上传');
-            }
+            await materializeAttachment(taskWorkspace,material,file);
           }
           const selection = {model: currentTask.model_id, effort: currentTask.effort};
           if (!diagnostic && !skill && !ruleMode) await settings.validateSelection(selection.model, selection.effort);
@@ -709,7 +750,9 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             : skill ? {mode: 'skill', model: '本地技能执行', maxSteps: 0}
               : {mode: config.mode, model: config.model.label, maxSteps: config.maxSteps, effort: config.effort ?? 'default', ...(fileScope ? {fileScope} : {}),
                 ...(customSkill ? {customSkill: {id: customSkill.id, name: customSkill.name, version: customSkill.version}} : {})};
-          for (const material of materials) store.file(task, material.id);
+          for (const material of materials) if (store.file(task, material.id).detached) throw new RequestError(409,'附件列表已变化，请重新发送');
+          const folders = fileScope ? [...store.taskFolders(task),...browserFolders.scope(task)] : [];
+          if (folders.length) runConfig.inputFolders = folders.map(({id,name}) => ({id,name}));
           const run = store.begin(task, body.request, prompt, runConfig, fileId, skillVersion);
           if (run.started) {
             const controller = new AbortController();
@@ -717,13 +760,16 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             active.set(run.id, entry);
             entry.job = (workflow ? executeAudit({id: run.id, task, goal: prompt, request: workflow, store,
               file: attachment, model: config.model, limits, signal: controller.signal, entry}) : executeRun({id: run.id, task, prompt, store, workspace: taskWorkspace, ...config, skill, attachment,
-              scope: fileScope ? {...fileScope, state} : null,
+              scope: fileScope ? {...fileScope, state, folders} : null,
               skillRegistrySnapshot:skillRegistry.snapshot(task,localSkills),
               skillEngine: skillnet.provider(undefined, details => store.record(run.id, 'skill_engine_details', details)),
               projectMemories,
+              skillSources:appConfig.skillSources,
+              githubAccess,
               context: {title: currentTask.title, goal: prompt, selectedFile: attachment ? {id: attachment.id, name: attachment.name, kind: attachment.kind} : null,
+                folders: folders.map(folder=>({name:folder.name,path:`folder:${folder.id}`})),
                 materials: materials.map(material => ({...material,
-                path: material.path.endsWith('.image') ? '' : fileScope?.mode && fileScope.mode !== 'attachments' ? 'attachment:' + material.path : material.path})),
+                path: fileScope?.mode && fileScope.mode !== 'attachments' ? 'attachment:' + material.path : material.path})),
                 fileAccess: fileScope, stage: '用户未提供', successCriteria: '用户未提供', deadline: '用户未提供'},
               signal: controller.signal, entry, skillAccess: !diagnostic, customSkill, localSkills}))
               .catch(error => { console.error('执行记录写入失败', error.message); })
@@ -782,15 +828,19 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
       else json(res, error instanceof RequestError ? error.status : 500, {error: error instanceof RequestError ? error.message : '服务内部错误'});
     }
   });
+  server.requestTimeout=0; // Uploads stream to disk; do not impose a total transfer-size/time cutoff.
 
   return {server, async close() {
     const closed = new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     studioController?.abort();
     optimizerController?.abort();
+    folderPickerController?.abort();
+    browserFolders.close();
     const entries = [...active.values()];
     for (const {controller} of entries) controller.abort();
     await Promise.all(entries.map(({job}) => job));
     await skillStudio.candidates.executions.close();
+    await githubAccess.close();
     server.closeAllConnections();
     await closed;
     store.db.close();

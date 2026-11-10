@@ -184,6 +184,9 @@ dialog header h2 { margin: 0; }
 .settings-summary dt { font-size: 12px; color: var(--muted); }
 .settings-summary dd { margin: 2px 0 0; font-size: 14px; font-weight: 630; overflow-wrap: anywhere; }
 #model-form, #run-form, .settings-fields { display: grid; gap: 10px; }
+.model-connection-row { display: flex; align-items: center; gap: 8px; }
+.model-connection-row select { flex: 1; min-width: 0; }
+.model-connection-row button { flex: none; }
 .settings-card { display: grid; gap: 14px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 12px; }
 .settings-card-heading h4 { margin: 0 0 2px; font-size: 15px; }
 .settings-fields { gap: 5px; }
@@ -346,12 +349,24 @@ textarea { width: 100%; display: block; background: transparent; border: 0; resi
 #composer .image-attachment img { width: 84px; height: 64px; border: 0; border-radius: 5px; }
 #task-files { max-height: 116px; overflow: auto; }
 .composer-attachment { position: relative; display: inline-flex; max-width: 240px; margin: 7px 8px 0 0; }
+.folder-card .folder-card-body { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 6px 25px 6px 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); text-align: left; }
+.folder-card .attachment-remove::before { display: none; }
+.folder-card-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 8px; background: var(--composer-hover); color: var(--muted); }
+.folder-card-icon svg { width: 23px; height: 23px; }
+.folder-card-label { display: grid; gap: 2px; min-width: 0; }
+.folder-card-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; }
+.folder-card-label small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.folder-card .attachment-remove { top: 5px; right: 5px; width: 17px; height: 17px; background: light-dark(#24272b,#e7e9ea); color: light-dark(#fff,#24272b); border: 0; font-size: 13px; }
 .attachment-remove { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 19px; height: 19px; padding: 0; border-radius: 50%; color: var(--ink); font-size: 16px; line-height: 1; z-index: 1; }
 .attachment-remove:hover { opacity: .8; }
 #saved-attachments { margin: 4px 0; padding: 3px 8px; }
 #saved-attachment-list { max-height: 180px; overflow: auto; display: grid; gap: 3px; padding-top: 5px; }
 #saved-attachment-list button { text-align: left; max-width: 240px; font-size: 12px; }
+.saved-attachment-row { display: flex; gap: 4px; align-items: center; }
+.saved-attachment-row button:first-child { min-width: 0; overflow-wrap: anywhere; flex: 1; }
 .message-images { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.message-folders { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: 0 0 10px; }
+.message-folders .folder-card { margin: 0; }
 #composer #task-files a:hover { background: var(--composer-hover); }
 @media (max-width: 460px) {
   #composer { width: calc(100% - 14px); padding: 6px; }

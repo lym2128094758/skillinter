@@ -2,6 +2,7 @@
   "host": "127.0.0.1",
   "port": 3095,
   "statePath": ".skillinter/native",
+  "skillSources": ["anthropics/skills", "openai/skills"],
   "runBudget": {
     "maxSeconds": 900,
     "maxToolCalls": 128,

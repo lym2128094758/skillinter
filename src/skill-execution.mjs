@@ -10,6 +10,7 @@ import {preflightSnapshot} from './tools.mjs';
 import {skillMarkdown} from './skill-files.mjs';
 import {parseSkillFile} from './skill-import.mjs';
 import {checkedLocalPath, inside} from './file-scope.mjs';
+import {readCitationReceipts} from './citation-verifier.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const digest = value => hash(JSON.stringify(value));
@@ -28,7 +29,7 @@ export const executionPlanSchema = object({
 });
 export const executionTools = ['list_workspace','read_file','create_file','replace_in_file','load_skill','inspect_skill',
   'read_skill_resource','start_skill','finish_skill','verify_skill_output','update_plan'];
-export const executionSha256 = digest(['skill-execution.mjs','runner.mjs','skill-session.mjs','skill-delivery.mjs','tools.mjs','file-scope.mjs','schema.mjs',
+export const executionSha256 = digest(['skill-execution.mjs','runner.mjs','skill-session.mjs','skill-delivery.mjs','citation-verifier.mjs','task-capabilities.mjs','task-preparation.mjs','document-tools.mjs','online-skills.mjs','git-skill-source.mjs','github-access.mjs','settings.mjs','python-tool.mjs','process-runtime.mjs','../scripts/extract-document.py','tools.mjs','file-scope.mjs','schema.mjs',
   'chat-skills.mjs','task-plan.mjs','preflight.mjs','skill-files.mjs','skill-routing.mjs','skill-registry.mjs',
   'run-budget.mjs','context-manager.mjs','skill-retrieval.mjs','skill-intelligence.mjs','../config.yaml']
   .map(path=>readFileSync(new URL(path,import.meta.url),'utf8')));
@@ -204,7 +205,8 @@ export function createSkillExecutions(store,{getCandidate,ensureCurrent,resolveC
             {prompt_tokens: settled.inputTokens, completion_tokens: settled.outputTokens}};
       });
       // A fresh signal allows bounded read-only final checks after an execution timeout.
-      result.verification=await verifyDelivery({frozen,scope,signal:AbortSignal.timeout(15000)});
+      result.verification=await verifyDelivery({frozen,scope,signal:AbortSignal.timeout(15000),
+        readReceipts: readCitationReceipts(local.events(run.id, 0))});
       const startedSkill = skill && detail.skillTrace?.graph.nodes.some(item => item.id === skill.id && item.started);
       const operations = startedSkill ? result.events.filter(event => event.type === 'tool_result' && event.payload.skillId === skill.id) : [];
       const adopted = !skill || operations.some(({payload}) => payload.output.ok && ['read_file','create_file','replace_in_file'].includes(payload.name));

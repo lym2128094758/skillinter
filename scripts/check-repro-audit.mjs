@@ -10,6 +10,7 @@ import {readRunBudget} from '../src/run-budget.mjs';
 import {readRunWorkers} from '../src/readonly-workers.mjs';
 import {localModel} from './local-model.mjs';
 import {config} from '../src/config.mjs';
+import {verifyCitations} from '../src/citation-verifier.mjs';
 
 const [source, outputDirectory, requestedModel = 'deepseek-v4.1-flash-1017', mode = 'run'] = process.argv.slice(2);
 if (!source || !outputDirectory || !['run', '--verify'].includes(mode)) {
@@ -93,36 +94,9 @@ function score(findings, receipts) {
     extraItems: findings.filter(item => !expected.has(item?.id)).length, rows};
 }
 
-// Resolve against actual read receipts only. Expected answers never participate.
-function resolveCitations(findings, receipts) {
-  const corrections = [], issues = [];
-  const resolved = findings.map(item => ({...item, evidence: (Array.isArray(item.evidence) ? item.evidence : []).map(citation => {
-    if (typeof citation?.quote !== 'string' || citation.quote.trim().length < 5) {
-      issues.push({id: item.id, code: 'INVALID_CITATION', citation});
-      return citation;
-    }
-    const quote = citation.quote.trim();
-    const candidates = new Set();
-    for (const receipt of receipts) {
-      if (receipt.path !== citation.path || receipt.sha256 !== protocol.inputSha256[citation.path]) continue;
-      for (const [index, text] of lines(receipt.excerpt).slice(0, receipt.linesReturned).entries()) {
-        if (text.includes(quote)) candidates.add(receipt.offset + index + 1);
-      }
-    }
-    if (candidates.has(citation.line)) return citation;
-    if (candidates.size !== 1) {
-      issues.push({id: item.id, code: candidates.size ? 'AMBIGUOUS_CITATION' : 'CITATION_NOT_FOUND', citation});
-      return citation;
-    }
-    const [line] = candidates;
-    corrections.push({id: item.id, path: citation.path, quote: citation.quote, originalLine: citation.line, resolvedLine: line});
-    return {...citation, line};
-  })}));
-  return {findings: resolved, corrections, issues};
-}
-
 async function verifyDelivery(arm, result) {
-  const resolved = resolveCitations(parseFindings(result.answer ?? ''), result.receipts);
+  const resolved = await verifyCitations(parseFindings(result.answer ?? ''), {receipts: result.receipts,
+    loadSource: async path => input.has(path) ? {bytes: input.get(path)} : {error: {message: '不在本次材料快照中。'}}});
   const quality = score(resolved.findings, result.receipts);
   const accepted = result.status === 'completed' && quality.passed === quality.total &&
     quality.extraItems === 0 && resolved.issues.length === 0 &&

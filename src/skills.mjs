@@ -1,4 +1,6 @@
 const numeric = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i;
+export const csvAnalysisMaxBytes = 2 * 1024 * 1024;
+export const csvAnalysisSizeMessage = '此 CSV 超过内置表格分析器的 2 MiB 处理范围，可用 read_document 分段读取。';
 const csvSkill = {
   id: 'xlsx', label: 'CSV 数据概览',
   reason: '任务要求分析表格，且选中了 CSV 文件。采用原技能库 xlsx 节点对应的本地 CSV 分析器。',
@@ -57,6 +59,7 @@ const oneLine = value => value.replace(/\s+/g, ' ').slice(0, 120);
 const format = value => String(Number(value.toPrecision(12)));
 
 export function analyzeCsv(file) {
+  if (file.size > csvAnalysisMaxBytes) throw new Error(csvAnalysisSizeMessage);
   const {header, rows} = parseCsv(utf8(file.bytes));
   const stats = header.map(() => ({count: 0, blank: 0, other: 0, min: Infinity, max: -Infinity, mean: 0}));
   for (const [index, row] of rows.entries()) {

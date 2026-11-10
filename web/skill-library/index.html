@@ -43,6 +43,7 @@
         <button id="localTab" class="tab" role="tab" aria-selected="false" disabled>局部图</button>
       </div>
       <div class="list-title"><span>浏览技能</span><button id="clearFilters" class="text-button">重置筛选</button></div>
+      <details class="source-fold" open><summary>技能分类</summary><div id="categoriesList" class="groups-list category-list"></div></details>
       <details class="source-fold"><summary>来源筛选</summary><div id="groupsList" class="groups-list"></div></details>
       <label class="graph-budget"><span>图谱节点上限</span><select id="maxNodes" aria-label="图谱节点上限"><option value="100">100</option><option value="200" selected>200（推荐）</option><option value="500">500</option><option value="0">全部（较慢）</option></select></label>
       <div id="skillList" class="skill-list" aria-label="Skill 列表"></div>
@@ -103,7 +104,7 @@
         <label class="range-row"><span>局部图深度 <output id="depthOutput">1</output></span><input id="depthInput" class="range" type="range" min="1" max="5" step="1" value="1" /></label>
       </details>
       <details class="setting-section"><summary>颜色组</summary>
-        <label class="setting-row"><span>按来源着色</span><input id="colorBySource" type="checkbox" /></label>
+        <label class="setting-row"><span>按分类着色</span><input id="colorBySource" type="checkbox" /></label>
         <div id="colorGroups"></div>
       </details>
       <details class="setting-section"><summary>外观</summary>

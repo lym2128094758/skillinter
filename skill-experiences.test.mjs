@@ -58,6 +58,24 @@ test('success claims, file instructions and lone timeout do not become experienc
   assert.equal(f.studio.experiences.list(f.task.id).find(x=>x.runId===guided.id).signals[0].code,'USER_CORRECTION');
 });
 
+test('host citation failures and calibrations become traceable observations without claiming a skill improvement',async t=>{
+  const f=await fixture(t),run=f.start();
+  f.store.record(run.id,'citation_verification',{status:'failed',corrections:[],sources:[],
+    issues:[{id:'x',code:'SOURCE_NOT_READ',status:'failed',message:'本轮没有读取引用文件。'}]});
+  f.store.finish(run.id,'failed',{error:'引用核验未通过'});
+  const item=f.studio.experiences.list(f.task.id)[0];
+  assert.equal(item.signals[0].code,'CITATION_FAILED');
+  assert.equal(item.references[0].type,'citation_verification');
+  const candidate=f.studio.candidates.save({context:f.task.id,taskId:f.task.id,sourceRunId:run.id,baseVersion:0,
+    targetScope:'project',draft:{...document,name:'citation-review'}});
+  assert.equal(candidate.sourceEvidence.citationVerification[0].issues[0].code,'SOURCE_NOT_READ');
+  assert.equal(candidate.publishedVersion,null);
+  const calibrated=f.start();
+  f.store.record(calibrated.id,'citation_verification',{status:'passed',corrections:[{id:'x',path:'a.md',quote:'真实证据原文',originalLine:1,resolvedLine:2}],issues:[],sources:[]});
+  f.store.finish(calibrated.id,'completed',{answer:'已核验'});
+  assert.equal(f.studio.experiences.list(f.task.id).find(x=>x.runId===calibrated.id).signals[0].code,'CITATION_CALIBRATED');
+});
+
 test('generated candidate stays isolated, preserves hard contracts, records real diffs and cached provenance',async t=>{
   const f=await fixture(t),run=f.start();f.delivery(run,'failed');f.delivery(run,'passed');f.store.finish(run.id,'completed',{answer:'修复后通过'});
   const id=f.studio.experiences.collect(run.id),model=draftModel(f);

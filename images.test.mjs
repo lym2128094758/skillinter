@@ -34,7 +34,11 @@ test('image uploads preview safely, reach the vision request, and persist throug
   const {id: task} = await (await post('/api/tasks', {})).json();
   const route = `/api/tasks/${task}`;
   assert.equal((await post(route + '/files?name=fake.png', Buffer.from('<svg onload="alert(1)">'), true)).status, 422);
-  assert.equal((await post(route + '/files?name=oversize.png', Buffer.alloc(2 * 1024 * 1024 + 1), true)).status, 413);
+  const largerImage = Buffer.concat([png, Buffer.alloc(2 * 1024 * 1024)]);
+  const large = await post(route + '/files?name=large.png', largerImage, true);
+  assert.equal(large.status, 201);
+  const largeFile = await large.json();
+  assert.deepEqual(Buffer.from(await (await fetch(base + route + '/files/' + largeFile.id + '/preview')).arrayBuffer()), largerImage);
   const upload = await post(route + '/files?name=picture.png', png, true);
   assert.equal(upload.status, 201);
   const file = await upload.json();

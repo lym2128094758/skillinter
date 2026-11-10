@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { apiModel, testModel } from './runner.mjs';
 import { RequestError } from './store.mjs';
@@ -31,7 +32,7 @@ async function dpapi(value, decrypt) {
   return decrypt ? Buffer.from(result, 'base64').toString('utf8') : result;
 }
 
-const windowsSecrets = {seal: value => dpapi(value, false), open: value => dpapi(value, true), available: isWindows};
+export const windowsSecrets = {seal: value => dpapi(value, false), open: value => dpapi(value, true), available: isWindows};
 
 function endpointOf(value, appendPath = true) {
   let url;
@@ -54,7 +55,18 @@ function apiConfig(endpoint, model, appendPath = true) {
   return {endpoint: endpointOf(endpoint.trim(), appendPath), model: model.trim()};
 }
 
-export async function createSettings({store, env}) {
+function providerModelId(config, selected) {
+  const id = selected || config.model;
+  return id === 'deepseek-v4.1-flash-1017' && new URL(config.endpoint).origin === 'https://api.deepseek.com'
+    ? 'deepseek-flash' : id;
+}
+
+function connectionName(endpoint) {
+  const {hostname, host} = new URL(endpoint);
+  return {'api.deepseek.com':'DeepSeek 官方','discovery-api.intern-ai.org.cn':'书生 API'}[hostname] ?? host;
+}
+
+export async function createSettings({store, env, previousConnection}) {
   let environment, envError;
   if (env.SKILLINTER_MODEL_URL || env.SKILLINTER_MODEL || env.SKILLINTER_API_KEY) {
     try {
@@ -64,6 +76,25 @@ export async function createSettings({store, env}) {
   const initial = store.preferences();
   let revision = initial.revision;
   let value = initial.value;
+  const connections = Array.isArray(value.connections) ? [...value.connections] : [];
+  let connectionId = value.connectionId;
+  if (!connectionId && value.endpoint && value.model) {
+    connectionId = randomUUID();
+    connections.push({id:connectionId,name:connectionName(value.endpoint),endpoint:value.endpoint,model:value.model,secret:value.secret});
+  }
+  if (previousConnection?.endpoint && previousConnection?.model) {
+    try {
+      const {endpoint,model} = apiConfig(previousConnection.endpoint,previousConnection.model);
+      if (!connections.some(profile=>profile.endpoint===endpoint)) {
+        connections.push({id:randomUUID(),name:connectionName(endpoint),endpoint,model,secret:previousConnection.secret});
+      }
+    } catch { /* Ignore an invalid backup. */ }
+  }
+  if (connections.length !== (value.connections?.length ?? 0)) {
+    value = {...value, connectionId, connections};
+    store.savePreferences(revision,value);
+    revision++;
+  }
   let key;
   let catalog = [], catalogAt = 0;
   if (value.secret) {
@@ -81,6 +112,8 @@ export async function createSettings({store, env}) {
     return {revision, mode: mode(), endpoint: value.endpoint ?? '', model: value.model ?? '',
       activeModel: snapshot().model?.label ?? '未连接模型', maxSteps: value.maxSteps ?? defaultSteps, defaultSteps,
       hasKey: Boolean(key), keyUnreadable: Boolean(value.secret && !key),
+      connectionId: value.connectionId ?? null,
+      connections: (value.connections ?? []).map(({id,name,endpoint,model,secret}) => ({id,name,endpoint,model,hasKey:Boolean(secret)})),
       canStoreKey: windowsSecrets.available, environmentModel: environment?.model ?? null,
       envError: envError ?? (value.mode === 'environment' && !environment ? '缺少模型地址和模型 ID' : null)};
   }
@@ -88,7 +121,7 @@ export async function createSettings({store, env}) {
   function snapshot(selection = {}) {
     const selected = mode();
     const config = selected === 'api' ? {...value, key} : selected === 'environment' ? environment : null;
-    const model = config ? apiModel({...config, model: selection.model || config.model, effort: selection.effort || 'default'}) : null;
+    const model = config ? apiModel({...config, model: providerModelId(config,selection.model), effort: selection.effort || 'default'}) : null;
     return {model, maxSteps: value.maxSteps ?? defaultSteps, mode: selected, effort: selection.effort || 'default'};
   }
 
@@ -125,7 +158,9 @@ export async function createSettings({store, env}) {
     if (!['default', 'on', 'off', 'low', 'medium', 'high'].includes(effort)) throw new RequestError(422, '思考选项无效');
     if (!model && effort === 'default') return;
     const directory = await models();
-    const entry = directory.models.find(row => row.id === (model || directory.defaultModel));
+    const connection = mode() === 'api' ? value : mode() === 'environment' ? environment : null;
+    const id = connection ? providerModelId(connection,model) : model;
+    const entry = directory.models.find(row => row.id === id);
     if (!entry || !entry.efforts.includes(effort)) throw new RequestError(422, '当前模型不支持所选思考选项，请刷新模型列表');
   }
 
@@ -148,14 +183,24 @@ export async function createSettings({store, env}) {
     validateBudget(maxSteps);
     const next = {...value, mode, maxSteps};
     if (mode !== 'api') return {next, key, requestedRevision};
-    Object.assign(next, apiConfig(body.endpoint, body.model ?? value.model ?? 'auto'));
+    Object.assign(next, apiConfig(body.endpoint, body.model ?? 'auto'));
+    const origin = new URL(next.endpoint).origin;
+    const profiles = value.connections ?? [];
+    const previous = body.connectionId === undefined
+      ? profiles.find(item => item.id === value.connectionId && new URL(item.endpoint).origin === origin)
+      : body.connectionId === null ? null : profiles.find(item => item.id === body.connectionId);
+    if (body.connectionId != null && !previous) throw new RequestError(404,'找不到该模型配置');
+    const name = body.name === undefined ? previous?.name ?? connectionName(next.endpoint) :
+      typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name || name.length > 80 || /[\x00-\x1f]/.test(name)) throw new RequestError(422,'配置名称需在 1 到 80 字之间');
     const supplied = body.key === undefined ? '' : body.key;
     if (typeof supplied !== 'string' || !/^[!-~]{0,4096}$/.test(supplied) || (body.clearKey !== undefined && typeof body.clearKey !== 'boolean') || (supplied && body.clearKey)) {
       throw new RequestError(422, 'API 密钥格式无效，或同时选择了填写和清除');
     }
-    const sameOrigin = value.endpoint && new URL(value.endpoint).origin === new URL(next.endpoint).origin;
-    if (body.clearKey || !sameOrigin) delete next.secret;
-    const nextKey = supplied || (next.secret ? key : undefined);
+    const sameOrigin = previous && new URL(previous.endpoint).origin === origin;
+    const savedSecret = sameOrigin && !body.clearKey ? previous.secret : undefined;
+    if (savedSecret) next.secret = savedSecret; else delete next.secret;
+    const nextKey = supplied || (savedSecret ? previous.id === value.connectionId ? key : await windowsSecrets.open(savedSecret) : undefined);
     let discovered;
     if (body.model === undefined) {
       const url = new URL(next.endpoint);
@@ -173,19 +218,38 @@ export async function createSettings({store, env}) {
         throw new RequestError(502, '无法读取模型列表，请检查服务是否提供 /models 接口');
       }
       if (!discovered.length) throw new RequestError(422, '此 API 没有返回可用模型');
-      next.model = sameOrigin && discovered.includes(value.model) ? value.model : discovered[0];
+      next.model = sameOrigin && discovered.includes(previous.model) ? previous.model : discovered[0];
     }
-    return {next, key: nextKey, supplied, requestedRevision, discovered};
+    return {next, key: nextKey, supplied, requestedRevision, discovered, name, connectionId:previous?.id ?? randomUUID()};
+  }
+
+  function activate(expected,next,nextKey) {
+    commit(expected,next);
+    key = nextKey;
+    catalog = [];
+    catalogAt = 0;
+    return view();
   }
 
   return {view, snapshot, models, validateSelection, async save(body) {
     const update = await draft(body);
     if (update.supplied) update.next.secret = await windowsSecrets.seal(update.supplied);
-    commit(update.requestedRevision, update.next);
-    key = update.key;
-    catalog = [];
-    catalogAt = 0;
-    return view();
+    if (update.connectionId) {
+      const {endpoint,model,secret} = update.next;
+      const profile = {id:update.connectionId,name:update.name,endpoint,model,secret};
+      const profiles = value.connections ?? [];
+      update.next.connectionId = profile.id;
+      update.next.connections = profiles.some(item=>item.id===profile.id)
+        ? profiles.map(item=>item.id===profile.id?profile:item) : [...profiles,profile];
+    }
+    return activate(update.requestedRevision,update.next,update.key);
+  }, async switchConnection(body) {
+    if (body?.revision !== revision) throw new RequestError(409,'设置已更新，请重新打开后再试');
+    const profile = value.connections?.find(item=>item.id===body.connectionId);
+    if (!profile) throw new RequestError(404,'找不到该模型配置');
+    const {id,endpoint,model,secret} = profile;
+    const nextKey = secret ? (id===value.connectionId ? key : await windowsSecrets.open(secret)) : undefined;
+    return activate(body.revision,{...value,mode:'api',connectionId:id,endpoint,model,secret},nextKey);
   }, saveBudget(body) {
     const {revision: expected, maxSteps} = body ?? {};
     if (expected !== revision) throw new RequestError(409, '设置已更新，请重新打开后再试');

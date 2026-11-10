@@ -7,7 +7,7 @@ const bridge = fileURLToPath(new URL('../scripts/skillnet-bridge.py', import.met
 const defaults = {enabled: false, sourcePath: '', python: 'python', encoder: 'auto'};
 const fields = new Set(Object.keys(defaults));
 
-export function createSkillnetConnection({store, state, env = {}}) {
+export function createSkillnetConnection({store, state, env = {},githubFetch}) {
   store.db.exec('CREATE TABLE IF NOT EXISTS skill_engine_settings (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, value TEXT NOT NULL)');
   function view() {
     const row = store.query('SELECT revision,value FROM skill_engine_settings WHERE id=1', 'get');
@@ -27,7 +27,7 @@ export function createSkillnetConnection({store, state, env = {}}) {
     async function call(operation, input, {signal, allowedRefs = [], relations = []} = {}) {
       let reply;
       try {
-        reply = await runBridge({value, state, operation, input, signal, githubToken: env.SIH_GITHUB_TOKEN, evolution,
+        reply = await runBridge({value, state, operation, input, signal, githubToken: env.SIH_GITHUB_TOKEN, githubFetch,evolution,
           cards: allowedRefs.map(card => ({id: card.id, version: card.version, name: card.label ?? card.name ?? card.id,
             description: card.description ?? '', domain: card.domain ?? ''})), relations});
       } catch (error) {
@@ -66,7 +66,7 @@ export function createSkillnetConnection({store, state, env = {}}) {
     }};
 }
 
-async function runBridge({value, state, operation, input, cards, relations, signal, githubToken, evolution}) {
+async function runBridge({value, state, operation, input, cards, relations, signal, githubToken, githubFetch,evolution}) {
   signal.throwIfAborted();
   const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
     /^(path|systemroot|windir|temp|tmp|userprofile|appdata|localappdata)$/i.test(key)));
@@ -99,7 +99,7 @@ async function runBridge({value, state, operation, input, cards, relations, sign
         if (typeof frame.error === 'string' && /^[A-Za-z]+Error$/.test(frame.error)) { fail(frame.error); return; }
         if (frame.kind === 'result' && !result) result = frame.reply;
         else if (frame.kind === 'github' && operation === 'discover' && ++githubCalls <= 8) {
-          void fetchGithub(frame, input.allowedSources, signal, githubToken).then(response => {
+          void fetchGithub(frame, input.allowedSources, signal, githubToken,githubFetch).then(response => {
             if (!failed && !child.stdin.destroyed) child.stdin.write(JSON.stringify(response) + '\n');
           }).catch(() => { if (!failed && !child.stdin.destroyed) child.stdin.write('{"status":null}\n'); });
         } else if (frame.kind === 'proposal-model' && operation === 'propose' && !modelRequested && !result &&
@@ -134,7 +134,7 @@ async function runBridge({value, state, operation, input, cards, relations, sign
   });
 }
 
-async function fetchGithub(frame, sources, signal, githubToken) {
+async function fetchGithub(frame, sources, signal, githubToken,githubFetch) {
   const parsed = sources.map(source => new URL(source).pathname.split('/').slice(1));
   const allowed = parsed.some(([owner, repo, , ref, ...parts]) => {
     const base = '/repos/' + owner + '/' + repo;
@@ -147,7 +147,7 @@ async function fetchGithub(frame, sources, signal, githubToken) {
   const url = new URL(frame.path, 'https://api.github.com');
   if (url.origin !== 'https://api.github.com') throw new Error('Invalid source origin');
   if (frame.params) url.searchParams.set('ref', frame.params.ref);
-  const response = await fetch(url, {signal, redirect: 'error', headers: {
+  const response = await (githubFetch??fetch)(url, {signal, redirect: 'error', headers: {
     accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'user-agent': 'Skillinter-SkillDiscovery/1',
     ...(githubToken ? {authorization: 'Bearer ' + githubToken} : {}),
   }});

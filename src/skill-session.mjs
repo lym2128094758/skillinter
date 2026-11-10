@@ -2,6 +2,7 @@ import { constants } from 'node:fs';
 import { open, readdir } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
+import {readCitationReceipts} from './citation-verifier.mjs';
 import { object, string, validate } from './schema.mjs';
 import { resultSchema, success, failure, checkResult } from './tool-contract.mjs';
 import { parseSkillFile } from './skill-import.mjs';
@@ -165,9 +166,11 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
     }
     await visit('.');
     const projectTests = tools.some(tool => tool.function.name === 'run_project_tests');
+    const python = tools.some(tool=>tool.function.name==='run_python');
+    const discovery = tools.some(tool=>tool.function.name==='discover_skills');
     const readiness = {status: 'unspecified', checks: ['未声明可机器检查的执行条件；不代表工具或环境已验证',
-      '本轮文件权限：' + (scope?.mode ?? 'attachments'), projectTests ? '项目 Node.js 测试需用户确认' : '当前不能执行命令',
-      '不能直接访问网络资源', ...issues].slice(0, 30), missing: []};
+      '本轮文件权限：' + (scope?.mode ?? 'attachments'), python ? '项目 Python 执行需逐次用户确认' : projectTests ? '项目 Node.js 测试需用户确认' : '当前不能执行命令',
+      discovery?'只能通过工具发现配置范围内的公开技能':'不能直接访问网络资源', ...issues].slice(0, 30), missing: []};
     if (resources.some(item => /\.(py|mjs|js|ps1|sh)$/i.test(item.path))) readiness.checks.push('包内脚本仅可读取；如任务依赖运行脚本，需要执行能力或改用已具备的工具');
     let requirementsHash = '', requiredFiles = [];
     if (metadata.has('SIH.requirements.json')) {
@@ -189,6 +192,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
       }
       for (const command of requirements.required_commands) {
         if (command === 'node --test' && projectTests) readiness.checks.push('项目 Node.js 测试可请求，运行需用户确认');
+        else if (['python','python -I'].includes(command)&&python) readiness.checks.push('可请求运行已审阅的Python脚本；环境须inspect_runtime检查，每次执行需确认');
         else readiness.missing.push('当前 Harness 不支持执行命令：' + command);
       }
       readiness.status = readiness.missing.length ? 'blocked' : 'ready';
@@ -201,7 +205,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
   async function withApplicability(skill, view) {
     if (skill.delivery && !deliveries.has(skill.id)) {
       const changed = store.events(run, 0).some(event => event.type === 'tool_result' &&
-        ['create_file', 'replace_in_file', 'run_project_tests'].includes(event.payload.name));
+        ['create_file', 'replace_in_file', 'run_project_tests','run_python'].includes(event.payload.name));
       const frozen = await freezeDelivery({contract: skill.delivery, scope, signal: operationSignal, beforeExecution: !changed});
       deliveries.set(skill.id, frozen);
       store.record(run, 'skill_delivery_prepared', {id: skill.id, name: skill.name, version: skill.version, ...frozen});
@@ -218,7 +222,8 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
   async function verifyOutput(id) {
     const skill = skillFor(id);
     let result;
-    try {result = await verifyDelivery({frozen: deliveries.get(id), scope, signal: AbortSignal.any([signal, AbortSignal.timeout(15000)])});}
+    try {result = await verifyDelivery({frozen: deliveries.get(id), scope, signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
+      readReceipts: readCitationReceipts(store.events(run, 0))});}
     catch {result = {status: 'unknown', contractSha256: deliveries.get(id)?.sha256 ?? '', verifierSha256: deliveries.get(id)?.verifierSha256 ?? '', frozenBeforeExecution: Boolean(deliveries.get(id)?.beforeExecution), files: [],
       checks: [{path: '', code: 'CHECK_INCOMPLETE', status: 'unknown', message: '检查中断或无法读取，不能确认产物。'}]};}
     if (JSON.stringify(deliveryResults.get(id)) !== JSON.stringify(result)) {
@@ -325,9 +330,11 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
       return null;
     },
     receipt(seq, name, output) {
-      if (!active || ['inspect_skill', 'read_skill_resource', 'verify_skill_output', 'start_skill', 'finish_skill', 'load_skill', 'search_skills', 'update_plan'].includes(name)) return;
+      if (!active || ['inspect_skill', 'read_skill_resource', 'verify_skill_output', 'start_skill', 'finish_skill', 'load_skill', 'search_skills', 'update_plan',
+        'prepare_task','inspect_runtime','discover_skills','adopt_discovered_skill','read_discovered_resource'].includes(name)) return;
       evidence.set(seq, {id: active, name, ok: output.ok &&
         (output.data?.kind !== 'project_tests' || output.data.status === 'passed') &&
+        (output.data?.kind !== 'python_execution' || output.data.status === 'passed') &&
         (output.data?.kind !== 'material_preflight' || output.data.status === 'completed')});
       return evidence.get(seq);
     },

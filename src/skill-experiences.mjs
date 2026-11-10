@@ -35,6 +35,12 @@ export function createSkillExperiences(store, {studio, projectFor, redact}) {
     };
     for (const event of events.slice(0, 1000)) {
       const p = JSON.parse(event.payload);
+      if (event.type === 'citation_verification') {
+        const code = p.status === 'failed' ? 'CITATION_FAILED' :
+          p.status === 'passed' && p.corrections?.length ? 'CITATION_CALIBRATED' : null;
+        if (code) signals.push({code, label: code === 'CITATION_FAILED' ? '引用原文核验未通过' : '引用行号由宿主校准，方法可改进',
+          evidenceRefs: [ref(event, JSON.stringify({status: p.status, corrections: p.corrections, issues: p.issues, sources: p.sources}))]});
+      }
       if (['skill_delivery', 'skill_applicability', 'skill_application'].includes(event.type) && p.id && p.name) {
         const previous = participating.get(p.id);
         participating.set(p.id, {id: p.id, name: redact(p.name, 160), version: p.version ?? previous?.version ?? null});

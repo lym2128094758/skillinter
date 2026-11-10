@@ -53,9 +53,10 @@ async function projectIdentity(scope) {
   return `${dev}:${ino}`;
 }
 
-async function requestApproval({entry, signal, store, run, cwd}) {
+export async function requestApproval({entry, signal, store, run, cwd, requestedCommand=command,
+  executable=process.execPath, purpose='project_tests', waitMs=approvalMs}) {
   const id = randomUUID();
-  const deadline = AbortSignal.timeout(approvalMs);
+  const deadline = AbortSignal.timeout(waitMs);
   const approved = Promise.withResolvers();
   const stop = () => approved.resolve('aborted');
   const expire = () => approved.resolve('expired');
@@ -70,7 +71,7 @@ async function requestApproval({entry, signal, store, run, cwd}) {
   deadline.addEventListener('abort', expire, {once: true});
   try {
     if (signal.aborted) return 'aborted';
-    store.record(run, 'project_test_request', {id, command, executable: process.execPath, cwd, expires: Date.now() + approvalMs});
+    store.record(run, 'project_test_request', {id, command:requestedCommand, executable, purpose, cwd, expires: Date.now() + waitMs});
     const decision = await approved.promise;
     store.record(run, 'project_test_decision', {id, decision});
     return decision;

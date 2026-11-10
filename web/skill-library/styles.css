@@ -249,6 +249,7 @@ kbd { padding: 1px 5px; border: 1px solid #ececea; border-radius: 3px; color: #a
 .sidebar .source-fold { margin-bottom:12px; }
 .source-fold summary { padding:8px 3px; color:#777; cursor:pointer; font-size:11px; }
 .groups-list { max-height:240px; padding-bottom:5px; overflow-y:auto; }
+.category-list { max-height:min(180px,24vh); overscroll-behavior:contain; }
 .group-label { font-size:12px; }
 .group-item { min-height:30px; padding-left:3px; }
 .skill-list { flex:1; min-height:80px; overflow-y:auto; border-top:1px solid #eee; padding-top:8px; }

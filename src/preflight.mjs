@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { extname } from 'node:path';
 import { imageMime } from './images.mjs';
-import { executeTool, preflightSnapshot } from './tools.mjs';
+import { executeTool, preflightSnapshot, fileErrors } from './tools.mjs';
+import {config} from './config.mjs';
 import { RequestError } from './store.mjs';
 
 const maxFiles = 20;
@@ -163,7 +164,7 @@ export async function executePreflight({store, task, run, goal, request, scope, 
     const issues = [];
     let selected, truncated = false;
     if (request.source === 'attachments') {
-      selected = attachments.map(file => ({id: file.id, path: file.name}));
+      selected = attachments.map(file => ({id: file.id, path: file.relativePath ?? file.name}));
     } else if (request.paths.length) {
       selected = request.paths.map(path => ({path}));
     } else {
@@ -182,8 +183,11 @@ export async function executePreflight({store, task, run, goal, request, scope, 
     const seen = new Map();
     for (const item of selected) {
       signal.throwIfAborted();
-      const {bytes, error} = await operation('read_material', () =>
-        item.id ? store.file(task, item.id) : preflightSnapshot(projectScope, item.path, signal));
+      const {bytes, error} = await operation('read_material', () => {
+        if (!item.id) return preflightSnapshot(projectScope, item.path, signal);
+        const file = store.file(task, item.id);
+        return file.size > config.tools.fileBytes ? {error:{code:'FILE_TOO_LARGE',message:fileErrors.FILE_TOO_LARGE}} : file;
+      });
       signal.throwIfAborted();
       if (error) { files.push({...item, structure: '未检查', issues: [error]}); continue; }
       const file = inspectMaterial(item, Buffer.from(bytes));

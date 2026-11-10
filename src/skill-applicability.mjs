@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { inspectMaterial } from './preflight.mjs';
-import { preflightSnapshot } from './tools.mjs';
+import { preflightSnapshot, fileErrors } from './tools.mjs';
+import {config} from './config.mjs';
 import { object, string } from './schema.mjs';
 
 const phrases = {type: 'array', maxItems: 12, items: {...string, minLength: 1, maxLength: 200}};
@@ -62,7 +63,9 @@ export async function assessApplicability({skill, goal, context = {}, store, tas
       signal.throwIfAborted();
       const file = store.file(task, material.id);
       if (file.run) continue;
-      result.inputs.push(materialObservation(file.name, file.bytes));
+      const path = file.relative_path ?? file.name;
+      if (file.size > config.tools.fileBytes) add('unknown','FILE_TOO_LARGE',`${path} · ${fileErrors.FILE_TOO_LARGE}`);
+      else result.inputs.push(materialObservation(path, file.bytes));
     }
   }
   if (policy.project_files.length) {

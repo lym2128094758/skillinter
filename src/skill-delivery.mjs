@@ -2,9 +2,10 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {object, string, validate} from './schema.mjs';
 import {preflightSnapshot} from './tools.mjs';
+import {verifyCitations} from './citation-verifier.mjs';
 
 const pathSchema = {...string, minLength: 1, maxLength: 300};
-const checkSchema = object({kind: {enum: ['text_contains', 'text_excludes', 'json_equals', 'json_type', 'json_length']},
+const checkSchema = object({kind: {enum: ['text_contains', 'text_excludes', 'json_equals', 'json_type', 'json_length', 'json_citations']},
   pointer: {...string, maxLength: 300}, expected: {...string, maxLength: 4000}});
 export const deliverySchema = object({version: {enum: [1]},
   preserve_inputs: {type: 'array', maxItems: 4, items: pathSchema},
@@ -18,7 +19,7 @@ export const deliveryResultSchema = object({status: {enum: ['passed', 'failed', 
     status: {enum: ['passed', 'failed', 'unknown']}, message: string})},
 });
 const hash = value => createHash('sha256').update(value).digest('hex');
-const verifierSha256 = hash(['skill-delivery.mjs', 'tools.mjs', 'file-scope.mjs', 'schema.mjs'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\0'));
+const verifierSha256 = hash(['skill-delivery.mjs', 'citation-verifier.mjs', 'tools.mjs', 'file-scope.mjs', 'schema.mjs'].map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\0'));
 deliveryResultSchema.properties.operationReceipts = {type: 'array', maxItems: 20, items: {type: 'integer', minimum: 1}};
 const parseJson = text => JSON.parse(text, (_, value) => { if (typeof value === 'number' && !Number.isFinite(value)) throw Error('Non-finite JSON number'); return value; });
 const safePath = path => !/^[\\/]|[:\x00-\x1f]/.test(path) && path.split(/[\\/]/).every(part => part && !part.startsWith('.'));
@@ -36,6 +37,7 @@ export function validDelivery(contract) {
     if (artifact.format !== 'json' || !/^(?:\/(?:[^~]|~[01])*)*$/.test(check.pointer)) return false;
     if (check.kind === 'json_type') return ['object', 'array', 'string', 'number', 'boolean', 'null'].includes(check.expected);
     if (check.kind === 'json_length') return /^\d{1,9}$/.test(check.expected);
+    if (check.kind === 'json_citations') return check.expected === '';
     try { parseJson(check.expected); return true; } catch { return false; }
   }));
 }
@@ -61,7 +63,7 @@ function lookup(value, pointer) {
   }
   return {found: true, value};
 }
-export async function verifyDelivery({frozen, scope, signal}) {
+export async function verifyDelivery({frozen, scope, signal, readReceipts = []}) {
   const output = result(frozen);
   if (!frozen?.contract) return output;
   const add = (path, code, status, message) => output.checks.push({path, code, status, message: message.slice(0, 1000)});
@@ -93,6 +95,15 @@ export async function verifyDelivery({frozen, scope, signal}) {
       }
       const entry = lookup(json, check.pointer);
       if (!entry.found) {add(artifact.path, 'JSON_POINTER', 'failed', '字段不存在：' + check.pointer); continue;}
+      if (check.kind === 'json_citations') {
+        const citations = await verifyCitations(entry.value, {receipts: readReceipts, signal,
+          loadSource: path => preflightSnapshot({...scope, mode: 'project_read'}, path, signal)});
+        for (const correction of citations.corrections) add(artifact.path, 'CITATION_LINE_MISMATCH', 'failed',
+          correction.path + ' 的引用行号应为 ' + correction.resolvedLine + '，文件中为 ' + correction.originalLine + '。');
+        for (const issue of citations.issues) add(artifact.path, issue.code, issue.status, issue.message);
+        if (citations.status === 'passed' && !citations.corrections.length) add(artifact.path, 'JSON_CITATIONS', 'passed', '引用原文、行号及本轮读取指纹一致。');
+        continue;
+      }
       const type = entry.value === null ? 'null' : Array.isArray(entry.value) ? 'array' : typeof entry.value;
       const ok = check.kind === 'json_equals' ? canonical(entry.value) === canonical(parseJson(check.expected)) : check.kind === 'json_type' ? type === check.expected :
         ['string', 'array'].includes(type) && entry.value.length === Number(check.expected);

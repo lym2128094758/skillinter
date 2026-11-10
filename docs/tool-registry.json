@@ -1,10 +1,20 @@
 {
   "generatedFrom": [
+    "src/github-access.mjs",
+    "src/git-skill-source.mjs",
+    "src/task-capabilities.mjs",
+    "src/document-tools.mjs",
+    "src/task-preparation.mjs",
+    "src/online-skills.mjs",
+    "src/python-tool.mjs",
+    "src/process-runtime.mjs",
+    "scripts/extract-document.py",
     "src/tools.mjs",
     "src/chat-skills.mjs",
     "src/skill-session.mjs",
     "src/skill-applicability.mjs",
     "src/skill-delivery.mjs",
+    "src/citation-verifier.mjs",
     "src/skill-execution.mjs",
     "src/task-plan.mjs",
     "src/project-tests.mjs",
@@ -2460,6 +2470,7 @@
           "FILE_CHANGED": "文件在读取期间发生变化，请重试。",
           "IO_ERROR": "读取失败。",
           "ABORTED": "操作已取消。",
+          "BROWSER_FOLDER_UNAVAILABLE": "拖入的文件夹已断开。请保持原页面打开，或重新拖入文件夹。",
           "ABSOLUTE_PATH_REQUIRED": "请提供本机绝对路径，例如 D:/项目/文件.txt。",
           "PROTECTED_PATH": "这是 Skillinter 的私有状态或凭据文件，不能访问。",
           "RUNTIME_PATH": "Agent 不能修改正在提供服务的 Skillinter 运行文件。",
@@ -2468,7 +2479,8 @@
           "EDIT_CONFLICT": "文件已变化，请重新读取后再修改。",
           "MATCH_NOT_UNIQUE": "待替换内容未找到或出现多次，请提供唯一的原文。",
           "WRITE_FAILED": "写入失败，请检查文件系统和操作系统权限。",
-          "TIMEOUT": "工具执行超时。"
+          "TIMEOUT": "工具执行超时。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。"
         },
         "timeoutMs": 5000,
         "idempotent": true,
@@ -2724,6 +2736,7 @@
           "FILE_CHANGED": "文件在读取期间发生变化，请重试。",
           "IO_ERROR": "读取失败。",
           "ABORTED": "操作已取消。",
+          "BROWSER_FOLDER_UNAVAILABLE": "拖入的文件夹已断开。请保持原页面打开，或重新拖入文件夹。",
           "ABSOLUTE_PATH_REQUIRED": "请提供本机绝对路径，例如 D:/项目/文件.txt。",
           "PROTECTED_PATH": "这是 Skillinter 的私有状态或凭据文件，不能访问。",
           "RUNTIME_PATH": "Agent 不能修改正在提供服务的 Skillinter 运行文件。",
@@ -2732,7 +2745,8 @@
           "EDIT_CONFLICT": "文件已变化，请重新读取后再修改。",
           "MATCH_NOT_UNIQUE": "待替换内容未找到或出现多次，请提供唯一的原文。",
           "WRITE_FAILED": "写入失败，请检查文件系统和操作系统权限。",
-          "TIMEOUT": "工具执行超时。"
+          "TIMEOUT": "工具执行超时。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。"
         },
         "timeoutMs": 5000,
         "idempotent": true,
@@ -2910,6 +2924,7 @@
           "FILE_CHANGED": "文件在读取期间发生变化，请重试。",
           "IO_ERROR": "读取失败。",
           "ABORTED": "操作已取消。",
+          "BROWSER_FOLDER_UNAVAILABLE": "拖入的文件夹已断开。请保持原页面打开，或重新拖入文件夹。",
           "ABSOLUTE_PATH_REQUIRED": "请提供本机绝对路径，例如 D:/项目/文件.txt。",
           "PROTECTED_PATH": "这是 Skillinter 的私有状态或凭据文件，不能访问。",
           "RUNTIME_PATH": "Agent 不能修改正在提供服务的 Skillinter 运行文件。",
@@ -2918,7 +2933,8 @@
           "EDIT_CONFLICT": "文件已变化，请重新读取后再修改。",
           "MATCH_NOT_UNIQUE": "待替换内容未找到或出现多次，请提供唯一的原文。",
           "WRITE_FAILED": "写入失败，请检查文件系统和操作系统权限。",
-          "TIMEOUT": "工具执行超时。"
+          "TIMEOUT": "工具执行超时。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。"
         },
         "timeoutMs": 5000,
         "idempotent": false,
@@ -3095,6 +3111,7 @@
           "FILE_CHANGED": "文件在读取期间发生变化，请重试。",
           "IO_ERROR": "读取失败。",
           "ABORTED": "操作已取消。",
+          "BROWSER_FOLDER_UNAVAILABLE": "拖入的文件夹已断开。请保持原页面打开，或重新拖入文件夹。",
           "ABSOLUTE_PATH_REQUIRED": "请提供本机绝对路径，例如 D:/项目/文件.txt。",
           "PROTECTED_PATH": "这是 Skillinter 的私有状态或凭据文件，不能访问。",
           "RUNTIME_PATH": "Agent 不能修改正在提供服务的 Skillinter 运行文件。",
@@ -3103,7 +3120,8 @@
           "EDIT_CONFLICT": "文件已变化，请重新读取后再修改。",
           "MATCH_NOT_UNIQUE": "待替换内容未找到或出现多次，请提供唯一的原文。",
           "WRITE_FAILED": "写入失败，请检查文件系统和操作系统权限。",
-          "TIMEOUT": "工具执行超时。"
+          "TIMEOUT": "工具执行超时。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。"
         },
         "timeoutMs": 5000,
         "idempotent": false,
@@ -3652,6 +3670,7 @@
           "ATTACHMENT_NOT_FOUND": "附件不属于当前会话或不存在。",
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
+          "CSV_TOO_LARGE": "此 CSV 超过内置表格分析器的 2 MiB 处理范围，可用 read_document 分段读取。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
           "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
           "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
@@ -3760,7 +3779,8 @@
                                         "text_excludes",
                                         "json_equals",
                                         "json_type",
-                                        "json_length"
+                                        "json_length",
+                                        "json_citations"
                                       ]
                                     },
                                     "pointer": {
@@ -3895,6 +3915,7 @@
           "ATTACHMENT_NOT_FOUND": "附件不属于当前会话或不存在。",
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
+          "CSV_TOO_LARGE": "此 CSV 超过内置表格分析器的 2 MiB 处理范围，可用 read_document 分段读取。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
           "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
           "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
@@ -4066,6 +4087,7 @@
           "ATTACHMENT_NOT_FOUND": "附件不属于当前会话或不存在。",
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
+          "CSV_TOO_LARGE": "此 CSV 超过内置表格分析器的 2 MiB 处理范围，可用 read_document 分段读取。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
           "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
           "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
@@ -4478,6 +4500,7 @@
           "ATTACHMENT_NOT_FOUND": "附件不属于当前会话或不存在。",
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
+          "CSV_TOO_LARGE": "此 CSV 超过内置表格分析器的 2 MiB 处理范围，可用 read_document 分段读取。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
           "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
           "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
@@ -4808,6 +4831,7 @@
           "ATTACHMENT_NOT_FOUND": "附件不属于当前会话或不存在。",
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
+          "CSV_TOO_LARGE": "此 CSV 超过内置表格分析器的 2 MiB 处理范围，可用 read_document 分段读取。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
           "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
           "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
@@ -5276,7 +5300,8 @@
                                         "text_excludes",
                                         "json_equals",
                                         "json_type",
-                                        "json_length"
+                                        "json_length",
+                                        "json_citations"
                                       ]
                                     },
                                     "pointer": {
@@ -6509,6 +6534,1454 @@
         ],
         "authorization": "绑定项目且具备写入权限。每次执行使用独立的一次性本机用户确认。项目代码使用当前系统账号运行。",
         "ordering": "标准输出和标准错误分别按进程写入顺序保留末尾，超限标记 truncated。"
+      },
+      {
+        "name": "read_document",
+        "description": "读取授权项目或附件的 PDF、DOCX、XLSX、UTF-8 文本正文，自动识别格式；offset/limit 对提取文本行计数，保留原始 SHA。PDF 页用换页符分隔；扫描件无 OCR。表格保留工作表、单元格坐标和缓存值，不计算公式。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "maxLength": 1000,
+              "minLength": 1
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "required": [
+            "path",
+            "offset",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "format": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "sourceSha256": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "offset": {
+                      "type": "integer"
+                    },
+                    "totalLines": {
+                      "type": "integer"
+                    },
+                    "linesReturned": {
+                      "type": "integer"
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 48000
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    },
+                    "notice": {
+                      "type": "string",
+                      "maxLength": 1000
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "format",
+                    "sourceSha256",
+                    "offset",
+                    "totalLines",
+                    "linesReturned",
+                    "text",
+                    "truncated",
+                    "notice"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "材料读取参数无效。",
+          "UNKNOWN_TOOL": "工具不存在。",
+          "WORKSPACE_NOT_FOUND": "工作区不存在。",
+          "NOT_FOUND": "路径不存在。",
+          "PATH_OUTSIDE_WORKSPACE": "路径超出工作区。",
+          "PERMISSION_DENIED": "没有读取权限。",
+          "SYMLINK_NOT_ALLOWED": "不允许跟随符号链接。",
+          "NOT_DIRECTORY": "路径不是目录。",
+          "NOT_FILE": "路径不是普通文件。",
+          "FILE_TOO_LARGE": "文件超过 1 MiB 读取上限。",
+          "NOT_TEXT": "文件不是 UTF-8 文本。",
+          "FILE_CHANGED": "文件在读取期间发生变化，请重试。",
+          "IO_ERROR": "读取失败。",
+          "ABORTED": "材料读取已停止。",
+          "BROWSER_FOLDER_UNAVAILABLE": "拖入的文件夹已断开。请保持原页面打开，或重新拖入文件夹。",
+          "ABSOLUTE_PATH_REQUIRED": "请提供本机绝对路径，例如 D:/项目/文件.txt。",
+          "PROTECTED_PATH": "这是 Skillinter 的私有状态或凭据文件，不能访问。",
+          "RUNTIME_PATH": "Agent 不能修改正在提供服务的 Skillinter 运行文件。",
+          "WRITE_NOT_ALLOWED": "当前会话未启用文件修改权限。",
+          "FILE_EXISTS": "目标文件已存在，请先读取并使用局部替换。",
+          "EDIT_CONFLICT": "文件已变化，请重新读取后再修改。",
+          "MATCH_NOT_UNIQUE": "待替换内容未找到或出现多次，请提供唯一的原文。",
+          "WRITE_FAILED": "写入失败，请检查文件系统和操作系统权限。",
+          "TIMEOUT": "材料解析超时。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。",
+          "UNSUPPORTED_FORMAT": "此格式尚无正文解析器。",
+          "PARSER_UNAVAILABLE": "缺少材料解析程序，请安装 Python 或 pdftotext。",
+          "PARSE_FAILED": "材料解析失败，未执行宏、公式或嵌入代码。",
+          "NO_TEXT": "未提取到可读正文，扫描件需要 OCR。"
+        },
+        "timeoutMs": 15000,
+        "idempotent": true,
+        "volatile": [],
+        "ordering": "按正文段落、工作表及行的原顺序。",
+        "authorization": "沿用会话附件或项目读取范围；源文件只读，不执行其代码。",
+        "timeoutMode": "子进程15秒硬上限并传递停止。",
+        "defaults": {
+          "offset": 0,
+          "limit": 200
+        }
+      },
+      {
+        "name": "prepare_task",
+        "description": "读过题目及材料后，保留原始用户目标，整理清晰目标、约束、交付要求、假设、必要问题与有依赖的子任务。为每步查询已安装技能，返回候选或缺口，并生成可见计划。source_receipts填本轮成功读取材料的回执序号。不能把假设或优化后的措辞当成用户已确认约束。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "objective": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 1
+            },
+            "constraints": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "deliverables": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "assumptions": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "questions": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "source_receipts": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "steps": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "depends_on": {
+                    "type": "array",
+                    "maxItems": 12,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 40
+                    }
+                  },
+                  "skill_query": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "depends_on",
+                  "skill_query"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "objective",
+            "constraints",
+            "deliverables",
+            "assumptions",
+            "questions",
+            "source_receipts",
+            "steps"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "originalGoal": {
+                      "type": "string",
+                      "maxLength": 16000
+                    },
+                    "objective": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "constraints": {
+                      "type": "array",
+                      "maxItems": 12,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "deliverables": {
+                      "type": "array",
+                      "maxItems": 12,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "assumptions": {
+                      "type": "array",
+                      "maxItems": 12,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "questions": {
+                      "type": "array",
+                      "maxItems": 12,
+                      "items": {
+                        "type": "string",
+                        "maxLength": 2000
+                      }
+                    },
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 40
+                          },
+                          "title": {
+                            "type": "string",
+                            "maxLength": 200
+                          },
+                          "depends_on": {
+                            "type": "array",
+                            "maxItems": 12,
+                            "items": {
+                              "type": "string",
+                              "maxLength": 40
+                            }
+                          },
+                          "skill_query": {
+                            "type": "string",
+                            "maxLength": 500
+                          },
+                          "candidates": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "maxLength": 2000
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "version"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "gap": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "depends_on",
+                          "skill_query",
+                          "candidates",
+                          "gap"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "seq": {
+                            "type": "integer"
+                          },
+                          "path": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "maxLength": 2000
+                          }
+                        },
+                        "required": [
+                          "seq",
+                          "path",
+                          "sha256"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "revision",
+                    "originalGoal",
+                    "objective",
+                    "constraints",
+                    "deliverables",
+                    "assumptions",
+                    "questions",
+                    "steps",
+                    "sources"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "任务整理参数无效。",
+          "SOURCE_NOT_READ": "任务说明引用了本轮未读取的材料回执。",
+          "SOURCE_CHANGED": "材料在读取后变化或当前不可读，请重新读取再整理任务。",
+          "INVALID_PLAN": "任务步骤存在无效依赖、重名或循环。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。",
+          "ABORTED": "任务整理已停止。",
+          "PREPARATION_FAILED": "任务整理未完成。"
+        },
+        "timeoutMs": 60000,
+        "idempotent": false,
+        "volatile": [],
+        "ordering": "保持步骤和来源回执顺序；候选沿用技能检索排序。",
+        "authorization": "只整理当前用户任务和本轮实际读过的材料，不能扩大范围、授予权限或发布技能。",
+        "timeoutMode": "继承根预算及停止，全部步骤检索60秒上限。"
+      },
+      {
+        "name": "discover_skills",
+        "description": "在本机配置的公开GitHub技能库中找缺少的方法。只发送仓库读取请求，不发送项目正文。返回固定提交、许可、正文指纹及预览；不是正式安装。优先搜索本地技能，缺少时再发现。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "required": [
+            "query",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "candidates": {
+                      "type": "array",
+                      "maxItems": 5,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "name": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "description": {
+                            "type": "string",
+                            "maxLength": 2000
+                          },
+                          "repository": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "path": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "url": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "commit": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "license": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "resourcesAvailable": {
+                            "type": "boolean"
+                          },
+                          "status": {
+                            "enum": [
+                              "preview",
+                              "adopted"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "description",
+                          "repository",
+                          "path",
+                          "url",
+                          "commit",
+                          "sha256",
+                          "license",
+                          "resourcesAvailable",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unavailable": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "candidates",
+                    "unavailable",
+                    "truncated"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "timeoutMs": 20000,
+        "idempotent": true,
+        "volatile": [
+          "data.candidates[].commit",
+          "data.candidates[].sha256"
+        ],
+        "ordering": "按查询词与路径匹配得分降序，同分按仓库路径字典序。",
+        "errors": {
+          "INVALID_ARGUMENT": "公开技能检索参数无效。",
+          "SOURCE_UNAVAILABLE": "公开技能库不可用或受到限流。",
+          "SOURCE_NOT_ALLOWED": "技能来源不在本机配置的公开库范围内。",
+          "SKILL_NOT_FOUND": "本轮没有发现这个外部技能。",
+          "SOURCE_INVALID": "技能内容、许可或来源快照不完整，不能采用。",
+          "ABORTED": "公开技能发现已停止。",
+          "TIMEOUT": "公开技能发现超时。"
+        },
+        "authorization": "用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
+        "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
+      },
+      {
+        "name": "adopt_discovered_skill",
+        "description": "将本轮已发现且有许可和完整正文的外部方法用于当前任务，返回指南及来源。仅本轮采用，不安装、不发布、不授予新工具或执行脚本；配套资源尚未下载时须说明缺口。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 1000,
+              "minLength": 1
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "skill": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "description": {
+                          "type": "string",
+                          "maxLength": 2000
+                        },
+                        "repository": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "path": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "url": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "commit": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "license": {
+                          "type": "string",
+                          "maxLength": 1000
+                        },
+                        "resourcesAvailable": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "enum": [
+                            "preview",
+                            "adopted"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "description",
+                        "repository",
+                        "path",
+                        "url",
+                        "commit",
+                        "sha256",
+                        "license",
+                        "resourcesAvailable",
+                        "status"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "instructions": {
+                      "type": "string",
+                      "maxLength": 64000
+                    },
+                    "warning": {
+                      "type": "string",
+                      "maxLength": 1000
+                    }
+                  },
+                  "required": [
+                    "skill",
+                    "instructions",
+                    "warning"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "timeoutMs": 1000,
+        "idempotent": true,
+        "volatile": [],
+        "ordering": "单个冻结的外部方法。",
+        "errors": {
+          "INVALID_ARGUMENT": "公开技能检索参数无效。",
+          "SOURCE_UNAVAILABLE": "公开技能库不可用或受到限流。",
+          "SOURCE_NOT_ALLOWED": "技能来源不在本机配置的公开库范围内。",
+          "SKILL_NOT_FOUND": "本轮没有发现这个外部技能。",
+          "SOURCE_INVALID": "技能内容、许可或来源快照不完整，不能采用。",
+          "ABORTED": "公开技能发现已停止。",
+          "TIMEOUT": "公开技能发现超时。"
+        },
+        "authorization": "用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
+        "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
+      },
+      {
+        "name": "read_discovered_resource",
+        "description": "读取本轮已发现技能在固定提交中的包内文本资源或脚本。path相对SKILL.md所在目录，不允许越界；只返回正文，不执行，不自动安装。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 1000,
+              "minLength": 1
+            },
+            "path": {
+              "type": "string",
+              "maxLength": 300,
+              "minLength": 1
+            }
+          },
+          "required": [
+            "id",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "path": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "url": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "commit": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "text": {
+                      "type": "string",
+                      "maxLength": 64000
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "path",
+                    "url",
+                    "commit",
+                    "sha256",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "timeoutMs": 10000,
+        "idempotent": true,
+        "volatile": [],
+        "ordering": "单个冻结提交中的UTF-8文本资源。",
+        "errors": {
+          "INVALID_ARGUMENT": "公开技能检索参数无效。",
+          "SOURCE_UNAVAILABLE": "公开技能库不可用或受到限流。",
+          "SOURCE_NOT_ALLOWED": "技能来源不在本机配置的公开库范围内。",
+          "SKILL_NOT_FOUND": "本轮没有发现这个外部技能。",
+          "SOURCE_INVALID": "技能内容、许可或来源快照不完整，不能采用。",
+          "ABORTED": "公开技能发现已停止。",
+          "TIMEOUT": "公开技能发现超时。"
+        },
+        "authorization": "用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
+        "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
+      },
+      {
+        "name": "inspect_runtime",
+        "description": "检查本机Python版本与numpy/scipy/pandas/matplotlib/openpyxl/python-docx等包的可用状态，不运行用户代码，不安装依赖。",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "python": {
+                      "type": "string"
+                    },
+                    "packages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "available": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "available"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "python",
+                    "packages"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "环境检查参数无效。",
+          "PYTHON_UNAVAILABLE": "Python无法启动。",
+          "ABORTED": "环境检查已停止。"
+        },
+        "timeoutMs": 10000,
+        "idempotent": true,
+        "volatile": [],
+        "ordering": "包名按固定列表顺序。",
+        "authorization": "只执行宿主固定的环境探测代码，无用户代码或网络请求。",
+        "timeoutMode": "10秒硬上限及父停止。"
+      },
+      {
+        "name": "run_python",
+        "description": "运行已经写入并读取确认的项目 Python 脚本，用于计算、求解、绘图或文档处理。必须提供脚本当前 SHA-256，每次由用户在界面确认；使用固定 python -I，冻结脚本字节，无 shell，最长60秒。代码有当前系统账号权限，不是沙箱。退出码0不代表业务结果正确。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "maxLength": 1000,
+              "minLength": 1,
+              "pattern": "\\.py$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "type": "string",
+              "maxLength": 500,
+              "minLength": 1
+            }
+          },
+          "required": [
+            "path",
+            "sha256",
+            "purpose"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "python_execution"
+                      ]
+                    },
+                    "status": {
+                      "enum": [
+                        "passed",
+                        "failed"
+                      ]
+                    },
+                    "script": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "scriptSha256": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "exitCode": {
+                      "anyOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ]
+                    },
+                    "stdout": {
+                      "type": "string",
+                      "maxLength": 16000
+                    },
+                    "stderr": {
+                      "type": "string",
+                      "maxLength": 16000
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    },
+                    "volatile": {
+                      "type": "object",
+                      "properties": {
+                        "elapsedMs": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "elapsedMs"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "status",
+                    "script",
+                    "scriptSha256",
+                    "exitCode",
+                    "stdout",
+                    "stderr",
+                    "truncated",
+                    "volatile"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "Python 执行参数无效。",
+          "UNKNOWN_TOOL": "工具不存在。",
+          "WORKSPACE_NOT_FOUND": "工作区不存在。",
+          "NOT_FOUND": "路径不存在。",
+          "PATH_OUTSIDE_WORKSPACE": "路径超出工作区。",
+          "PERMISSION_DENIED": "没有读取权限。",
+          "SYMLINK_NOT_ALLOWED": "不允许跟随符号链接。",
+          "NOT_DIRECTORY": "路径不是目录。",
+          "NOT_FILE": "路径不是普通文件。",
+          "FILE_TOO_LARGE": "文件超过 1 MiB 读取上限。",
+          "NOT_TEXT": "文件不是 UTF-8 文本。",
+          "FILE_CHANGED": "文件在读取期间发生变化，请重试。",
+          "IO_ERROR": "读取失败。",
+          "ABORTED": "Python 执行已停止。",
+          "BROWSER_FOLDER_UNAVAILABLE": "拖入的文件夹已断开。请保持原页面打开，或重新拖入文件夹。",
+          "ABSOLUTE_PATH_REQUIRED": "请提供本机绝对路径，例如 D:/项目/文件.txt。",
+          "PROTECTED_PATH": "这是 Skillinter 的私有状态或凭据文件，不能访问。",
+          "RUNTIME_PATH": "Agent 不能修改正在提供服务的 Skillinter 运行文件。",
+          "WRITE_NOT_ALLOWED": "当前会话未启用文件修改权限。",
+          "FILE_EXISTS": "目标文件已存在，请先读取并使用局部替换。",
+          "EDIT_CONFLICT": "文件已变化，请重新读取后再修改。",
+          "MATCH_NOT_UNIQUE": "待替换内容未找到或出现多次，请提供唯一的原文。",
+          "WRITE_FAILED": "写入失败，请检查文件系统和操作系统权限。",
+          "TIMEOUT": "Python 执行超过 60 秒，已停止。",
+          "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。",
+          "PYTHON_NOT_ALLOWED": "运行 Python 需要绑定项目并开启读写权限。",
+          "APPROVAL_DECLINED": "用户拒绝了本次 Python 执行。",
+          "APPROVAL_EXPIRED": "Python 执行确认已过期。",
+          "APPROVAL_SUPERSEDED": "收到新引导，已撤回待确认的 Python 执行。",
+          "PYTHON_UNAVAILABLE": "Python 无法启动，请安装并配置到 PATH。"
+        },
+        "timeoutMs": 60000,
+        "approvalTimeoutMs": 60000,
+        "idempotent": false,
+        "volatile": [
+          "data.stdout",
+          "data.stderr",
+          "data.volatile.elapsedMs"
+        ],
+        "ordering": "stdout和stderr分别按进程写入顺序，保留前16000字节并注明截断。",
+        "authorization": "项目读写且每次经用户明确确认。最小环境不含模型密钥；Python仍有操作系统账号权限。",
+        "timeoutMode": "确认和运行各60秒，父停止或超时终止进程树。"
       }
     ],
     "skillApplicability": {
@@ -6725,7 +8198,8 @@
                           "text_excludes",
                           "json_equals",
                           "json_type",
-                          "json_length"
+                          "json_length",
+                          "json_citations"
                         ]
                       },
                       "pointer": {
@@ -6874,6 +8348,70 @@
         "additionalProperties": false
       }
     },
+    "citedFindings": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "status": {
+            "enum": [
+              "verified",
+              "missing",
+              "uncertain"
+            ]
+          },
+          "claim": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 5,
+                  "maxLength": 4000
+                }
+              },
+              "required": [
+                "path",
+                "line",
+                "quote"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "claim",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
     "skillExecution": {
       "plan": {
         "type": "object",
@@ -6968,7 +8506,8 @@
                                     "text_excludes",
                                     "json_equals",
                                     "json_type",
-                                    "json_length"
+                                    "json_length",
+                                    "json_citations"
                                   ]
                                 },
                                 "pointer": {

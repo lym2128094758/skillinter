@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import {summarizeRun} from './run-outcome.mjs';
 
 // Shared by model history and active plans. Queries bind r to runs and t to tasks.
 export const visibleRunContext = `NOT EXISTS (SELECT 1 FROM events origin WHERE origin.run=r.id AND origin.type='started'
@@ -47,12 +49,21 @@ export class Store {
         name TEXT NOT NULL, kind TEXT NOT NULL, sha256 TEXT NOT NULL, bytes BLOB NOT NULL
       );
       CREATE INDEX IF NOT EXISTS task_files_by_task ON task_files(task);
+      CREATE TABLE IF NOT EXISTS task_folders (
+        id TEXT PRIMARY KEY, task TEXT NOT NULL REFERENCES tasks(id),
+        name TEXT NOT NULL, path TEXT NOT NULL, UNIQUE(task,path)
+      );
       CREATE TABLE IF NOT EXISTS preferences (
         id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL, value TEXT NOT NULL
       );
       INSERT OR IGNORE INTO preferences VALUES (1, 0, '{}');
     `);
     this.transaction(() => {
+      const fileColumns = new Set(this.query('PRAGMA table_info(task_files)', 'all').map(column => column.name));
+      for (const [name, type] of [['disk_path','TEXT'],['stored_size','INTEGER'],['relative_path','TEXT'],['workspace_path','TEXT'],['detached','INTEGER NOT NULL DEFAULT 0']]) {
+        if (!fileColumns.has(name)) this.db.exec(`ALTER TABLE task_files ADD COLUMN ${name} ${type}`);
+      }
+      this.db.exec('CREATE UNIQUE INDEX IF NOT EXISTS task_files_workspace ON task_files(task, workspace_path) WHERE workspace_path IS NOT NULL');
       const columns = new Set(this.query('PRAGMA table_info(tasks)', 'all').map(column => column.name));
       for (const name of ['pinned', 'archived']) {
         if (!columns.has(name)) this.db.exec(`ALTER TABLE tasks ADD COLUMN ${name} INTEGER NOT NULL DEFAULT 0`);
@@ -158,13 +169,20 @@ export class Store {
     const task = this.query('SELECT * FROM tasks WHERE id = ?', 'get', id);
     if (!task) throw new RequestError(404, '任务不存在');
     const runs = this.query('SELECT id, prompt, status, answer, error, input_file FROM runs WHERE task = ? ORDER BY rowid', 'all', id);
-    const files = this.query('SELECT id, run, name, kind, sha256, length(bytes) AS size FROM task_files WHERE task = ? ORDER BY rowid', 'all', id);
+    const files = this.query('SELECT id, run, name, kind, sha256, coalesce(stored_size,length(bytes)) AS size, relative_path AS relativePath, workspace_path AS workspacePath, detached FROM task_files WHERE task = ? ORDER BY rowid', 'all', id);
+    const detachedFiles = new Map(files.filter(file => file.detached).map(file => [file.id, file]));
     const skills = this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'skill_completed'", 'all', id);
     const adopted = new Map(skills.map(event => [event.run, JSON.parse(event.payload)]));
     const audits = new Map(this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'audit_completed'", 'all', id)
       .map(event => [event.run, JSON.parse(event.payload)]));
     const preflights = new Map(this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'preflight_completed'", 'all', id)
       .map(event => [event.run, JSON.parse(event.payload)]));
+    const citations = new Map(this.query("SELECT e.run,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='citation_verification' ORDER BY e.seq", 'all', id)
+      .map(event => [event.run, JSON.parse(event.payload)]));
+    const briefs = new Map(this.query("SELECT e.run,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='task_brief' ORDER BY e.seq", 'all', id)
+      .map(event=>[event.run,JSON.parse(event.payload)]));
+    const external = this.query("SELECT e.run,e.type,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type IN ('external_skill_discovery','external_skill_adopted') ORDER BY e.seq", 'all', id)
+      .map(event=>({...event,payload:JSON.parse(event.payload)}));
     const capabilityFits = new Map(this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'capability_fit' ORDER BY e.seq", 'all', id)
       .map(event => [event.run, JSON.parse(event.payload)]));
     const searches = new Map(this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'skill_search' ORDER BY e.seq", 'all', id)
@@ -186,6 +204,22 @@ export class Store {
       .map(event => ({run: event.run, ...JSON.parse(event.payload)}));
     const configs = this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'started'", 'all', id);
     const configByRun = new Map(configs.map(event => [event.run, JSON.parse(event.payload)]));
+    const previousFolderContexts = new Map(this.query(`SELECT e.run, json_extract(e.payload,'$.context.folders') AS folders
+      FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='request_context'
+      AND json_type(e.payload,'$.context.folders')='array' ORDER BY e.seq`, 'all',id).map(({run,folders}) => [run,JSON.parse(folders)]));
+    const seenFolders = new Set();
+    const inputFolders = new Map();
+    for (const run of runs) {
+      const folders = configByRun.get(run.id)?.inputFolders ?? (previousFolderContexts.get(run.id) ?? [])
+        .map(folder => ({id: /^folder:([a-f\d-]{36})$/.exec(folder.path)?.[1], name:folder.name}));
+      const added = [];
+      for (const folder of folders) {
+        if (!folder.id || seenFolders.has(folder.id)) continue;
+        seenFolders.add(folder.id);
+        added.push(folder);
+      }
+      if (added.length) inputFolders.set(run.id,added);
+    }
     const endings = this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'finished'", 'all', id);
     const endByRun = new Map(endings.map(event => [event.run, JSON.parse(event.payload)]));
     const guidance = this.query('SELECT g.* FROM run_guidance g JOIN runs r ON r.id = g.run WHERE r.task = ? ORDER BY g.rowid', 'all', id);
@@ -193,18 +227,23 @@ export class Store {
       .map(event => [event.run, JSON.parse(event.payload)]));
     const receipts = this.query("SELECT e.run, e.seq, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'tool_result' AND json_extract(e.payload, '$.planStep') IS NOT NULL ORDER BY e.seq", 'all', id)
       .map(event => ({run: event.run, seq: event.seq, ...JSON.parse(event.payload)}));
-    return {...task, files: files.filter(file => !file.run), runs: runs.map(run => ({...run, config: configByRun.get(run.id),
+    return {...task, folders:this.taskFolders(id), files: files.filter(file => !file.run && !file.detached), runs: runs.map(run => ({...run, config: configByRun.get(run.id),
+      inputAttachment: detachedFiles.get(run.input_file),
+      inputFolders: inputFolders.get(run.id),
       guidance: guidance.filter(item => item.run === run.id), ended: endByRun.get(run.id)?.ended,
       plan: plans.get(run.id), planReceipts: receipts.filter(item => item.run === run.id).map(({seq, name, planStep, planRevision, planStepTitle, output, planOutcome}) =>
         ({seq, name, planStep, planRevision, planStepTitle,
-          ...(planOutcome ?? {ok: output.ok && (output.data?.kind !== 'project_tests' || output.data.status === 'passed') &&
+          ...(planOutcome ?? {ok: output.ok && (!['project_tests','python_execution'].includes(output.data?.kind) || output.data.status === 'passed') &&
             (output.data?.kind !== 'material_preflight' || output.data.status === 'completed'),
             message: output.ok ? ['project_tests', 'material_preflight'].includes(output.data?.kind) ? output.data.summary : '调用成功' : output.error.message})})),
       skill: adopted.get(run.id), skillSearch: searches.get(run.id), loadedSkills: loaded.get(run.id) ?? [],
       skillRoute: routes.get(run.id), skillTrace: skillTraces.get(run.id), skillApplications: applications.filter(item => item.run === run.id),
       skillApplicability: applicability.filter(item => item.run === run.id),
       skillDeliveries: deliveries.filter(item => item.run === run.id),
-      audit: audits.get(run.id), preflight: preflights.get(run.id), capabilityFit: capabilityFits.get(run.id), artifacts: files.filter(file => file.run === run.id)}))};
+      taskBrief:briefs.get(run.id),externalSkills:[...new Map(external.filter(e=>e.run===run.id).flatMap(e=>e.type==='external_skill_discovery'?e.payload.candidates:[e.payload]).map(item=>[item.id,item])).values()],
+      audit: audits.get(run.id), preflight: preflights.get(run.id), citationVerification: citations.get(run.id),
+      capabilityFit: capabilityFits.get(run.id), artifacts: files.filter(file => file.run === run.id)}))
+      .map(run => ({...run, outcome: summarizeRun(run)}))};
   }
 
   guide(run, request, prompt) {
@@ -241,41 +280,82 @@ export class Store {
 
   addAttachment(task, name, kind, bytes) {
     return this.transaction(() => {
-      const current = this.query('SELECT archived FROM tasks WHERE id = ?', 'get', task);
-      if (!current) throw new RequestError(404, '任务不存在');
-      if (current.archived) throw new RequestError(409, '请先恢复已归档任务');
-      if (this.query('SELECT count(*) AS total FROM task_files WHERE task = ? AND run IS NULL', 'get', task).total >= 12) {
-        throw new RequestError(409, '每个任务最多添加 12 个附件');
-      }
+      this.checkAttachmentTarget(task);
       return this.addFile(task, null, name, kind, bytes);
     });
+  }
+
+  checkAttachmentTarget(task) {
+    const current = this.query('SELECT archived FROM tasks WHERE id = ?', 'get', task);
+    if (!current) throw new RequestError(404, '任务不存在');
+    if (current.archived) throw new RequestError(409, '请先恢复已归档任务');
+  }
+
+  taskFolders(task) {
+    return this.query('SELECT id,name,path FROM task_folders WHERE task=? ORDER BY rowid','all',task);
+  }
+
+  addTaskFolder(task, name, path) {
+    this.checkAttachmentTarget(task);
+    const existing = this.query('SELECT id,name,path FROM task_folders WHERE task=? AND path=?','get',task,path);
+    if (existing) return existing;
+    const id = randomUUID();
+    this.query('INSERT INTO task_folders (id,task,name,path) VALUES (?,?,?,?)','run',id,task,name,path);
+    return {id,name,path};
+  }
+
+  removeTaskFolder(task, id) {
+    this.checkAttachmentTarget(task);
+    if (this.query("SELECT id FROM runs WHERE task=? AND status='running'",'get',task)) throw new RequestError(409,'请结束当前执行后再移除目录');
+    const result = this.query('DELETE FROM task_folders WHERE task=? AND id=?','run',task,id);
+    if (!result.changes) throw new RequestError(404,'该会话中没有挂载此目录');
+    return {id,deleted:true};
   }
 
   addFile(task, run, name, kind, bytes) {
     const id = randomUUID();
     const sha256 = createHash('sha256').update(bytes).digest('hex');
-    this.query('INSERT INTO task_files VALUES (?, ?, ?, ?, ?, ?, ?)', 'run', id, task, run, name, kind, sha256, bytes);
+    this.query('INSERT INTO task_files (id,task,run,name,kind,sha256,bytes) VALUES (?, ?, ?, ?, ?, ?, ?)', 'run', id, task, run, name, kind, sha256, bytes);
     return {id, run, name, kind, sha256, size: bytes.length};
+  }
+
+  addDiskAttachment(task, {id, name, kind, sha256, size, diskPath, relativePath, workspacePath}) {
+    return this.transaction(() => {
+      this.checkAttachmentTarget(task);
+      if (this.query('SELECT id FROM task_files WHERE task=? AND workspace_path=?','get',task,workspacePath)) throw new RequestError(409,'本批文件中存在重复路径');
+      this.query('INSERT INTO task_files (id,task,run,name,kind,sha256,bytes,disk_path,stored_size,relative_path,workspace_path) VALUES (?,?,NULL,?,?,?, ?,?,?,?,?)',
+        'run',id,task,name,kind,sha256,Buffer.alloc(0),diskPath,size,relativePath,workspacePath);
+      return {id,run:null,name,kind,sha256,size,relativePath,workspacePath};
+    });
   }
 
   file(task, id) {
     const file = this.query('SELECT * FROM task_files WHERE task = ? AND id = ?', 'get', task, id);
     if (!file) throw new RequestError(404, '该任务中没有这个文件');
+    file.size = file.stored_size ?? file.bytes.length;
+    if (file.disk_path) Object.defineProperty(file,'bytes',{enumerable:false,get:()=>readFileSync(file.disk_path)});
     return file;
   }
 
-  removeAttachment(task, id, cleanup = () => {}) {
+  removeAttachment(task, id, cleanup = () => {}, detachUsed = false) {
     return this.transaction(() => {
       const current = this.query('SELECT archived FROM tasks WHERE id = ?', 'get', task);
       if (!current) throw new RequestError(404, '任务不存在');
       if (current.archived) throw new RequestError(409, '请先恢复会话再删除附件');
       const file = this.file(task, id);
       if (file.run) throw new RequestError(409, '这是执行产物，不能作为待发送附件删除');
+      if (this.query("SELECT id FROM runs WHERE task = ? AND status = 'running'", 'get', task)) {
+        throw new RequestError(409,'请结束当前执行后再移除附件');
+      }
       const used = this.query('SELECT id FROM runs WHERE task = ? AND input_file = ? LIMIT 1', 'get', task, id) ||
         this.query(`SELECT e.run FROM events e JOIN runs r ON r.id = e.run, json_tree(e.payload) j
           WHERE r.task = ? AND e.type = 'request_context' AND j.key = 'id' AND j.value = ? LIMIT 1`, 'get', task, id);
-      if (used) throw new RequestError(409, '该附件已用于执行记录，不能作为待发送附件删除');
-      cleanup(file);
+      if (used && !detachUsed) throw new RequestError(409, '该附件已用于执行记录，不能作为待发送附件删除');
+      cleanup(file, Boolean(used));
+      if (used) {
+        this.query('UPDATE task_files SET detached=1 WHERE task=? AND id=?', 'run',task,id);
+        return {deleted:true, id, detached:true, file:{id,name:file.name,kind:file.kind,relativePath:file.relative_path}};
+      }
       this.query('DELETE FROM task_files WHERE task = ? AND id = ?', 'run', task, id);
       return {deleted: true, id};
     });

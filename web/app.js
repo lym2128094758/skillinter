@@ -1,7 +1,10 @@
+import {captureDrop,createBrowserFolderAccess} from './browser-folders.js';
+
 const studioModule = await import('./skill-studio.js').catch(() => null);
 const planModule = await import('./task-plan.js').catch(() => null);
 const skillRuntimeModule = await import('./skill-runtime.js').catch(() => null);
 const optimizerModule = await import('./prompt-optimizer.js').catch(() => null);
+const outcomeModule = await import('./run-outcome.js').catch(() => null);
 
 const $ = id => document.getElementById(id);
 const statusText = {running: '执行中', completed: '已完成', stopped: '已停止', failed: '执行失败', interrupted: '已中断', needs_input: '等待补充', budget_exhausted: '预算耗尽'};
@@ -18,6 +21,7 @@ const clockLabels = new Map();
 let draftKey = 'new', draftReady = false;
 let selectedSkill = null;
 let projects = [], projectsAvailable = false, projectBusy = false, savingAccess = false;
+const browserFolderAccess = createBrowserFolderAccess(api);
 const collapsedGroups = new Set();
 const accessLabels = {attachments: '仅附件', project_read: '项目只读', project_write: '项目读写', full: '全盘读写'};
 
@@ -158,9 +162,11 @@ function restoreDraft() {
 function drawRunStatus(label, run) {
   const seconds = run.config?.started ? Math.max(0, Math.round(((run.ended ?? Date.now()) - run.config.started) / 1000)) : null;
   const skill = run.config?.customSkill;
-  label.textContent = [statusText[run.status], run.config?.model, skill ? `${skill.name} · v${skill.version}` : null, run.config?.mode === 'skill' ? null : effortLabels[run.config?.effort ?? 'default'],
+  const outcome = outcomeModule?.summarizeRun(run) ?? run.outcome;
+  label.textContent = [outcome?.label ?? statusText[run.status], run.config?.model, skill ? `${skill.name} · v${skill.version}` : null, run.config?.mode === 'skill' ? null : effortLabels[run.config?.effort ?? 'default'],
     run.config?.fileScope?.mode !== 'attachments' ? accessLabels[run.config?.fileScope?.mode] : null,
     seconds === null ? null : `${seconds} 秒`].filter(Boolean).join(' · ');
+  label.title = outcome?.blockers?.map(item => item.message).join('\n') ?? '';
 }
 setInterval(() => {
   for (const [label, run] of clockLabels) if (run.status === 'running') drawRunStatus(label, run);
@@ -430,45 +436,99 @@ function imagePreview(taskId, file) {
   return link;
 }
 
+function folderCard(folder, connected, historical = false) {
+  const card = document.createElement('div'); card.className = 'composer-attachment folder-card mounted-folder';
+  const body = document.createElement('div');
+  body.className = 'folder-card-body';
+  body.title = connected ? connected.path ?? '按需读取本机文件夹' : '历史文件夹';
+  const icon = document.createElement('span');
+  icon.className = 'folder-card-icon';
+  icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 10h18"/></svg>';
+  const label = document.createElement('span'); label.className = 'folder-card-label';
+  const name = document.createElement('strong'); name.textContent = folder.name;
+  const type = document.createElement('small'); type.textContent = '文件夹';
+  label.append(name,type); body.append(icon,label); card.append(body);
+  if (!connected || task?.archived) return card;
+  const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'attachment-remove';
+  remove.textContent = '×'; remove.title = '从会话移除文件夹'; remove.setAttribute('aria-label',`移除文件夹 ${folder.name}`);
+  remove.onclick = async () => {
+    const owner = task;
+    remove.disabled = true;
+    try {
+      await api(`/api/tasks/${owner.id}/folders/${folder.id}`,{},'DELETE');
+      if (connected.browser) browserFolderAccess.remove(folder.id);
+      owner.folders = owner.folders.filter(item => item.id !== folder.id);
+      if (task?.id === owner.id) {
+        if (historical) { remove.remove(); body.title = '历史文件夹'; }
+        drawFiles(); showError();
+      }
+    } catch (error) { showError(error); remove.disabled = false; }
+  };
+  card.append(remove);
+  return card;
+}
+
 function drawFiles(selected = $('analysis-file').value) {
   const files = task?.files ?? [];
+  const sentFolders = new Set(task?.runs.flatMap(run => (run.inputFolders ?? []).map(folder => folder.id)));
+  const folders = (task?.folders ?? []).filter(folder => !sentFolders.has(folder.id));
   const choices = $('analysis-file');
-  choices.replaceChildren(new Option('不选本轮附件', ''), ...files.map(file => new Option(file.name, file.id)));
+  choices.replaceChildren(new Option('不选本轮附件', ''));
+  for (const file of files) choices.append(new Option(file.relativePath ?? file.name, file.id));
   choices.value = files.some(file => file.id === selected) ? selected : '';
   choices.hidden = true;
   const file = files.find(file => file.id === choices.value);
-  $('task-files').hidden = !file;
-  $('composer-files').hidden = !file;
+  $('task-files').hidden = !files.length && !folders.length;
+  $('composer-files').hidden = !files.length && !folders.length;
   $('task-files').replaceChildren();
-  if (file) {
+  for (const folder of folders) $('task-files').append(folderCard(folder,folder));
+  const removeFile = async (file, button) => {
+    const owner = task;
+    button.disabled = true;
+    try {
+      const result = await api(`/api/tasks/${owner.id}/files/${file.id}`, {detachUsed:true}, 'DELETE');
+      if (result.detached) for (const run of owner.runs) if (run.input_file === file.id) run.inputAttachment = result.file;
+      owner.files = owner.files.filter(item => item.id !== file.id);
+      if (task?.id === owner.id) {
+        drawFiles(); saveDraft(); showError(); $('prompt').focus();
+      }
+    } catch (error) { showError(error); button.disabled = false; }
+  };
+  if (files.length > 24) {
+    const summary = document.createElement('button');
+    summary.type = 'button';
+    summary.textContent = `${files.length} 个附件`;
+    summary.setAttribute('popovertarget', 'composer-menu');
+    summary.onclick = () => { $('saved-attachments').open = true; };
+    $('task-files').append(summary);
+  }
+  const cards = files.length > 24 ? files.slice(0,24) : files;
+  if (file && !cards.includes(file)) cards[23] = file;
+  for (const file of cards) {
     const card = document.createElement('div'); card.className = 'composer-attachment';
-    const preview = file.kind === 'image' ? imagePreview(task.id, file) : fileLink(task.id, file);
+    const path = file.relativePath ?? file.name;
+    const preview = file.kind === 'image' ? imagePreview(task.id, file) : fileLink(task.id, file, path);
+    preview.title = path;
     const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'attachment-remove';
-    remove.textContent = '×'; remove.title = '删除附件'; remove.setAttribute('aria-label', `删除附件 ${file.name}`);
-    remove.onclick = async () => {
-      const owner = task;
-      remove.disabled = true;
-      try {
-        await api(`/api/tasks/${owner.id}/files/${file.id}`, {}, 'DELETE');
-        owner.files = owner.files.filter(item => item.id !== file.id);
-        if (task?.id === owner.id) {
-          drawFiles(''); saveDraft();
-          if ($('selection-status').textContent.startsWith('附件已保存')) $('selection-status').textContent = '';
-          showError(); $('prompt').focus();
-        }
-      } catch (error) { showError(error); remove.disabled = false; }
-    };
+    remove.textContent = '×'; remove.title = '移除附件'; remove.setAttribute('aria-label', `移除附件 ${path}`);
+    remove.onclick = () => removeFile(file, remove);
     card.append(preview, remove); $('task-files').append(card);
   }
   $('saved-attachments').hidden = !files.length;
-  $('saved-attachment-list').replaceChildren(...files.map(file => {
+  const rows = document.createDocumentFragment();
+  for (const file of files) {
+    const row = document.createElement('div'); row.className = 'saved-attachment-row';
     const button = document.createElement('button'); button.type = 'button';
-    const label = document.createElement('span'); label.className = 'glass-label'; label.textContent = file.name;
+    const path = file.relativePath ?? file.name;
+    const label = document.createElement('span'); label.className = 'glass-label'; label.textContent = path;
     button.append(label);
-    button.title = `附带 ${file.name}`;
+    button.title = `选用 ${path}`;
     button.onclick = () => { drawFiles(file.id); saveDraft(); $('composer-menu').hidePopover(); $('prompt').focus(); };
-    return button;
-  }));
+    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×';
+    remove.setAttribute('aria-label', `删除附件 ${path}`); remove.onclick = () => removeFile(file, remove);
+    row.append(button, remove); rows.append(row);
+  }
+  $('saved-attachment-list').replaceChildren(rows);
 }
 
 function drawCapabilityFit(panel, decision) {
@@ -609,6 +669,49 @@ function drawSkillEvidence(container, taskId, run) {
   graph.textContent = '在图谱定位';
   graph.onclick = () => void showGraph(true, run.skill.id);
   container.replaceChildren(detail, graph, ...run.artifacts.map(file => fileLink(taskId, file, '下载分析报告')));
+}
+
+function drawCitationVerification(panel, taskId, run) {
+  const record = run.citationVerification;
+  panel.hidden = !record;
+  if (!record) return;
+  const summary = document.createElement('summary');
+  summary.textContent = '引用原文核验 · ' + ({passed: '通过', failed: '未通过', unknown: '未确认'}[record.status]);
+  const description = document.createElement('p');
+  description.textContent = `核对 ${record.sources.length} 份本轮读取文件，校准 ${record.corrections.length} 处行号。结论的判断仍需结合原文复核。`;
+  const list = document.createElement('ul');
+  for (const correction of record.corrections) {
+    const item = document.createElement('li');
+    item.textContent = `${correction.path} · 第 ${correction.originalLine} 行 → 第 ${correction.resolvedLine} 行`;
+    list.append(item);
+  }
+  for (const issue of record.issues) {
+    const item = document.createElement('li');
+    item.textContent = issue.message;
+    list.append(item);
+  }
+  panel.replaceChildren(summary, description, list,
+    fileLink(taskId, record.artifact, '下载原始回复与引用核验记录'));
+}
+
+function drawTaskCapabilities(panel,run) {
+  const brief=run.taskBrief,external=run.externalSkills??[];
+  panel.hidden=!brief&&!external.length;if(panel.hidden)return;
+  const text=(tag,value)=>{const el=document.createElement(tag);el.textContent=value;return el;};
+  panel.replaceChildren(text('summary','任务理解与技能选择'));
+  if(brief) {
+    panel.append(text('p',brief.objective));
+    for(const [label,items]of [['约束',brief.constraints],['交付要求',brief.deliverables],['假设（未确认）',brief.assumptions],['待补充',brief.questions]]) {
+      if(items?.length)panel.append(text('p',label+'：'+items.join('；')));
+    }
+    const list=document.createElement('ol');
+    for(const step of brief.steps)list.append(text('li',step.title+' · '+(step.gap?'没有匹配的本地技能':step.candidates.map(item=>item.name).join('、'))));
+    panel.append(list,text('p','依据 '+brief.sources.length+' 条本轮读取回执；原始用户要求保持不变。'));
+  }
+  for(const item of external) {
+    const row=text('p',item.name+' · '+(item.status==='adopted'?'本轮采用方法，未验证':'外部候选')+' · '+item.license+' ');
+    const link=text('a','查看来源');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';row.append(link);panel.append(row);
+  }
 }
 
 async function api(path, data, method = 'POST') {
@@ -762,7 +865,7 @@ function drawAccessOptions() {
   const mode = $('access-mode').value;
   const project = projects.find(item => item.id === $('access-project').value);
   const help = {
-    attachments: 'Agent 只能读取此会话的附件。',
+    attachments: 'Agent 只能读取此会话的附件和已挂载目录。',
     project_read: 'Agent 可以列目录和读取项目内的 UTF-8 文本。',
     project_write: 'Agent 可以读取、创建和修改项目内的 UTF-8 文本。',
     full: 'Agent 可以访问本机账号有权限的各盘文本文件。项目外路径请使用绝对路径。',
@@ -1008,13 +1111,54 @@ function showSettingsPage(page) {
   $('settings-load').hidden = page === 'archive' || !$('settings-load').textContent;
   document.querySelector('.settings-content').scrollTop = 0;
   if (page === 'archive') void loadArchive();
+  if (page === 'github') void refreshGithub();
 }
+
+let githubPoll;
+function drawGithub(value) {
+  const labels={environment:'环境配置','git-credential-manager':'本机登录','saved-token':'已保存令牌',anonymous:'未登录',disconnected:'已断开','unreadable-token':'本机凭据不可读取'};
+  $('github-status').textContent=value.connected?'已连接 · '+value.login+' · '+(labels[value.source]??value.source):value.error??labels[value.source]??'未连接';
+  $('github-disconnect').disabled=value.source==='disconnected';
+  const pending=['starting','waiting'].includes(value.device?.status);
+  $('github-login').disabled=pending;
+  $('github-device').hidden=!value.device?.code||!pending;
+  $('github-device-code').textContent=value.device?.code??'';
+  if(value.device?.error)$('github-status').textContent=value.device.error;
+  if(pending){clearTimeout(githubPoll);githubPoll=setTimeout(()=>{if($('settings-dialog').open&&!$('github-view').hidden)void refreshGithub();},1500);}
+  else clearTimeout(githubPoll);
+}
+async function refreshGithub(refresh=false) {
+  try {drawGithub(await api('/api/skill-intelligence/github'+(refresh?'?refresh=1':'')));}
+  catch(error){$('github-status').textContent=error.message;}
+}
+async function changeGithub(action,token) {
+  $('github-status').textContent='正在处理连接…';
+  try {
+    const value=await api('/api/skill-intelligence/github',{action,...(token?{token}:{})});
+    $('github-token').value='';
+    if(action==='login'){drawGithub({source:'anonymous',device:value.device});void refreshGithub();}
+    else drawGithub(value);
+  } catch(error){$('github-status').textContent=error.message;}
+}
+$('github-login').onclick=()=>void changeGithub('login');
+$('github-reuse').onclick=()=>void changeGithub('reuse');
+$('github-refresh').onclick=()=>void refreshGithub(true);
+$('github-disconnect').onclick=()=>void changeGithub('disconnect');
+$('github-copy-code').onclick=()=>void navigator.clipboard.writeText($('github-device-code').textContent).catch(()=>{});
+$('github-token-form').onsubmit=event=>{event.preventDefault();void changeGithub('token',$('github-token').value.trim());};
+$('settings-dialog').addEventListener('close',()=>{clearTimeout(githubPoll);$('github-token').value='';});
 
 function drawModelMode() {
   const mode = $('model-mode').value;
   const custom = mode === 'api';
   $('api-fields').hidden = !custom;
   $('api-endpoint').disabled = !custom;
+  $('model-connection').disabled = !custom || savingPreferences;
+  $('model-connection-name').disabled = !custom || savingPreferences;
+  const canSwitch = custom && $('model-connection').value &&
+    (preferences?.mode !== 'api' || $('model-connection').value !== preferences.connectionId);
+  $('use-model-connection').hidden = !canSwitch;
+  $('use-model-connection').disabled = savingPreferences;
   $('api-key').disabled = !custom || !preferences?.canStoreKey || $('clear-key').checked;
   $('test-model').disabled = !preferences || savingPreferences;
   $('save-model').disabled = !preferences || savingPreferences;
@@ -1031,15 +1175,26 @@ function fillPreferences(data) {
   $('active-model').textContent = data.activeModel;
   $('environment-option').hidden = !data.environmentModel;
   $('model-mode').value = data.mode === 'environment' ? 'environment' : 'api';
-  $('api-endpoint').value = data.endpoint.replace(/\/chat\/completions\/?$/, '');
   $('max-steps').value = data.maxSteps;
+  $('model-connection').replaceChildren(...(data.connections ?? []).map(profile =>
+    new Option(profile.name + (data.mode === 'api' && profile.id === data.connectionId ? ' · 当前使用' : ''),profile.id)),
+    new Option('＋ 新增配置',''));
+  $('model-connection').value = data.connectionId ?? '';
+  fillConnectionDraft();
+}
+
+function fillConnectionDraft() {
+  const profile = preferences?.connections?.find(item => item.id === $('model-connection').value);
+  const unreadable = profile && profile.id === preferences.connectionId && preferences.keyUnreadable;
+  $('model-connection-name').value = profile?.name ?? '';
+  $('api-endpoint').value = profile?.endpoint.replace(/\/chat\/completions\/?$/, '') ?? '';
   $('api-key').value = '';
-  $('api-key').placeholder = data.hasKey ? '•••••••• 已保存，留空继续使用' : '粘贴 API 密钥';
+  $('api-key').placeholder = profile?.hasKey && !unreadable ? '•••••••• 已保存，留空继续使用' : '粘贴 API 密钥';
   $('clear-key').checked = false;
-  $('clear-key-row').hidden = !data.hasKey && !data.keyUnreadable;
-  $('key-help').textContent = data.keyUnreadable ? '已保存的密钥无法读取，请重新填写或清除。'
-    : !data.canStoreKey ? '此系统的密钥请通过 .env 配置。'
-    : data.hasKey ? '密钥已保存。留空继续使用；更换服务地址时请重新填写。'
+  $('clear-key-row').hidden = !profile?.hasKey;
+  $('key-help').textContent = unreadable ? '已保存的密钥无法读取，请重新填写或清除。'
+    : !preferences?.canStoreKey ? '此系统的密钥请通过 .env 配置。'
+    : profile?.hasKey ? '密钥已保存。留空继续使用；更换服务地址时请重新填写。'
     : '按服务商要求填写。本机无需密钥的服务可留空。';
   drawModelMode();
 }
@@ -1048,7 +1203,9 @@ async function applyPreferences(testOnly) {
   if (!preferences || savingPreferences || !$('model-form').reportValidity()) return;
   const mode = $('model-mode').value;
   const payload = {mode, revision: preferences.revision, maxSteps: preferences.maxSteps};
-  if (mode === 'api') Object.assign(payload, {endpoint: $('api-endpoint').value,
+  const name = $('model-connection-name').value.trim();
+  if (mode === 'api') Object.assign(payload, {endpoint: $('api-endpoint').value, connectionId:$('model-connection').value || null,
+    ...(name ? {name} : {}),
     key: $('api-key').value, clearKey: $('clear-key').checked});
   savingPreferences = true;
   drawModelMode();
@@ -1067,6 +1224,19 @@ async function applyPreferences(testOnly) {
     }
   } catch (error) { settingsMessage('model-feedback', error.message, 'error'); }
   finally { savingPreferences = false; drawModelMode(); }
+}
+
+async function switchModelConnection() {
+  const connectionId = $('model-connection').value;
+  if (!preferences || !connectionId || savingPreferences) return;
+  savingPreferences = true;
+  drawModelMode();
+  try {
+    fillPreferences(await api('/api/settings/switch',{revision:preferences.revision,connectionId}));
+    settingsMessage('model-feedback','已切换，从下一轮执行起生效。');
+    void loadModels(true);
+  } catch (error) {settingsMessage('model-feedback',error.message,'error');}
+  finally {savingPreferences = false; drawModelMode();}
 }
 
 async function loadArchive() {
@@ -1126,6 +1296,7 @@ function updateControls() {
   $('send').setAttribute('aria-label', sendLabel);
   $('try-tool').disabled = $('send').disabled || !!active;
   $('attach').disabled = sending || loading || uploading || projectBusy || !!task?.archived;
+  $('attach-folder').disabled = $('attach').disabled;
   $('composer-add').disabled = $('attach').disabled && $('try-tool').disabled;
   $('analysis-file').disabled = $('attach').disabled;
   $('open-audit').disabled = $('attach').disabled;
@@ -1229,7 +1400,7 @@ function appendEvent(list, {seq, type, payload}) {
   const icon = document.createElement('span');
   icon.className = 'execution-icon'; icon.setAttribute('aria-hidden', 'true');
   const failed = type === 'budget_denied' || type === 'worker_read' && !payload.ok ||
-    type === 'worker_finished' && payload.status !== 'completed' || output?.ok === false || (output?.data?.kind === 'project_tests' && output.data.status !== 'passed') ||
+    type === 'worker_finished' && payload.status !== 'completed' || output?.ok === false || (['project_tests','python_execution'].includes(output?.data?.kind) && output.data.status !== 'passed') ||
     (output?.data?.kind === 'material_preflight' && output.data.status === 'needs_input') ||
     (type === 'finished' && ['failed', 'stopped', 'interrupted', 'budget_exhausted'].includes(payload.status));
   const pending = type === 'tool' || type === 'worker_started';
@@ -1270,14 +1441,14 @@ function appendEvent(list, {seq, type, payload}) {
 function showTestApproval(panel, run, proposal) {
   panel.dataset.approval = proposal.id;
   const title = document.createElement('strong');
-  title.textContent = '运行项目测试？';
+  title.textContent = proposal.purpose==='python_execution'?'运行 Python 脚本？':'运行项目测试？';
   const command = document.createElement('code');
   command.textContent = proposal.command;
   command.title = proposal.executable;
   const directory = document.createElement('p');
   directory.textContent = proposal.cwd;
   const note = document.createElement('p');
-  note.textContent = '测试代码会以当前系统账号运行，具有该账号的文件和网络权限。每次确认仅授权这一次。';
+  note.textContent = '代码会以当前系统账号运行，具有该账号的文件和网络权限，不是沙箱。每次确认仅授权这一次。';
   const actions = document.createElement('div'); actions.className = 'actions';
   const buttons = [['approve', '确认运行'], ['decline', '跳过测试']].map(([decision, label]) => {
     const button = document.createElement('button'); button.type = 'button'; button.textContent = label;
@@ -1361,6 +1532,10 @@ function drawTranscript() {
     if (!planModule) planPanel.hidden = true;
     evidence.className = 'skill-evidence';
     drawSkillEvidence(evidence, taskId, run);
+    const citationPanel = document.createElement('details');
+    citationPanel.className = 'task-plan';
+    drawCitationVerification(citationPanel, taskId, run);
+    const taskCapabilities=document.createElement('details');taskCapabilities.className='task-plan';drawTaskCapabilities(taskCapabilities,run);
     const runStatus = document.createElement('p');
     runStatus.className = 'run-status';
     drawRunStatus(runStatus, run);
@@ -1378,13 +1553,19 @@ function drawTranscript() {
       line.textContent = `${item.applied ? '已应用引导' : run.status === 'running' ? '等待应用引导' : '未应用引导'} · ${item.prompt}`;
     }
     for (const item of run.guidance ?? []) showGuidance(item);
-    const sourceFile = task.files?.find(file => file.id === run.input_file);
+    const sourceFile = run.inputAttachment ?? task.files?.find(file => file.id === run.input_file);
     if (sourceFile?.kind === 'image') {
       const images = document.createElement('div'); images.className = 'message-images';
       images.append(imagePreview(taskId, sourceFile));
       row.append(images);
     }
-    row.append(prompt, runStatus, guidance, skillPanel, planPanel, capabilityFit, testPanel, answer, evidence, details);
+    row.append(prompt);
+    if (run.inputFolders?.length) {
+      const folders = document.createElement('div'); folders.className = 'message-folders';
+      for (const folder of run.inputFolders) folders.append(folderCard(folder,task.folders?.find(item => item.id === folder.id),true));
+      row.append(folders);
+    }
+    row.append(runStatus, guidance, taskCapabilities, skillPanel, planPanel, capabilityFit, testPanel, answer, citationPanel, evidence, details);
     const actions = document.createElement('div');
     actions.className = 'reply-actions';
     const copy = document.createElement('button');
@@ -1428,9 +1609,11 @@ function drawTranscript() {
     improveSkill.onclick = () => studio?.openFromRun(run, usedSkill());
     const experience=document.createElement('button');experience.type='button';experience.onclick=()=>studio?.openExperiences(run);
     function drawStudioActions() {
-      const available = studio && run.status === 'completed' && Boolean(run.answer?.trim());
+      const available = studio && (outcomeModule?.canDraftFromRun(run) ??
+        (run.status === 'completed' && Boolean(run.answer?.trim())));
       saveSkill.hidden = !available;
       improveSkill.hidden = !available || !usedSkill();
+      saveSkill.textContent = run.status === 'completed' ? '保存为技能' : '从执行记录提炼技能';
       experience.hidden=!studio||!run.experience;
       experience.textContent=run.experience?'发现可提炼经验 · '+run.experience.signals.length+' 条线索':'';
     }
@@ -1450,6 +1633,12 @@ function drawTranscript() {
           return;
         }
         appendEvent(list, event);
+        if(event.type==='task_brief'){run.taskBrief=event.payload;taskCapabilities.open=true;drawTaskCapabilities(taskCapabilities,run);}
+        if(event.type==='external_skill_discovery'||event.type==='external_skill_adopted'){
+          const items=event.type==='external_skill_discovery'?event.payload.candidates:[event.payload];
+          run.externalSkills=[...new Map([...(run.externalSkills??[]),...items].map(item=>[item.id,item])).values()];
+          drawTaskCapabilities(taskCapabilities,run);
+        }
         if (event.type === 'capability_fit') {
           run.capabilityFit = event.payload;
           drawCapabilityFit(capabilityFit, run.capabilityFit);
@@ -1460,12 +1649,12 @@ function drawTranscript() {
           testPanel.hidden = true;
         }
         if (event.type === 'project_test_started' && run.status === 'running') {
-          testPanel.textContent = `正在运行项目测试 · ${event.payload.command}`;
+          testPanel.textContent = `${event.payload.purpose==='python_execution'?'正在运行 Python':'正在运行项目测试'} · ${event.payload.command}`;
           testPanel.hidden = false;
         }
-        if (event.type === 'tool_result' && event.payload.name === 'run_project_tests' && run.status === 'running') {
+        if (event.type === 'tool_result' && ['run_project_tests','run_python'].includes(event.payload.name) && run.status === 'running') {
           const {output} = event.payload;
-          testPanel.textContent = output.ok ? `${output.data.summary} 耗时 ${(output.data.volatile.elapsedMs / 1000).toFixed(1)} 秒。` : output.error.message;
+          testPanel.textContent = output.ok ? `${output.data.summary??('Python '+(output.data.status==='passed'?'进程完成':'执行失败'))} 耗时 ${(output.data.volatile.elapsedMs / 1000).toFixed(1)} 秒。` : output.error.message;
           testPanel.hidden = false;
         }
         if (event.type === 'skill_route') { run.skillRoute = event.payload; skillPanel.open = true; drawSkillRuntime(); }
@@ -1491,7 +1680,7 @@ function drawTranscript() {
           if (!run.planReceipts.some(receipt => receipt.seq === event.seq)) run.planReceipts.push({
             seq: event.seq, name: event.payload.name, planStep: event.payload.planStep, planRevision: event.payload.planRevision,
             planStepTitle: event.payload.planStepTitle,
-            ...(event.payload.planOutcome ?? {ok: event.payload.output.ok && (event.payload.output.data?.kind !== 'project_tests' || event.payload.output.data.status === 'passed') &&
+            ...(event.payload.planOutcome ?? {ok: event.payload.output.ok && (!['project_tests','python_execution'].includes(event.payload.output.data?.kind) || event.payload.output.data.status === 'passed') &&
               (event.payload.output.data?.kind !== 'material_preflight' || event.payload.output.data.status === 'completed'),
             message: ['project_tests', 'material_preflight'].includes(event.payload.output.data?.kind) ? event.payload.output.data.summary :
               event.payload.output.ok ? '调用成功' : event.payload.output.error.message}),
@@ -1532,6 +1721,10 @@ function drawTranscript() {
         if (event.type === 'preflight_completed') {
           run.preflight = event.payload;
           drawSkillEvidence(evidence, taskId, run);
+        }
+        if (event.type === 'citation_verification') {
+          run.citationVerification = event.payload;
+          drawCitationVerification(citationPanel, taskId, run);
         }
         if (event.type !== 'finished') return;
         stream.close();
@@ -1595,44 +1788,122 @@ $('attach').onclick = () => {
   $('composer-menu').hidePopover();
   $('task-upload').click();
 };
-$('task-upload').onchange = event => {
-  const file = event.target.files[0];
-  event.target.value = '';
-  void uploadFile(file);
+$('attach-folder').onclick = () => {
+  $('composer-menu').hidePopover();
+  openFolderMount();
 };
-async function uploadFile(file) {
-  if (!file || uploading || sending || loading || task?.archived) return;
-  if (file.size > 2 * 1024 * 1024) {
-    showError(new Error('单个附件不能超过 2 MB。'));
-    return;
+$('task-upload').onchange = event => {
+  const files = [...event.target.files];
+  event.target.value = '';
+  if (files.length) void uploadFiles(files.map(file => ({file, path:file.name})));
+};
+
+const mountDialog = $('mount-folder-dialog');
+const mountForm = $('mount-folder-form');
+let mountPicker;
+function openFolderMount() {
+  if ($('attach-folder').disabled || mountDialog.open) return;
+  mountForm.reset();
+  dialogError(mountDialog);
+  $('mount-folder-note').textContent = 'SIH 会直接读取本机原目录。';
+  mountDialog.showModal();
+  $('mount-folder-path').focus();
+}
+mountDialog.addEventListener('close', () => mountPicker?.abort());
+$('cancel-mount-folder').onclick = () => mountDialog.close();
+$('browse-mount-folder').onclick = async () => {
+  if (mountPicker) return;
+  const controller = mountPicker = new AbortController();
+  $('browse-mount-folder').disabled = true;
+  dialogError(mountDialog);
+  try {
+    const response = await fetch('/api/local-folder-picker',{method:'POST',headers:{'content-type':'application/json'},body:'{}',signal:controller.signal});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    if (result.path && mountDialog.open) $('mount-folder-path').value = result.path;
+  } catch (error) { if (!controller.signal.aborted) dialogError(mountDialog,error); }
+  finally { mountPicker = undefined; $('browse-mount-folder').disabled = false; }
+};
+mountForm.onsubmit = async event => {
+  event.preventDefault();
+  if (projectBusy || uploading || sending) return;
+  const button = mountForm.querySelector('[type=submit]');
+  const path = $('mount-folder-path').value;
+  projectBusy = button.disabled = true;
+  updateControls();
+  dialogError(mountDialog);
+  try {
+    const owner = await ensureAttachmentTask();
+    const folder = await api(`/api/tasks/${owner.id}/folders`,{path});
+    owner.folders ??= [];
+    if (!owner.folders.some(item=>item.id===folder.id)) owner.folders.push(folder);
+    if (task?.id === owner.id) { drawFiles(); saveDraft(); showError(); }
+    mountDialog.close();
+    $('prompt').focus();
+  } catch(error) { dialogError(mountDialog,error); }
+  finally { projectBusy = button.disabled = false; updateControls(); }
+};
+
+async function ensureAttachmentTask() {
+  if (task) return task;
+  const owner = task = {...await api('/api/tasks', {}), runs: [], files: [], folders: []};
+  draftKey = owner.id;
+  localStorage.setItem('skillinter-task', owner.id);
+  saveDraft();
+  try { localStorage.removeItem('sih-draft-new'); } catch { /* Browser storage may be disabled. */ }
+  if (modelChoice || effortChoice !== 'default') {
+    Object.assign(owner, await api(`/api/tasks/${owner.id}`, {model_id:modelChoice,effort:effortChoice},'PATCH'));
   }
+  tasks = await api('/api/tasks');
+  drawTasks();
+  return owner;
+}
+
+async function uploadFile(file) {
+  return file ? uploadFiles([{file, path: file.name}]) : undefined;
+}
+
+async function uploadFiles(items) {
+  if (uploading || sending || loading || task?.archived) return;
   uploading = true;
   showError();
   updateControls();
+  let owner = task, last, count = 0, failed = 0, firstError;
+  const batch = crypto.randomUUID();
   try {
-    if (!task) {
-      task = {...await api('/api/tasks', {}), runs: [], files: []};
-      draftKey = task.id;
-      localStorage.setItem('skillinter-task', task.id);
-      if (modelChoice || effortChoice !== 'default') Object.assign(task, await api(`/api/tasks/${task.id}`, {model_id: modelChoice, effort: effortChoice}, 'PATCH'));
-      tasks = await api('/api/tasks');
-      drawTasks();
+    for await (const {file, path} of items) {
+      owner ??= await ensureAttachmentTask();
+      if (task?.id === owner.id) $('selection-status').textContent = `正在添加 ${path}，已保存 ${count} 个文件`;
+      try {
+        const response = await fetch(`/api/tasks/${owner.id}/files?${new URLSearchParams({name: file.name, path, batch})}`, {
+          method: 'POST', headers: {'content-type': 'application/octet-stream'}, body: file,
+        });
+        const uploaded = await response.json();
+        if (!response.ok) throw new Error(uploaded.error);
+        owner.files.push(uploaded);
+        last = uploaded;
+        count++;
+      } catch (error) {
+        failed++;
+        firstError ??= `${path}：${error.message}`;
+      }
     }
-    const response = await fetch(`/api/tasks/${task.id}/files?${new URLSearchParams({name: file.name})}`, {
-      method: 'POST', headers: {'content-type': 'application/octet-stream'}, body: file,
-    });
-    const uploaded = await response.json();
-    if (!response.ok) throw new Error(uploaded.error);
-    task.files.push(uploaded);
-    drawFiles(uploaded.id);
-    if (task?.runs.some(run => run.status === 'running')) {
-      $('selection-status').textContent = '附件已保存，将从下一轮使用。本轮引导仅发送文字。';
+  } catch (error) {
+    failed++;
+    firstError ??= error.message;
+  } finally {
+    uploading = false;
+    if (task?.id === owner?.id) {
+      if (last) { drawFiles(count === 1 ? last.id : $('analysis-file').value); saveDraft(); }
+      const active = task?.runs.some(run => run.status === 'running');
+      $('selection-status').textContent = count ? `已保存 ${count} 个附件${active ? '，下轮可用' : ''}` : '';
+      if (failed) showError(new Error(`${failed} 项未完成。${firstError}`));
+      else if (!count) showError(new Error('没有找到可上传的文件。'));
+      $('prompt').focus();
     }
-    saveDraft();
-    $('prompt').focus();
-    return uploaded;
-  } catch (error) { showError(error); }
-  finally { uploading = false; updateControls(); }
+    updateControls();
+  }
+  return last;
 }
 $('composer').addEventListener('dragover', event => {
   if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); $('composer').classList.add('file-drag'); }
@@ -1643,7 +1914,30 @@ $('composer').addEventListener('dragleave', event => {
 $('composer').addEventListener('drop', async event => {
   event.preventDefault();
   $('composer').classList.remove('file-drag');
-  for (const file of event.dataTransfer.files) await uploadFile(file);
+  if ($('attach-folder').disabled) return;
+  const getItems = captureDrop(event.dataTransfer);
+  uploading = true;
+  updateControls();
+  let files = [], folderError;
+  try {
+    const dropped = await getItems();
+    files = dropped.files;
+    if (dropped.folders.length) {
+      const owner = await ensureAttachmentTask();
+      owner.folders ??= [];
+      for (const root of dropped.folders) {
+        try {owner.folders.push(await browserFolderAccess.add(owner.id,root));}
+        catch (error) {folderError ??= error;}
+      }
+      drawFiles();saveDraft();
+    }
+  } catch (error) {folderError = error;}
+  finally {
+    uploading = false;
+    updateControls();
+  }
+  if (files.length) await uploadFiles(files.map(file => ({file,path:file.name})));
+  if (folderError) showError(folderError);
 });
 $('prompt').addEventListener('paste', async event => {
   const images = [...(event.clipboardData?.items ?? [])].filter(item => item.kind === 'file' && item.type.startsWith('image/'));
@@ -1756,6 +2050,8 @@ for (const button of document.querySelectorAll('[data-settings-page]')) {
   button.onclick = () => showSettingsPage(button.dataset.settingsPage);
 }
 $('model-mode').onchange = drawModelMode;
+$('model-connection').onchange = () => {fillConnectionDraft(); settingsMessage('model-feedback');};
+$('use-model-connection').onclick = () => void switchModelConnection();
 $('clear-key').onchange = () => { if ($('clear-key').checked) $('api-key').value = ''; drawModelMode(); };
 $('test-model').onclick = () => void applyPreferences(true);
 $('model-form').onsubmit = event => { event.preventDefault(); void applyPreferences(false); };
@@ -1822,6 +2118,7 @@ async function submitRun(prompt, diagnostic = false, workflow = null, auditMode 
     if ((task.model_id ?? null) !== modelChoice || (task.effort ?? 'default') !== effortChoice) {
       Object.assign(task, await api(`/api/tasks/${task.id}`, {model_id: modelChoice, effort: effortChoice}, 'PATCH'));
     }
+    if (!diagnostic && !workflow) await browserFolderAccess.restore(task.id);
     if (pending?.prompt !== prompt || pending.file !== file || pending.diagnostic !== diagnostic || (pending.skillId ?? null) !== skillId || (pending.skillVersion ?? null) !== skillVersion ||
         pending.selectedModel !== modelChoice || pending.selectedEffort !== effortChoice || pending.auditMode !== auditMode || Boolean(pending.expandedBudget) !== expandedBudget || JSON.stringify(pending.workflow) !== JSON.stringify(workflow)) {
       pending = {request: crypto.randomUUID(), prompt, file, diagnostic, workflow, auditMode, expandedBudget, selectedModel: modelChoice, selectedEffort: effortChoice, ...(skillId ? {skillId, skillVersion} : {})};

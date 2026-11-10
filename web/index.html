@@ -62,7 +62,7 @@
           <button id="composer-add" class="composer-icon" type="button" popovertarget="composer-menu" aria-label="添加或使用工具" title="添加或使用工具">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
           </button>
-          <input type="file" id="task-upload" hidden>
+          <input type="file" id="task-upload" multiple hidden>
           <button id="open-file-access" class="composer-icon" type="button" aria-label="文件权限" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 7 3v5c0 4.5-3 7.9-7 10-4-2.1-7-5.5-7-10V6zM12 8v4m0 4h.01"/></svg>
           </button>
@@ -150,11 +150,26 @@
     </form>
   </dialog>
   <div id="composer-menu" class="composer-popover" popover="auto" aria-label="附件与工具">
+    <button id="attach-folder" type="button">挂载本机文件夹</button>
     <button id="attach" type="button">添加附件</button>
     <button id="try-tool" type="button" title="在本地试跑一次工作区文件工具">试跑工具</button>
     <details id="saved-attachments" hidden><summary>会话附件</summary><div id="saved-attachment-list"></div></details>
     <p id="attachment-runtime-note" class="status" hidden>任务运行中，新增附件从下一轮使用。本轮引导仅发送文字。</p>
   </div>
+  <dialog id="mount-folder-dialog" aria-labelledby="mount-folder-title">
+    <form id="mount-folder-form" class="folder-form">
+      <h2 id="mount-folder-title">挂载本机文件夹</h2>
+      <p id="mount-folder-note" class="status"></p>
+      <label for="mount-folder-path">本机文件夹路径</label>
+      <input id="mount-folder-path" placeholder="可从资源管理器复制路径" autocomplete="off" spellcheck="false" required>
+      <p class="dialog-error" role="alert" hidden></p>
+      <div class="actions">
+        <button id="cancel-mount-folder" type="button">取消</button>
+        <button id="browse-mount-folder" type="button">浏览本机</button>
+        <button class="primary-action" type="submit">挂载</button>
+      </div>
+    </form>
+  </dialog>
   <div id="model-picker" class="composer-popover" popover="auto" aria-label="选择模型">
     <div class="model-picker-header"><input id="model-search" type="search" aria-label="搜索模型" placeholder="搜索模型"><button id="refresh-models" type="button" aria-label="刷新模型列表">刷新</button></div>
     <p id="catalog-status" role="status"></p>
@@ -230,6 +245,7 @@
     <nav class="settings-nav" aria-label="设置页面">
       <button type="button" data-settings-page="model" aria-controls="model-view" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 4 14 4 14 0V6M5 12v6c0 4 14 4 14 0v-6"/></svg>模型</button>
       <button type="button" data-settings-page="run" aria-controls="run-view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16M8 4v6m8-1v6m-6-1v6"/></svg>运行</button>
+      <button type="button" data-settings-page="github" aria-controls="github-view"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 19v-4m8 4v-4M8 8h8v6H8z"/></svg>GitHub</button>
       <button type="button" data-settings-page="archive" aria-controls="archive-view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v5H4zm2 5v10h12V9m-8 4h4"/></svg>已归档</button>
     </nav>
     <div class="settings-content">
@@ -252,6 +268,13 @@
         <p id="mode-help" class="settings-hint"></p>
         </div>
         <div id="api-fields" class="settings-fields" hidden>
+          <label for="model-connection">已保存的配置</label>
+          <div class="model-connection-row">
+            <select id="model-connection"></select>
+            <button id="use-model-connection" type="button" hidden>使用此配置</button>
+          </div>
+          <label for="model-connection-name">配置名称</label>
+          <input id="model-connection-name" maxlength="80" placeholder="例如 DeepSeek 官方" autocomplete="off">
           <label for="api-endpoint">API 基地址</label>
           <input id="api-endpoint" type="url" maxlength="2048" placeholder="https://example.com/v1" autocomplete="off" required>
           <label for="api-key">API 密钥</label>
@@ -288,6 +311,21 @@
         </div>
         <p id="run-feedback" class="settings-message" role="status" hidden></p>
         <div class="settings-actions"><button id="reset-run" type="button">恢复默认值</button><button class="primary-action" id="save-run" type="submit">保存运行设置</button></div>
+      </form>
+    </section>
+    <section id="github-view" aria-labelledby="github-heading" hidden>
+      <div class="settings-intro"><h3 id="github-heading">GitHub</h3><p>连接你自己的账号，为在线技能发现提供授权。</p></div>
+      <div class="settings-card">
+        <p id="github-status" role="status">正在读取连接状态…</p>
+        <div class="settings-actions"><button id="github-login" type="button" class="primary-action">登录 GitHub</button><button id="github-reuse" type="button">使用本机登录</button><button id="github-refresh" type="button">刷新状态</button><button id="github-disconnect" type="button">断开连接</button></div>
+        <div id="github-device" hidden><p>在 GitHub 授权页输入以下验证码：</p><strong id="github-device-code"></strong> <button id="github-copy-code" type="button">复制验证码</button> <a href="https://github.com/login/device" target="_blank" rel="noopener noreferrer">打开 GitHub 授权页</a></div>
+        <p class="settings-hint">登录使用本机 Git Credential Manager；没有该程序时，可使用下面的访问令牌。断开只停止 SIH 使用授权，不退出其他应用。</p>
+      </div>
+      <form id="github-token-form" class="settings-card">
+        <label for="github-token">GitHub 访问令牌（备用连接方式）</label>
+        <input id="github-token" type="password" autocomplete="new-password" spellcheck="false" maxlength="4096" placeholder="输入你自己的 GitHub Token">
+        <p class="settings-hint">仅需读取技能来源的权限；公开技能库无需写入权限。Windows 下加密保存在当前系统用户的本机状态中，不随源码分享。</p>
+        <div class="settings-actions"><button type="submit">验证并保存连接</button></div>
       </form>
     </section>
     <section id="archive-view" aria-labelledby="archive-heading" hidden>
@@ -420,7 +458,7 @@
           <p class="status">声明项目相对路径和明确的文本或 JSON 判据。运行前冻结，完成时 SIH 重读实际文件；不满足时不能标记技能应用完成。条件需由你按任务目标核对。</p>
           <button id="studio-delivery-example" type="button">填入结构示例</button>
           <label for="studio-delivery">产物契约 JSON（留空表示未声明）</label><textarea id="studio-delivery" rows="9" maxlength="24000" spellcheck="false" placeholder='{"version":1,"preserve_inputs":[],"artifacts":[{"path":"report.json","format":"json","require_change":true,"checks":[{"kind":"json_type","pointer":"/records","expected":"array"}]}]}'></textarea>
-          <p class="status">支持 text_contains / text_excludes（pointer 为空），json_equals（expected 为 JSON 字符串）、json_type、json_length。JSON Pointer 例如 /records/0/value，空字符串指整个文件对象。</p>
+          <p class="status">支持 text_contains / text_excludes（pointer 为空），json_equals（expected 为 JSON 字符串）、json_type、json_length。json_citations 检查 findings 数组中的引用，pointer 指向该数组、expected 为空。JSON Pointer 例如 /records/0/value，空字符串指整个文件对象。</p>
         </details>
         <p id="studio-baseline" class="status"></p>
         <div id="studio-tests" class="studio-list"></div>
