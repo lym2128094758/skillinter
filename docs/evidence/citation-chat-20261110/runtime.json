@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-11-10T12:23:12.438Z",
+  "baseCommit": "8c10aae602279f6191fa9bd9e78570f697f909ab",
+  "workingTree": true,
+  "sha256": {
+    "src/citation-verifier.mjs": "28f04cd831b1b962fbaf321b06db718343f29b006d32249e2f6095292609c020",
+    "src/runner.mjs": "a945eebcbdc7d6167cbe2e8675a5343491d4d4d16af84fcda9dc9b4328951471",
+    "src/skill-delivery.mjs": "c633e96ba4bf1eb13fb2260b647668848e6a71e6888cbb3a04b76443ec19fe6e",
+    "src/skill-session.mjs": "bd4285933b49c7efd75574360626cc222f6819ff9f04bf3f779ac0a98724a998",
+    "src/skill-execution.mjs": "8734db53619e1f773c4d7a7981b087a7c67e7b666d250e5319c898736774c4b3",
+    "src/skill-experiences.mjs": "ce8b050ace864475ffa473a4a5e875eddd769cf4dae357eb42410a94d5be4c42",
+    "src/skill-studio.mjs": "5c60382e3cd4811014044171d2c7e98a5682b0615713fb19f96de34672db6962",
+    "src/store.mjs": "2185d06b55e0d82243016cf734793db2eb19bc76e671e64ba77fafe7210d0fed",
+    "web/app.js": "514c9ed557cb3c209bf02032552008965e35f00a8c2b143a6b3da08cd12772a7",
+    "scripts/check-citation-ui.mjs": "0e6e1559f8297c5793f4f0d859ff2f5591cf66be00ef871f2af51d194947cd9f",
+    "scripts/check-citation-learning.mjs": "a086e7ca1aacd0542412468a55f62f58cbb7967c02d0b384dc5f8fe07434fac4"
+  },
+  "model": "deepseek-v4.1-flash-1017"
+}

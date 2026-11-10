@@ -289,7 +289,12 @@
         <p id="model-feedback" class="settings-message" role="status" hidden></p>
         <div class="settings-actions"><button id="test-model" type="button">测试连接</button><button class="primary-action" id="save-model" type="submit">保存模型设置</button></div>
       </form>
-      <form id="engine-form" class="settings-card">
+      <div class="settings-card">
+        <h4>技能搜索</h4>
+        <p class="settings-hint">模型根据任务搜索当前项目和用户技能，并同时检索已配置的公开 GitHub 技能库。选中的技能会显示在会话的技能链中。</p>
+        <p class="settings-hint">搜索配置的公开来源及 GitHub 上相关的公开技能库。模型生成的检索词会发送到 GitHub。GitHub 授权可在设置中管理。</p>
+      </div>
+      <form id="engine-form" class="settings-card" hidden>
         <h4>SkillNet 技能引擎</h4>
         <label><input id="engine-enabled" type="checkbox">启用混合检索</label>
         <label for="engine-path">SkillNet 源码目录</label>
@@ -306,8 +311,8 @@
       <div class="settings-intro"><h3 id="run-heading">运行</h3><p>限制单轮任务的模型调用和工具循环。</p></div>
       <form id="run-form">
         <div class="settings-card">
-          <div class="settings-setting-row"><div><label for="max-steps">每轮最多模型请求次数</label><p id="steps-help" class="settings-hint">可设为 1 到 12 次。聊天、技能内部规划和供应商重试共用此额度。保存后从下一轮起生效。</p></div>
-          <input id="max-steps" type="number" min="1" max="12" step="1" required aria-describedby="steps-help"></div>
+          <div class="settings-setting-row"><div><label for="max-steps">每轮最多模型请求次数</label><p id="steps-help" class="settings-hint">可设为 1 到 200 次。聊天、技能内部规划和供应商重试共用此额度。保存后从下一轮起生效。</p></div>
+          <input id="max-steps" type="number" min="1" max="200" step="1" required aria-describedby="steps-help"></div>
         </div>
         <p id="run-feedback" class="settings-message" role="status" hidden></p>
         <div class="settings-actions"><button id="reset-run" type="button">恢复默认值</button><button class="primary-action" id="save-run" type="submit">保存运行设置</button></div>

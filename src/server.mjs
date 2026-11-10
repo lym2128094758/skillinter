@@ -762,7 +762,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
               file: attachment, model: config.model, limits, signal: controller.signal, entry}) : executeRun({id: run.id, task, prompt, store, workspace: taskWorkspace, ...config, skill, attachment,
               scope: fileScope ? {...fileScope, state, folders} : null,
               skillRegistrySnapshot:skillRegistry.snapshot(task,localSkills),
-              skillEngine: skillnet.provider(undefined, details => store.record(run.id, 'skill_engine_details', details)),
+              skillEngine: null,
               projectMemories,
               skillSources:appConfig.skillSources,
               githubAccess,

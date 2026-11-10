@@ -91,7 +91,8 @@ test('online discovery pins a real commit and blob hash, reuses results, and onl
   const blob=createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex'),commit='a'.repeat(40),calls=[],events=[];
   const resource='print(1)\n',resourceSha=createHash('sha1').update('blob '+Buffer.byteLength(resource)+'\0').update(resource).digest('hex');
   const fetcher=async url=>{calls.push(url);let body;
-    if(url.endsWith('/commits/HEAD'))body={sha:commit};
+    if(url.includes('/search/repositories?'))body={items:[]};
+    else if(url.endsWith('/commits/HEAD'))body={sha:commit};
     else if(url.includes('/license?ref='+commit))body={license:{spdx_id:'MIT'},sha:'license'};
     else if(url.includes('/git/trees/'+commit))body={sha:'b'.repeat(40),tree:[{type:'blob',path:'skills/math/SKILL.md',sha:blob,size:Buffer.byteLength(text)}]};
     else if(url.endsWith('/git/blobs/'+blob))body={encoding:'base64',size:Buffer.byteLength(text),content:Buffer.from(text).toString('base64')};
@@ -107,7 +108,58 @@ test('online discovery pins a real commit and blob hash, reuses results, and onl
   assert.equal(loaded.data.text,resource);assert.equal(loaded.data.sha256,hash(resource));
   assert.equal((await engine.execute('read_discovered_resource',{id:first.data.candidates[0].id,path:'../secret'})).error.code,'SOURCE_NOT_ALLOWED');
   assert.equal((await engine.execute('adopt_discovered_skill',{id:'invented'})).error.code,'SKILL_NOT_FOUND');
-  assert(calls.every(url=>url.startsWith('https://api.github.com/repos/owner/repo/')));
+  assert(calls.every(url=>url.startsWith('https://api.github.com/repos/owner/repo/') || url.startsWith('https://api.github.com/search/repositories?')));
+});
+
+test('online discovery continues past unreadable candidates until it fills the requested results',async()=>{
+  const commit='a'.repeat(40),records=Array.from({length:5},(_,i)=>{
+    const text=`---\nname: math-${i}\ndescription: math analysis ${i}\nlicense: MIT\n---\nAnalyze the task.`;
+    return {text,sha:createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex')};
+  });
+  const calls=[];
+  const fetcher=async url=>{
+    calls.push(url);
+    if(url.includes('/search/repositories?'))return Response.json({items:[]});
+    if(url.endsWith('/commits/HEAD'))return Response.json({sha:commit});
+    if(url.includes('/license?'))return Response.json({license:{spdx_id:'MIT'}});
+    if(url.includes('/git/trees/'))return Response.json({sha:'b'.repeat(40),tree:records.map((item,i)=>({type:'blob',path:`math-${i}/SKILL.md`,sha:item.sha,size:Buffer.byteLength(item.text)}))});
+    const item=records.find(record=>url.endsWith('/git/blobs/'+record.sha));
+    if(item===records[0] || item===records[1])return new Response('',{status:404});
+    if(item)return Response.json({encoding:'base64',size:Buffer.byteLength(item.text),content:Buffer.from(item.text).toString('base64')});
+    throw Error('Unexpected request');
+  };
+  const engine=createOnlineSkills({sources:['owner/repo'],signal:new AbortController().signal,fetcher});
+  const result=await engine.execute('discover_skills',{query:'math',limit:3});
+  assert.equal(result.ok,true);
+  assert.deepEqual(result.data.candidates.map(item=>item.name),['math-2','math-3','math-4']);
+  assert.equal(result.data.unavailable.length,2);
+  assert.equal(calls.filter(url=>url.includes('/git/blobs/')).length,5);
+  await engine.close();
+});
+
+test('combined skill search returns local and online results and records adoption',async t=>{
+  const f=await fixture(t),text='---\nname: math-online\ndescription: Mathematical modeling\nlicense: MIT\n---\nUse the method.';
+  const blob=createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex');
+  const commit='a'.repeat(40),events=[];
+  const fetcher=async url=>{
+    let body;
+    if(url.includes('/search/repositories?'))body={items:[]};
+    else if(url.endsWith('/commits/HEAD'))body={sha:commit};
+    else if(url.includes('/license?'))body={license:{spdx_id:'MIT'}};
+    else if(url.includes('/git/trees/'))body={sha:'b'.repeat(40),tree:[{type:'blob',path:'math/SKILL.md',sha:blob,size:Buffer.byteLength(text)}]};
+    else if(url.endsWith('/git/blobs/'+blob))body={encoding:'base64',size:Buffer.byteLength(text),content:Buffer.from(text).toString('base64')};
+    else throw Error('unexpected request');
+    return new Response(JSON.stringify(body));
+  };
+  const capabilities=createTaskCapabilities({...f,signal:new AbortController().signal,skillSources:['owner/repo'],githubAccess:{fetch:fetcher},
+    store:{record:(_run,type,data)=>events.push({type,data})},search:async()=>[{id:'local-id',label:'local-math',version:1,description:'数学建模'}]});
+  const call=(name,args)=>capabilities.execute({function:{name,arguments:JSON.stringify(args)}});
+  const result=await call('search_skill_libraries',{query:'math',limit:3});
+  assert.equal(result.ok,true);assert.equal(result.data.local[0].name,'local-math');assert.equal(result.data.online.candidates[0].name,'math-online');
+  assert.deepEqual(result.data.sources,['owner/repo']);
+  assert.equal((await call('adopt_discovered_skill',{id:result.data.online.candidates[0].id})).data.skill.status,'adopted');
+  assert(events.some(event=>event.type==='skill_library_search_started'));
+  assert(events.some(event=>event.type==='skill_library_search'));await capabilities.close();
 });
 
 test('GitHub access reuses only host-bound credentials, never exposes secrets or forwards them to another origin',async()=>{

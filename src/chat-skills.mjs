@@ -111,8 +111,14 @@ function searchableCards(localSkills, snapshot) {
 
 export function searchSkills({query, limit = 5, executable_only = false}, localSkills = [], snapshot) {
   const {catalogSha256, cards} = searchableCards(localSkills, snapshot);
-  const terms = [...new Set([...new Intl.Segmenter('zh', {granularity: 'word'}).segment(query.toLowerCase())]
+  const normalized = query.toLowerCase();
+  const terms = [...new Set([...new Intl.Segmenter('zh', {granularity: 'word'}).segment(normalized)]
     .filter(part => part.isWordLike).map(part => part.segment))];
+  for (const [pattern, aliases] of [
+    [/绘图|画图|图表|可视化/, ['plot','figure','visualization','chart']],
+    [/论文|写作|撰写/, ['paper','academic','writing','manuscript']],
+    [/建模|模型|求解/, ['modeling','mathematical','optimization']],
+  ]) if (pattern.test(normalized)) terms.push(...aliases);
   const matches = cards.filter(item => !executable_only || item.executable).map(item => {
     const title = (item.label + ' ' + item.domain).toLowerCase();
     const text = (item.id + ' ' + item.description).toLowerCase();

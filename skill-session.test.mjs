@@ -120,6 +120,31 @@ async function fixture(t) {
   return {root, store, studio, scope, task, run, controller, publish, route};
 }
 
+test('model-selected task steps load real skill guides in dependency order', async t => {
+  const f = await fixture(t);
+  const model = f.publish('modeling-guide'), writing = f.publish('writing-guide'), figure = f.publish('figure-guide');
+  const session = createSkillSession({...f, localSkills:[model,writing,figure],route:f.route([]),tools:toolsForScope(f.scope),signal:f.controller.signal});
+  await session.prepare();
+  const selections = [
+    {step_id:'writing',skill_id:writing.id}, {step_id:'plot',skill_id:figure.id}, {step_id:'model',skill_id:model.id},
+  ];
+  const args = {selections,rationale:'按用户目标选择各步骤的适用技能'};
+  assert.equal((await session.execute('select_task_skill_chain',args)).error.code,'CHAIN_NOT_PLANNED');
+  f.store.record(f.run,'task_brief',{steps:[
+    {id:'model',depends_on:[],candidates:[{id:model.id}]},
+    {id:'plot',depends_on:['model'],candidates:[{id:figure.id}]},
+    {id:'writing',depends_on:['plot'],candidates:[{id:writing.id}]},
+  ]});
+  const result = await session.execute('select_task_skill_chain',args);
+  assert.equal(result.ok,true);
+  assert.deepEqual(result.data.selections.map(item=>item.name),['modeling-guide','figure-guide','writing-guide']);
+  assert.ok(result.data.selections.every(item=>item.status==='loaded' && item.instructions));
+  assert.deepEqual(f.store.events(f.run,0).filter(event=>event.type==='custom_skill_loaded').map(event=>event.payload.name),
+    ['modeling-guide','figure-guide','writing-guide']);
+  assert.equal((await session.execute('select_task_skill_chain',{selections:[{step_id:'plot',skill_id:writing.id}],rationale:'错误候选'})).error.code,'CHAIN_NOT_PLANNED');
+  assert.equal(f.store.events(f.run,0).filter(event=>event.type==='skill_application').length,0);
+});
+
 test('skill package reads are bounded, frozen and separate from task permissions; conditions, dependency order and completion receipts are enforced', async t => {
   const f = await fixture(t);
   const a = f.publish('inspect-a'), b = f.publish('inspect-b');

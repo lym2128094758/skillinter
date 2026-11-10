@@ -11,7 +11,7 @@ export const onlineErrors={INVALID_ARGUMENT:'公开技能检索参数无效。',
 const candidate=object({id:str,name:str,description:{type:'string',maxLength:2000},repository:str,path:str,url:str,
   commit:str,sha256:str,license:str,resourcesAvailable:{type:'boolean'},status:{enum:['preview','adopted']}});
 export const onlineSkillTools=[{name:'discover_skills',
-  description:'在本机配置的公开GitHub技能库中找缺少的方法。只发送仓库读取请求，不发送项目正文。返回固定提交、许可、正文指纹及预览；不是正式安装。优先搜索本地技能，缺少时再发现。',
+  description:'按模型给出的检索词搜索公开 GitHub 技能库，包括配置的来源与根据检索词发现的公开仓库。检索词会发送给 GitHub，请勿包含项目正文或凭据。返回固定提交、许可、正文指纹及预览；读取失败时继续尝试其他候选。',
   parameters:object({query:{...str,minLength:1,maxLength:500},limit:{type:'integer',minimum:1,maximum:5}}),
   returns:resultSchema(object({candidates:{type:'array',maxItems:5,items:candidate},unavailable:{type:'array',items:str},truncated:{type:'boolean'}})),
   timeoutMs:20000,idempotent:true,volatile:['data.candidates[].commit','data.candidates[].sha256'],ordering:'按查询词与路径匹配得分降序，同分按仓库路径字典序。'},
@@ -22,8 +22,9 @@ export const onlineSkillTools=[{name:'discover_skills',
     parameters:object({id:{...str,minLength:1},path:{...str,minLength:1,maxLength:300}}),
     returns:resultSchema(object({id:str,path:str,url:str,commit:str,sha256:str,text:{type:'string',maxLength:64000}})),
     timeoutMs:10000,idempotent:true,volatile:[],ordering:'单个冻结提交中的UTF-8文本资源。'}].map(tool=>({...tool,errors:onlineErrors,
-      authorization:'用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。',
+      authorization:'用户要求按任务寻找技能；只访问配置的公开仓库和按通用检索词发现的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。',
       timeoutMode:'整次发现20秒；固定域名请求、限响应体、停止传递到请求。'}));
+onlineSkillTools[0].returns.anyOf[0].properties.data.properties.sources={type:'array',items:str};
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 
 export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,gitFallback=fetcher===fetch}) {
@@ -71,7 +72,20 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
     const synonyms=[[/论文|写作|paper|writing/,'paper writing document docx'],[/绘图|图表|plot|visual/,'plot visualization design'],
       [/建模|数学|求解|math|optim/,'math scientific optimization'],[/数据|统计|data|stat/,'data analysis spreadsheet'],[/文献|研究|research/,'research citation']];
     for(const [pattern,words]of synonyms)if(pattern.test(args.query))terms.push(...words.split(' '));
-    for(const repository of allowed) {
+    const repositories=[...allowed];
+    const english=[...new Set(terms.filter(term=>/^[a-z][a-z0-9-]{2,}$/.test(term)))].slice(0,2);
+    if (english.length) {
+      try {
+        const params=new URLSearchParams({q:english.join(' ')+' agent skills',sort:'stars',order:'desc',per_page:'10'});
+        const result=await github('/search/repositories?'+params,bound,300000);
+        for(const item of result.items??[]) {
+          const name=item.full_name;
+          if (typeof name==='string' && /^[\w.-]+\/[\w.-]+$/.test(name) && !item.private && !item.archived && !repositories.includes(name)) repositories.push(name);
+          if(repositories.length>=allowed.length+5)break;
+        }
+      } catch {unavailable.push('GitHub 公开仓库搜索');}
+    }
+    await Promise.all(repositories.map(async repository=>{
       try {
         if(!trees.has(repository)) {
           try {
@@ -94,10 +108,13 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
           if(score)ranked.push({repository,commit,path:item.path,blob:item.sha,license,score,truncated:tree.truncated===true});
         }
       } catch {unavailable.push(repository);}
-    }
+    }));
     ranked.sort((a,b)=>b.score-a.score||(a.repository+'/'+a.path).localeCompare(b.repository+'/'+b.path,'en'));
     const found=[];
-    for(const ref of ranked.slice(0,args.limit)) {
+    let attempted=0;
+    for(const ref of ranked) {
+      if(found.length>=args.limit || bound.aborted || attempted>=20)break;
+      attempted++;
       try {
         const source=trees.get(ref.repository),saved=source?.transport==='git'?await source.read(ref.path):null;
         const blob=saved?{encoding:'base64',size:saved.size,content:saved.bytes.toString('base64')}:
@@ -118,8 +135,10 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
       } catch {unavailable.push(ref.repository+'/'+ref.path);}
     }
     if(signal.aborted)return failure(onlineErrors,'ABORTED');
-    if(bound.aborted)return failure(onlineErrors,'TIMEOUT');
-    const result=success({candidates:found,unavailable:[...new Set(unavailable)],truncated:ranked.length>args.limit||ranked.some(item=>item.truncated)});
+    if(bound.aborted && !found.length)return failure(onlineErrors,'TIMEOUT');
+    if(bound.aborted)unavailable.push('部分公开来源检索超时');
+    const result=success({candidates:found,unavailable:[...new Set(unavailable)],sources:repositories,
+      truncated:attempted<ranked.length||ranked.some(item=>item.truncated)||bound.aborted});
     emit('external_skill_discovery',result.data);if(!unavailable.length)cache.set(key,result);return result;
   }};
 }

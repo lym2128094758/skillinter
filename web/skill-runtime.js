@@ -20,7 +20,7 @@ export function renderSkillRuntime(container, run, {taskId, onGraph, onOpen, onR
   const body = text('div', '', 'skill-runtime-body');
   const applied = nodes.filter(node => node.state === 'applied').length;
   const summary = text('summary', '技能链 · ' + nodes.length + ' 项 · ' + applied + ' 项已应用');
-  body.append(text('p', '自动按任务和已安装技能筛选；依赖影响先后，互补仅作建议。', 'status'));
+  body.append(text('p', '按任务检索本机及公开技能，由模型选择；依赖影响先后，互补仅作建议。', 'status'));
   if (!nodes.length) body.append(text('p', route?.emptyReason || '本次没有采用已安装技能。', 'status'));
   if (route?.rejected?.length) {
     const excluded = text('details'); excluded.append(text('summary', '未采用的相关技能 · ' + route.rejected.length));

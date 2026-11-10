@@ -165,7 +165,7 @@ export async function createSettings({store, env, previousConnection}) {
   }
 
   function validateBudget(maxSteps) {
-    if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 12) throw new RequestError(422, '模型调用次数必须是 1 到 12 的整数');
+    if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 200) throw new RequestError(422, '模型调用次数必须是 1 到 200 的整数');
   }
 
   function commit(expected, next) {

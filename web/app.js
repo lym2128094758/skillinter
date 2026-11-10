@@ -695,8 +695,8 @@ function drawCitationVerification(panel, taskId, run) {
 }
 
 function drawTaskCapabilities(panel,run) {
-  const brief=run.taskBrief,external=run.externalSkills??[];
-  panel.hidden=!brief&&!external.length;if(panel.hidden)return;
+  const brief=run.taskBrief,external=run.externalSkills??[],searches=run.skillLibrarySearches??[];
+  panel.hidden=!brief&&!external.length&&!searches.length&&!run.skillSearchPending;if(panel.hidden)return;
   const text=(tag,value)=>{const el=document.createElement(tag);el.textContent=value;return el;};
   panel.replaceChildren(text('summary','任务理解与技能选择'));
   if(brief) {
@@ -707,6 +707,17 @@ function drawTaskCapabilities(panel,run) {
     const list=document.createElement('ol');
     for(const step of brief.steps)list.append(text('li',step.title+' · '+(step.gap?'没有匹配的本地技能':step.candidates.map(item=>item.name).join('、'))));
     panel.append(list,text('p','依据 '+brief.sources.length+' 条本轮读取回执；原始用户要求保持不变。'));
+  }
+  if(run.skillSearchPending)panel.append(text('p','正在搜索本机及公开技能库 · '+run.skillSearchPending.query));
+  for(const search of searches) {
+    const details=text('details');
+    details.append(text('summary','技能搜索 · '+search.query));
+    details.append(text('p','本机：'+(search.local.map(item=>item.name).join('、')||'无匹配')));
+    details.append(text('p','公开来源：'+(search.sources?.join('、')||'未提供')));
+    details.append(text('p','在线候选：'+(search.online.candidates.map(item=>item.name).join('、')||'无匹配')));
+    if(search.onlineError)details.append(text('p','在线搜索失败：'+search.onlineError));
+    if(search.online.unavailable.length)details.append(text('p','未能读取：'+search.online.unavailable.join('、')));
+    panel.append(details);
   }
   for(const item of external) {
     const row=text('p',item.name+' · '+(item.status==='adopted'?'本轮采用方法，未验证':'外部候选')+' · '+item.license+' ');
@@ -1634,6 +1645,12 @@ function drawTranscript() {
         }
         appendEvent(list, event);
         if(event.type==='task_brief'){run.taskBrief=event.payload;taskCapabilities.open=true;drawTaskCapabilities(taskCapabilities,run);}
+        if(event.type==='skill_library_search_started'){run.skillSearchPending=event.payload;taskCapabilities.open=true;drawTaskCapabilities(taskCapabilities,run);}
+        if(event.type==='skill_library_search'){
+          run.skillSearchPending=null;run.skillLibrarySearches??=[];
+          if(!run.skillLibrarySearches.some(item=>item.seq===event.seq))run.skillLibrarySearches.push({...event.payload,seq:event.seq});
+          drawTaskCapabilities(taskCapabilities,run);
+        }
         if(event.type==='external_skill_discovery'||event.type==='external_skill_adopted'){
           const items=event.type==='external_skill_discovery'?event.payload.candidates:[event.payload];
           run.externalSkills=[...new Map([...(run.externalSkills??[]),...items].map(item=>[item.id,item])).values()];
@@ -2310,11 +2327,6 @@ $('audit-form').onsubmit = async event => {
     if ($('audit-dialog').open && !$('error').hidden) { $('audit-error').textContent = $('error').textContent; $('audit-error').hidden = false; }
   } finally { updateControls(); }
 };
-
-void import('./skill-engine.js').catch(() => {
-  $('engine-status').textContent = '技能引擎模块未加载。请重新启动 Skillinter 后刷新页面。';
-  for (const control of $('engine-form').querySelectorAll('input, select, button')) control.disabled = true;
-});
 
 try {
   loading = true;

@@ -286,10 +286,7 @@ try {
   await checkGlassButton('#settingsButton',
     "!document.querySelector('#skill-graph-frame').contentDocument.querySelector('#settingsPanel').hidden", true);
   await checkGlassButton('#settings', "document.querySelector('#settings-dialog').open");
-  await waitFor('技能引擎设置加载', () => run("document.querySelector('#engine-status').textContent.includes('本地匹配')"));
-  await run("document.querySelector('#engine-enabled').checked=false;document.querySelector('#engine-form').requestSubmit();true");
-  await waitFor('保存引擎设置', () => run("document.querySelector('#engine-status').textContent.includes('已保存')"));
-  assert.equal((await (await get('/api/skill-intelligence/settings')).json()).revision, 1);
+  assert.equal(await run("document.querySelector('#model-view').textContent.includes('技能搜索')"),true);
   const githubDisconnected=await fetch(base+'/api/skill-intelligence/github',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'disconnect'})});
   assert.equal(githubDisconnected.status,200);
   await run("document.querySelector('[data-settings-page=github]').click();true");

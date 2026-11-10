@@ -146,7 +146,10 @@ test('settings test a draft, encrypt the key, preserve origin boundaries and app
   assert.equal(budget.maxSteps, 5);
   assert.equal(budget.activeModel, 'fixture-model');
   assert.equal(budget.hasKey, Boolean(key));
-  assert.equal((await (await request('/api/settings', 'PUT', {...draft, revision: budget.revision, maxSteps: 5, clearKey: true, key: ''})).json()).hasKey, false);
+  const expanded = await (await request('/api/settings', 'PATCH', {revision: budget.revision, maxSteps: 200})).json();
+  assert.equal(expanded.maxSteps, 200);
+  assert.equal((await request('/api/settings', 'PATCH', {revision: expanded.revision, maxSteps: 201})).status, 422);
+  assert.equal((await (await request('/api/settings', 'PUT', {...draft, revision: expanded.revision, maxSteps: 200, clearKey: true, key: ''})).json()).hasKey, false);
 });
 
 test('CSV attachments produce a downloadable, traceable skill result', async t => {

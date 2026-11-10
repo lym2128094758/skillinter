@@ -26,6 +26,7 @@ export const sessionErrors = {INVALID_ARGUMENT: '技能运行参数无效。', S
   DEPENDENCY_INCOMPLETE: '前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。',
   SKILL_ACTIVE: '当前另一个技能尚未结束，请先记录它的结果。',
   NO_EVIDENCE: '缺少属于本轮该技能的真实工具回执，不能标记为已应用。',
+  CHAIN_NOT_PLANNED: '技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。',
   ABORTED: '操作已取消。', TIMEOUT: '技能操作超过 15 秒，请缩小读取范围后重试。', INTERNAL: '技能运行失败。'};
 const definitions = [
   {name: 'inspect_skill', description: '检查本轮技能版本、配套资源清单及 SIH.requirements.json 声明的工具、文件和命令要求。未声明条件时标为 unspecified，不代表环境已验证。',
@@ -42,6 +43,9 @@ const definitions = [
   {name: 'revise_skill_route', description: '按任务需要换用已安装替代技能或移除不再采用的方法，必须解释依据。本轮冻结的硬依赖不可跳过；保留依赖技能时须保留或先完成其前置。不清除既有回执，不修改权限。',
     parameters: object({skill_ids: {type: 'array', maxItems: 6, items: string}, rationale: {...string, minLength: 1}}),
     data: object({skills: strings, rationale: string})},
+  {name:'select_task_skill_chain',description:'从 prepare_task 的各步骤候选中选择技能，按任务依赖顺序加入本轮技能链并实际加载指南。每项提供对应 step_id 和候选 skill_id；相同技能可以服务多个步骤。未通过适用性检查的技能会单独报告，不会冒充已加载或已执行。',
+    parameters:object({selections:{type:'array',minItems:1,maxItems:12,items:object({step_id:string,skill_id:string})},rationale:{...string,minLength:1}}),
+    data:object({selections:{type:'array',items:object({step_id:string,skill_id:string,name:string,status:{enum:['loaded','blocked']},instructions:{type:'string',maxLength:10000},message:string})}})},
   {name: 'finish_skill', description: '记录技能应用结果。applied 仅表示 Agent 报告已应用且存在本轮真实回执，不代表独立质量验收。evidence 为该技能实际工具回执的序号；blocked/failed 可不带回执，但须说明原因。',
     parameters: object({skill_id: string, status: {enum: ['applied', 'blocked', 'failed']}, summary: {...string, minLength: 1},
       evidence: {type: 'array', maxItems: 20, items: {type: 'integer', minimum: 1}}}),
@@ -331,7 +335,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
     },
     receipt(seq, name, output) {
       if (!active || ['inspect_skill', 'read_skill_resource', 'verify_skill_output', 'start_skill', 'finish_skill', 'load_skill', 'search_skills', 'update_plan',
-        'prepare_task','inspect_runtime','discover_skills','adopt_discovered_skill','read_discovered_resource'].includes(name)) return;
+        'prepare_task','select_task_skill_chain','search_skill_libraries','inspect_runtime','discover_skills','adopt_discovered_skill','read_discovered_resource'].includes(name)) return;
       evidence.set(seq, {id: active, name, ok: output.ok &&
         (output.data?.kind !== 'project_tests' || output.data.status === 'passed') &&
         (output.data?.kind !== 'python_execution' || output.data.status === 'passed') &&
@@ -357,10 +361,45 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
         operationSignal = AbortSignal.any([signal, AbortSignal.timeout(15000)]);
         operationSignal.throwIfAborted();
         if (!definition || validate(definition.parameters, args).length) return failure(sessionErrors, 'INVALID_ARGUMENT');
+        if (name === 'select_task_skill_chain') {
+          const brief = store.events(run,0).findLast(event=>event.type==='task_brief')?.payload;
+          if (!brief) return failure(sessionErrors,'CHAIN_NOT_PLANNED');
+          const stepById = new Map(brief.steps.map(step=>[step.id,step]));
+          if (args.selections.some(item=>!stepById.get(item.step_id)?.candidates.some(candidate=>candidate.id===item.skill_id)) ||
+              new Set(args.selections.map(item=>item.step_id+'\0'+item.skill_id)).size!==args.selections.length) return failure(sessionErrors,'CHAIN_NOT_PLANNED');
+          const ordered = [], visited = new Set();
+          function visit(id) {
+            if (visited.has(id)) return;
+            visited.add(id);
+            for (const dependency of stepById.get(id).depends_on) visit(dependency);
+            ordered.push(id);
+          }
+          for (const step of brief.steps) visit(step.id);
+          const selections = [...args.selections].sort((a,b)=>ordered.indexOf(a.step_id)-ordered.indexOf(b.step_id));
+          const ids = [...new Set(selections.map(item=>item.skill_id))];
+          const revised = await this.execute('revise_skill_route',{skill_ids:ids,rationale:args.rationale});
+          if (!revised.ok) return revised;
+          const loaded = new Map(), result = [];
+          for (const item of selections) {
+            const skill = skillFor(item.skill_id);
+            if (!loaded.has(skill.id)) {
+              try {
+                const guide = await load(skill.id);
+                loaded.set(skill.id,{status:'loaded',instructions:guide.instructions.slice(0,10000),message:guide.instructions.length>10000?'指南已截断，可继续读取 SKILL.md。':''});
+              } catch (error) {
+                const code = Object.hasOwn(sessionErrors,error.code) ? error.code : 'INTERNAL';
+                loaded.set(skill.id,{status:'blocked',instructions:'',message:sessionErrors[code]});
+              }
+            }
+            result.push({...item,name:skill.name,...loaded.get(skill.id)});
+          }
+          store.record(run,'task_skill_chain',{selections:result.map(({instructions,...item})=>item),rationale:args.rationale});
+          return success({selections:result});
+        }
         if (name === 'revise_skill_route') {
           if (new Set(args.skill_ids).size !== args.skill_ids.length || active && !args.skill_ids.includes(active)) return failure(sessionErrors, 'SKILL_ACTIVE');
           const chosen = args.skill_ids.map(skillFor);
-          if(registry&&chosen.some(skill=>registryBlocked(skill.id)||dependencies(skill.id).some(id=>!args.skill_ids.includes(id)&&states.get(id)?.state!=='applied')))throw namedError('DEPENDENCY_INCOMPLETE');
+          if(registry&&chosen.some(skill=>!registry.skills.some(ref=>ref.skillId===skill.id&&ref.selectable)||registryBlocked(skill.id)||dependencies(skill.id).some(id=>!args.skill_ids.includes(id)&&states.get(id)?.state!=='applied')))throw namedError('DEPENDENCY_INCOMPLETE');
           route.candidates = chosen.map(skill => ({id: skill.id, name: skill.name, version: skill.version, nodeId: nodeId(skill), description: skill.description.slice(0, 500), reason: args.rationale}));
           const names = new Set(chosen.map(skill => skill.name));
           route.relations = registry?registry.relations.filter(edge=>args.skill_ids.includes(edge.source)&&args.skill_ids.includes(edge.target)):relationsForSkills([...names]);

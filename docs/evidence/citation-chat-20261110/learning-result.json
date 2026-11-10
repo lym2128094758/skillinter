@@ -1,0 +1,582 @@
+{
+  "model": "deepseek-v4.1-flash-1017",
+  "base": "http://127.0.0.1:60427",
+  "sourcePolicy": "开发用例；初始方法只做 README 初筛，改进目标是实际依赖审查。",
+  "chat": {
+    "taskId": "1eae637c-c761-4b39-816f-2b147d12cc44",
+    "runId": "c65740e3-65b6-4ac1-898e-a76316635c6d",
+    "verification": {
+      "status": "passed",
+      "corrections": [],
+      "issues": [],
+      "sources": [
+        {
+          "path": "protocol.md",
+          "sha256": "792c24a9d0fb1651d90ad2bbaeb277b3538ee7dd617a6b44afcd7bdb59f0fc90"
+        }
+      ],
+      "artifact": {
+        "id": "04724ed9-de4f-452c-8353-b8758b07f66a",
+        "run": "c65740e3-65b6-4ac1-898e-a76316635c6d",
+        "name": "citation-verification.json",
+        "kind": "citation-report",
+        "sha256": "5cc43d6c8cc0d49460089025185b8286cfb94599cab9a0e0efb38e257d8a5da4",
+        "size": 703
+      }
+    }
+  },
+  "source": {
+    "taskId": "37ebc641-3d9e-45b4-9d62-1c4f08eae1ca",
+    "runId": "bc0857b5-e92d-432b-a391-2d324c7cb0cc",
+    "skillId": "ad8e8b4b-c762-45f5-b586-7aac368b8f2f",
+    "version": 1,
+    "report": {
+      "findings": [
+        {
+          "id": "dependency_lock",
+          "status": "missing",
+          "claim": "项目不具备精确的依赖版本锁定：requirements.txt 只给出区间约束（fastapi>=0.110,<1 与 pytest>=8,<10），没有用 == 固定到具体版本，也没有哈希或 lock 文件；README 仅说明从 requirements.txt 安装依赖并使用 Python 3.11，未声明任何版本锁定机制。",
+          "evidence": [
+            {
+              "path": "requirements.txt",
+              "line": 1,
+              "quote": "fastapi>=0.110,<1"
+            },
+            {
+              "path": "requirements.txt",
+              "line": 2,
+              "quote": "pytest>=8,<10"
+            },
+            {
+              "path": "README.md",
+              "line": 3,
+              "quote": "Install dependencies from requirements.txt."
+            }
+          ]
+        }
+      ]
+    },
+    "targetStatus": "missing",
+    "goalMet": true
+  },
+  "feedbackRun": "a90d6527-4287-4743-8db2-c3e4a353d487",
+  "proposal": {
+    "experience": {
+      "id": "57ebdd8c-4ee0-4381-a33c-7a9b7332c1ff",
+      "projectId": "61a637cf-9266-4db9-a5e3-1bf485cbde8d",
+      "sha256": "31e1fd84bcda13a273f76f363f54c32c102abf0b0033c643f5288ae4ccbb1673",
+      "state": "open",
+      "createdAt": "2026-11-10T12:18:53.591Z",
+      "policyVersion": 1,
+      "taskId": "37ebc641-3d9e-45b4-9d62-1c4f08eae1ca",
+      "runId": "bc0857b5-e92d-432b-a391-2d324c7cb0cc",
+      "taskTitle": "技能改进 · 来源任务",
+      "prompt": "使用当前技能审查本项目是否具备精确的依赖版本锁定。将一条 id=dependency_lock 的 findings 写入 report.json，每条包含 status(verified/missing/uncertain)、claim 及 evidence[{path,line,quote}]。条件满足才是 verified，明确未满足是 missing，证据不足是 uncertain。保留输入不变。任务很短，直接读取、写产物并核验即可，避免重复查看已加载的技能与建立冗长计划。",
+      "runStatus": "completed",
+      "signals": [
+        {
+          "code": "USER_CORRECTION",
+          "label": "用户消息包含纠正线索，需核对上下文",
+          "evidenceRefs": [
+            "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+          ]
+        }
+      ],
+      "references": [
+        {
+          "id": "user:a90d6527-4287-4743-8db2-c3e4a353d487",
+          "runId": "a90d6527-4287-4743-8db2-c3e4a353d487",
+          "type": "user_message",
+          "excerpt": "技能方法需要修正：指南要求只读 README，但本轮正确结果实际上依赖 requirements.txt，方法与真实操作不一致。不要再执行文件操作，本轮只确认这个方法缺口。应允许读取实际声明，区分全部精确固定、存在范围约束和证据不足。"
+        }
+      ],
+      "skills": [
+        {
+          "id": "ad8e8b4b-c762-45f5-b586-7aac368b8f2f",
+          "name": "dependency-evidence-review",
+          "version": 1
+        }
+      ],
+      "eventsTruncated": false,
+      "limit": 1000,
+      "limitation": "线索不证明因果或改进收益；须人工核对并独立验证。",
+      "proposals": []
+    },
+    "proposal": {
+      "id": "bbe35734-43ee-40a6-a77b-eae36df115f1",
+      "experienceId": "57ebdd8c-4ee0-4381-a33c-7a9b7332c1ff",
+      "experienceSha256": "31e1fd84bcda13a273f76f363f54c32c102abf0b0033c643f5288ae4ccbb1673",
+      "candidateId": "b399579b-4e2f-4e87-ba83-f2b09ed0adb3",
+      "baseVersion": 1,
+      "changes": [
+        {
+          "field": "description",
+          "before": "根据项目复现说明初筛依赖准备情况，并保留原文。",
+          "after": "依据 README.md 与 requirements.txt 原文核对依赖版本锁定情况，区分精确固定、范围约束与证据不足，并保留输入。",
+          "evidenceRefs": [
+            "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+          ]
+        },
+        {
+          "field": "instructions",
+          "before": "这是 README 初筛方法。只读取 README.md，依据说明中的直接证据判断依赖条件。说明没有给出精确版本时，标 uncertain，避免从文件名猜测内容。写出用户要求的 report.json，引用 README 中相关的一行。核对产物后记录技能完成。",
+          "after": "读取 README.md 和 requirements.txt 的实际声明，不改输入。依赖全部精确固定标 verified；明确仅有范围约束或未锁定标 missing；证据不足标 uncertain。把 id=dependency_lock 的 status、claim 和 evidence（path、line、quote）写入 report.json，并引用原文行；用 verify_skill_output 核对引用，失败则修复重验。",
+          "evidenceRefs": [
+            "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+          ]
+        },
+        {
+          "field": "tests",
+          "before": [],
+          "after": [
+            {
+              "prompt": "README.md：`Install from requirements.txt.`；requirements.txt：`requests==2.31.0`。审查依赖是否精确锁定，写 report.json 并按引用行核验。",
+              "expected_output": "report.json 中唯一 finding 的 status 为 verified，evidence 引用 requirements.txt 第 1 行原文 `requests==2.31.0`。",
+              "expectations": [
+                "report.json 的 /findings 长度为 1",
+                "finding 的 status 为 verified",
+                "evidence 的 path 为 requirements.txt",
+                "evidence 的 line 为 1",
+                "evidence 的 quote 包含：requests==2.31.0"
+              ]
+            },
+            {
+              "prompt": "README.md：`Install dependencies.`；requirements.txt：`flask>=2,<3`。判断依赖锁定状态并写 report.json，引用原文行。",
+              "expected_output": "status 为 missing（仅有范围约束、无精确固定），evidence 引用 requirements.txt 第 1 行原文 `flask>=2,<3`。",
+              "expectations": [
+                "report.json 的 /findings 长度为 1",
+                "finding 的 status 为 missing",
+                "evidence 的 path 为 requirements.txt",
+                "evidence 的 line 为 1",
+                "evidence 的 quote 包含：flask>=2,<3"
+              ]
+            }
+          ],
+          "evidenceRefs": [
+            "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "maxTokens": 4096,
+          "finishReason": "stop",
+          "usage": {
+            "prompt_tokens": 3063,
+            "total_tokens": 5447,
+            "completion_tokens": 2384,
+            "prompt_tokens_details": {
+              "cached_tokens": 0,
+              "created_cache_tokens": 3008
+            },
+            "completion_tokens_details": {
+              "reasoning_tokens": 1900
+            }
+          },
+          "model": "deepseek-v4.1-flash-1017"
+        }
+      ],
+      "limitation": "改动字段由源码比较产生；引用是待审核依据，不证明因果关系或验证收益。",
+      "cached": false
+    },
+    "candidate": {
+      "id": "b399579b-4e2f-4e87-ba83-f2b09ed0adb3",
+      "projectId": "61a637cf-9266-4db9-a5e3-1bf485cbde8d",
+      "skillId": "ad8e8b4b-c762-45f5-b586-7aac368b8f2f",
+      "baseVersion": 1,
+      "sha256": "0d95121c7455c8efaa39fea8f518ac7e4526da1c20e7242a8c0adce37464fb80",
+      "createdAt": "2026-11-10T12:23:47.481Z",
+      "sourceTaskId": "37ebc641-3d9e-45b4-9d62-1c4f08eae1ca",
+      "sourceRunId": "bc0857b5-e92d-432b-a391-2d324c7cb0cc",
+      "publishedSkillId": null,
+      "publishedVersion": null,
+      "draft": {
+        "name": "dependency-evidence-review",
+        "description": "依据 README.md 与 requirements.txt 原文核对依赖版本锁定情况，区分精确固定、范围约束与证据不足，并保留输入。",
+        "instructions": "读取 README.md 和 requirements.txt 的实际声明，不改输入。依赖全部精确固定标 verified；明确仅有范围约束或未锁定标 missing；证据不足标 uncertain。把 id=dependency_lock 的 status、claim 和 evidence（path、line、quote）写入 report.json，并引用原文行；用 verify_skill_output 核对引用，失败则修复重验。",
+        "tests": [
+          {
+            "prompt": "README.md：`Install from requirements.txt.`；requirements.txt：`requests==2.31.0`。审查依赖是否精确锁定，写 report.json 并按引用行核验。",
+            "expected_output": "report.json 中唯一 finding 的 status 为 verified，evidence 引用 requirements.txt 第 1 行原文 `requests==2.31.0`。",
+            "expectations": [
+              "report.json 的 /findings 长度为 1",
+              "finding 的 status 为 verified",
+              "evidence 的 path 为 requirements.txt",
+              "evidence 的 line 为 1",
+              "evidence 的 quote 包含：requests==2.31.0"
+            ]
+          },
+          {
+            "prompt": "README.md：`Install dependencies.`；requirements.txt：`flask>=2,<3`。判断依赖锁定状态并写 report.json，引用原文行。",
+            "expected_output": "status 为 missing（仅有范围约束、无精确固定），evidence 引用 requirements.txt 第 1 行原文 `flask>=2,<3`。",
+            "expectations": [
+              "report.json 的 /findings 长度为 1",
+              "finding 的 status 为 missing",
+              "evidence 的 path 为 requirements.txt",
+              "evidence 的 line 为 1",
+              "evidence 的 quote 包含：flask>=2,<3"
+            ]
+          }
+        ],
+        "delivery": {
+          "version": 1,
+          "preserve_inputs": [
+            "README.md",
+            "requirements.txt"
+          ],
+          "artifacts": [
+            {
+              "path": "report.json",
+              "format": "json",
+              "require_change": true,
+              "checks": [
+                {
+                  "kind": "json_length",
+                  "pointer": "/findings",
+                  "expected": "1"
+                },
+                {
+                  "kind": "json_citations",
+                  "pointer": "/findings",
+                  "expected": ""
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "baseline": {
+        "name": "dependency-evidence-review",
+        "description": "根据项目复现说明初筛依赖准备情况，并保留原文。",
+        "instructions": "这是 README 初筛方法。只读取 README.md，依据说明中的直接证据判断依赖条件。说明没有给出精确版本时，标 uncertain，避免从文件名猜测内容。写出用户要求的 report.json，引用 README 中相关的一行。核对产物后记录技能完成。",
+        "tests": [],
+        "delivery": {
+          "version": 1,
+          "preserve_inputs": [
+            "README.md",
+            "requirements.txt"
+          ],
+          "artifacts": [
+            {
+              "path": "report.json",
+              "format": "json",
+              "require_change": true,
+              "checks": [
+                {
+                  "kind": "json_length",
+                  "pointer": "/findings",
+                  "expected": "1"
+                },
+                {
+                  "kind": "json_citations",
+                  "pointer": "/findings",
+                  "expected": ""
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "baselineSha256": "baa661ecc29bdc7945930a7ec3666a9e6b6cfbaae219b167ff32e00b834cb882",
+      "suite": [
+        {
+          "prompt": "README.md：`Install from requirements.txt.`；requirements.txt：`requests==2.31.0`。审查依赖是否精确锁定，写 report.json 并按引用行核验。",
+          "expected_output": "report.json 中唯一 finding 的 status 为 verified，evidence 引用 requirements.txt 第 1 行原文 `requests==2.31.0`。",
+          "expectations": [
+            "report.json 的 /findings 长度为 1",
+            "finding 的 status 为 verified",
+            "evidence 的 path 为 requirements.txt",
+            "evidence 的 line 为 1",
+            "evidence 的 quote 包含：requests==2.31.0"
+          ],
+          "sourceOverlap": false
+        },
+        {
+          "prompt": "README.md：`Install dependencies.`；requirements.txt：`flask>=2,<3`。判断依赖锁定状态并写 report.json，引用原文行。",
+          "expected_output": "status 为 missing（仅有范围约束、无精确固定），evidence 引用 requirements.txt 第 1 行原文 `flask>=2,<3`。",
+          "expectations": [
+            "report.json 的 /findings 长度为 1",
+            "finding 的 status 为 missing",
+            "evidence 的 path 为 requirements.txt",
+            "evidence 的 line 为 1",
+            "evidence 的 quote 包含：flask>=2,<3"
+          ],
+          "sourceOverlap": false
+        }
+      ],
+      "sourceEvidence": {
+        "preceding": [],
+        "selected": {
+          "id": "bc0857b5-e92d-432b-a391-2d324c7cb0cc",
+          "prompt": "使用当前技能审查本项目是否具备精确的依赖版本锁定。将一条 id=dependency_lock 的 findings 写入 report.json，每条包含 status(verified/missing/uncertain)、claim 及 evidence[{path,line,quote}]。条件满足才是 verified，明确未满足是 missing，证据不足是 uncertain。保留输入不变。任务很短，直接读取、写产物并核验即可，避免重复查看已加载的技能与建立冗长计划。",
+          "answer": "**结论：status = missing（项目不具备精确的依赖版本锁定）。**\n\n依据（行号为本轮实际读取范围）：\n- `requirements.txt`（共 2 行，已读完）：`requirements.txt` 第1行 `fastapi>=0.110,<1`、第2行 `pytest>=8,<10` — 只有区间约束，没有 `==` 固定到具体版本，也没有哈希或约束文件。\n- `README.md`（共 5 行，已读完）：第3行 `Install dependencies from requirements.txt.` — 只说明从 requirements.txt 安装，未声明任何版本锁定机制。\n- `list_workspace` 递归列出项目根目录仅含 `README.md`、`requirements.txt`，不存在 lock 文件（如 package-lock.json、poetry.lock、requirements.lock）。\n\n产物：`report.json`（新建，sha256 `9566406f…3d6d`），含单条 finding `id=dependency_lock`，status 为 `missing`，3 条 evidence 引用上述真实行原文。\n\n采用的技能：`dependency-evidence-review` v1（先 `start_skill`，读取 → 写产物 → `verify_skill_output` 返回 passed，输入文件 `INPUT_UNCHANGED` 均通过 → `finish_skill` applied，evidence 回执 297/301/374）。\n\n未完成/待复核：无。说明一点证据边界——`requirements.txt` 已直接读取并构成 missing 的正面证据，因此未按指南“无精确版本即标 uncertain”的保守默认处理；该判定基于依赖清单原文本身，而非从文件名猜测。",
+          "status": "completed",
+          "error": ""
+        },
+        "subsequentUserMessages": [
+          {
+            "id": "a90d6527-4287-4743-8db2-c3e4a353d487",
+            "text": "技能方法需要修正：指南要求只读 README，但本轮正确结果实际上依赖 requirements.txt，方法与真实操作不一致。不要再执行文件操作，本轮只确认这个方法缺口。应允许读取实际声明，区分全部精确固定、存在范围约束和证据不足。"
+          }
+        ],
+        "appliedGuidance": [],
+        "tools": [
+          {
+            "type": "tool_result",
+            "tool": "list_workspace",
+            "ok": 1,
+            "projectTestStatus": null,
+            "errorCode": "OK"
+          },
+          {
+            "type": "tool_result",
+            "tool": "start_skill",
+            "ok": 1,
+            "projectTestStatus": "running",
+            "errorCode": "OK"
+          },
+          {
+            "type": "tool_result",
+            "tool": "read_file",
+            "ok": 1,
+            "projectTestStatus": null,
+            "errorCode": "OK"
+          },
+          {
+            "type": "tool_result",
+            "tool": "read_file",
+            "ok": 1,
+            "projectTestStatus": null,
+            "errorCode": "OK"
+          },
+          {
+            "type": "tool_result",
+            "tool": "create_file",
+            "ok": 1,
+            "projectTestStatus": null,
+            "errorCode": "OK"
+          },
+          {
+            "type": "tool_result",
+            "tool": "verify_skill_output",
+            "ok": 1,
+            "projectTestStatus": "passed",
+            "errorCode": "OK"
+          },
+          {
+            "type": "tool_result",
+            "tool": "finish_skill",
+            "ok": 1,
+            "projectTestStatus": "applied",
+            "errorCode": "OK"
+          }
+        ],
+        "attachment": null,
+        "artifacts": [
+          {
+            "name": "skill-execution.json",
+            "kind": "report"
+          }
+        ],
+        "citationVerification": [],
+        "skillRoute": {
+          "candidates": [
+            {
+              "name": "dependency-evidence-review",
+              "version": 1,
+              "reason": "用户明确选择"
+            }
+          ],
+          "relations": [],
+          "warnings": []
+        },
+        "skillApplications": [
+          {
+            "name": "dependency-evidence-review",
+            "status": "applied",
+            "summary": "按 dependency-evidence-review 指南只读取 README.md 与 requirements.txt（复现说明与依赖清单），依据原文判定项目无精确版本锁定：requirements.txt 仅为区间约束、无 == 固定版本或 lock 文件，故写 status=missing 的 dependency_lock finding 到 report.json，引用 requirements.txt 第1/2行与 README.md 第3行；verify_skill_output 返回 passed，且输入文件指纹未变。",
+            "evidence": [
+              297,
+              301,
+              374
+            ]
+          }
+        ],
+        "skillApplicability": [
+          {
+            "name": "dependency-evidence-review",
+            "version": 1,
+            "status": "unspecified",
+            "policySha256": "",
+            "goalSha256": "c080ce0673aee2e7fa949d686bde110a34f621ddd096859d539f72516e1c261c",
+            "checks": []
+          }
+        ],
+        "skillDeliveries": [
+          {
+            "name": "dependency-evidence-review",
+            "version": 1,
+            "status": "passed",
+            "contractSha256": "3bd24717042e1d68eb37f1e4f66b8b5406ea02a787d0dc5497e7493adf0d5f47",
+            "verifierSha256": "1a40ccb7f4536ab58979f7b2aa4768f0a98d90d9d46586d179c95ec1913763fb",
+            "frozenBeforeExecution": true,
+            "files": [
+              {
+                "path": "README.md",
+                "role": "input",
+                "sha256": "1d265d951049b15ea645fda7a066ccab21c0267815049e58c1e64cfcdcc91195",
+                "beforeSha256": "1d265d951049b15ea645fda7a066ccab21c0267815049e58c1e64cfcdcc91195"
+              },
+              {
+                "path": "requirements.txt",
+                "role": "input",
+                "sha256": "4302a0da25eb42394ac29ae9dc1ea70e205ae0eacb309400d2d364ccb86abdd9",
+                "beforeSha256": "4302a0da25eb42394ac29ae9dc1ea70e205ae0eacb309400d2d364ccb86abdd9"
+              },
+              {
+                "path": "report.json",
+                "role": "artifact",
+                "sha256": "9566406ffdfd875a0778a7184dd8f2083c0f687bf2ca61050216490d137f3d6d",
+                "beforeSha256": ""
+              }
+            ],
+            "checks": [
+              {
+                "path": "README.md",
+                "code": "INPUT_UNCHANGED",
+                "status": "passed",
+                "message": "原始输入字节保持一致。"
+              },
+              {
+                "path": "requirements.txt",
+                "code": "INPUT_UNCHANGED",
+                "status": "passed",
+                "message": "原始输入字节保持一致。"
+              },
+              {
+                "path": "report.json",
+                "code": "ARTIFACT_CHANGED",
+                "status": "passed",
+                "message": "本轮产物字节与执行前不同。"
+              },
+              {
+                "path": "report.json",
+                "code": "FORMAT",
+                "status": "passed",
+                "message": "产物通过声明的格式检查。"
+              },
+              {
+                "path": "report.json",
+                "code": "JSON_LENGTH",
+                "status": "passed",
+                "message": "/findings · json_length · 预期 1"
+              },
+              {
+                "path": "report.json",
+                "code": "JSON_CITATIONS",
+                "status": "passed",
+                "message": "引用原文、行号及本轮读取指纹一致。"
+              }
+            ]
+          }
+        ]
+      },
+      "parentCandidateId": null,
+      "scope": "text-only",
+      "limitation": "只比较冻结文本用例；不执行工具，不证明跨任务收益，也不调整正式排序。",
+      "trials": [],
+      "regressionCases": [],
+      "executionEvidence": null,
+      "publication": {
+        "reason": "最新验证没有可发布的改进证据，保留原版本。"
+      },
+      "experienceProposals": [
+        {
+          "id": "bbe35734-43ee-40a6-a77b-eae36df115f1",
+          "experienceId": "57ebdd8c-4ee0-4381-a33c-7a9b7332c1ff",
+          "experienceSha256": "31e1fd84bcda13a273f76f363f54c32c102abf0b0033c643f5288ae4ccbb1673",
+          "candidateId": "b399579b-4e2f-4e87-ba83-f2b09ed0adb3",
+          "baseVersion": 1,
+          "changes": [
+            {
+              "field": "description",
+              "before": "根据项目复现说明初筛依赖准备情况，并保留原文。",
+              "after": "依据 README.md 与 requirements.txt 原文核对依赖版本锁定情况，区分精确固定、范围约束与证据不足，并保留输入。",
+              "evidenceRefs": [
+                "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+              ]
+            },
+            {
+              "field": "instructions",
+              "before": "这是 README 初筛方法。只读取 README.md，依据说明中的直接证据判断依赖条件。说明没有给出精确版本时，标 uncertain，避免从文件名猜测内容。写出用户要求的 report.json，引用 README 中相关的一行。核对产物后记录技能完成。",
+              "after": "读取 README.md 和 requirements.txt 的实际声明，不改输入。依赖全部精确固定标 verified；明确仅有范围约束或未锁定标 missing；证据不足标 uncertain。把 id=dependency_lock 的 status、claim 和 evidence（path、line、quote）写入 report.json，并引用原文行；用 verify_skill_output 核对引用，失败则修复重验。",
+              "evidenceRefs": [
+                "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+              ]
+            },
+            {
+              "field": "tests",
+              "before": [],
+              "after": [
+                {
+                  "prompt": "README.md：`Install from requirements.txt.`；requirements.txt：`requests==2.31.0`。审查依赖是否精确锁定，写 report.json 并按引用行核验。",
+                  "expected_output": "report.json 中唯一 finding 的 status 为 verified，evidence 引用 requirements.txt 第 1 行原文 `requests==2.31.0`。",
+                  "expectations": [
+                    "report.json 的 /findings 长度为 1",
+                    "finding 的 status 为 verified",
+                    "evidence 的 path 为 requirements.txt",
+                    "evidence 的 line 为 1",
+                    "evidence 的 quote 包含：requests==2.31.0"
+                  ]
+                },
+                {
+                  "prompt": "README.md：`Install dependencies.`；requirements.txt：`flask>=2,<3`。判断依赖锁定状态并写 report.json，引用原文行。",
+                  "expected_output": "status 为 missing（仅有范围约束、无精确固定），evidence 引用 requirements.txt 第 1 行原文 `flask>=2,<3`。",
+                  "expectations": [
+                    "report.json 的 /findings 长度为 1",
+                    "finding 的 status 为 missing",
+                    "evidence 的 path 为 requirements.txt",
+                    "evidence 的 line 为 1",
+                    "evidence 的 quote 包含：flask>=2,<3"
+                  ]
+                }
+              ],
+              "evidenceRefs": [
+                "user:a90d6527-4287-4743-8db2-c3e4a353d487"
+              ]
+            }
+          ],
+          "attempts": [
+            {
+              "maxTokens": 4096,
+              "finishReason": "stop",
+              "usage": {
+                "prompt_tokens": 3063,
+                "total_tokens": 5447,
+                "completion_tokens": 2384,
+                "prompt_tokens_details": {
+                  "cached_tokens": 0,
+                  "created_cache_tokens": 3008
+                },
+                "completion_tokens_details": {
+                  "reasoning_tokens": 1900
+                }
+              },
+              "model": "deepseek-v4.1-flash-1017"
+            }
+          ],
+          "limitation": "改动字段由源码比较产生；引用是待审核依据，不证明因果关系或验证收益。"
+        }
+      ]
+    }
+  },
+  "comparison": {
+    "planId": "3ed4484b-d7a0-4766-9929-a5ca3fffb94d",
+    "trialId": "3c688193-c38c-4940-bd54-dd43d89156a3",
+    "verdict": "unknown"
+  },
+  "passed": false,
+  "publication": null,
+  "reason": "执行对照已停止，部分组记录保留。",
+  "limitation": "真实配对未证明改进，按正式门槛保留候选，不发布、不声称学习成功。"
+}

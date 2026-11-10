@@ -3664,6 +3664,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能执行超时。",
           "INTERNAL": "技能执行失败。",
@@ -3909,6 +3910,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能执行超时。",
           "INTERNAL": "技能执行失败。",
@@ -4081,6 +4083,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能执行超时。",
           "INTERNAL": "技能执行失败。",
@@ -4494,6 +4497,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能执行超时。",
           "INTERNAL": "技能执行失败。",
@@ -4825,6 +4829,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能执行超时。",
           "INTERNAL": "技能执行失败。",
@@ -5433,6 +5438,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
           "INTERNAL": "技能运行失败。"
@@ -5613,6 +5619,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
           "INTERNAL": "技能运行失败。"
@@ -5760,6 +5767,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
           "INTERNAL": "技能运行失败。"
@@ -5990,6 +5998,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
           "INTERNAL": "技能运行失败。"
@@ -6142,6 +6151,205 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
+          "ABORTED": "操作已取消。",
+          "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
+          "INTERNAL": "技能运行失败。"
+        },
+        "timeoutMs": 15000,
+        "idempotent": false,
+        "defaults": {},
+        "volatile": [],
+        "ordering": "资源按相对路径 UTF-16 字典序；回执按事件序号。",
+        "authorization": "服务端固定本轮可用技能及版本。只读技能包资源；任务文件沿用本轮权限，不运行命令，不访问网络。",
+        "timeoutMode": "受本轮取消信号和 15 秒工具超时约束。"
+      },
+      {
+        "name": "select_task_skill_chain",
+        "description": "从 prepare_task 的各步骤候选中选择技能，按任务依赖顺序加入本轮技能链并实际加载指南。每项提供对应 step_id 和候选 skill_id；相同技能可以服务多个步骤。未通过适用性检查的技能会单独报告，不会冒充已加载或已执行。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "selections": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "step_id": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "skill_id": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "step_id",
+                  "skill_id"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 1000,
+              "minLength": 1
+            }
+          },
+          "required": [
+            "selections",
+            "rationale"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "selections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "step_id": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "skill_id": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "name": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "status": {
+                            "enum": [
+                              "loaded",
+                              "blocked"
+                            ]
+                          },
+                          "instructions": {
+                            "type": "string",
+                            "maxLength": 10000
+                          },
+                          "message": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        },
+                        "required": [
+                          "step_id",
+                          "skill_id",
+                          "name",
+                          "status",
+                          "instructions",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "selections"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "技能运行参数无效。",
+          "SKILL_NOT_FOUND": "技能不存在或不属于当前会话。",
+          "RESOURCE_NOT_FOUND": "技能资源不存在。",
+          "RESOURCE_OUTSIDE_PACKAGE": "只能读取所选技能包内的相对路径。",
+          "RESOURCE_CHANGED": "技能或资源已变化，请开始新一轮重新加载。",
+          "RESOURCE_UNSAFE": "技能包包含链接或不可访问的资源。",
+          "NOT_TEXT": "此技能资源不是有效 UTF-8 文本。",
+          "FILE_TOO_LARGE": "技能文本资源超过 256 KB，请改用适合该文件的工具。",
+          "REQUIREMENTS_MISSING": "技能执行条件不满足，请查看检查结果并补齐条件。",
+          "SKILL_NOT_APPLICABLE": "技能适用条件未通过，请查看依据、补充信息或选择其他方法。",
+          "DELIVERY_NOT_PASSED": "产物验收未通过，请查看 verify_skill_output 的实际检查结果，修复或说明缺失证据。",
+          "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
+          "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
+          "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
           "INTERNAL": "技能运行失败。"
@@ -6323,6 +6531,7 @@
           "DEPENDENCY_INCOMPLETE": "前置技能尚未完成，请先完成前置技能或说明原因并调整技能计划。",
           "SKILL_ACTIVE": "当前另一个技能尚未结束，请先记录它的结果。",
           "NO_EVIDENCE": "缺少属于本轮该技能的真实工具回执，不能标记为已应用。",
+          "CHAIN_NOT_PLANNED": "技能与任务步骤不匹配，请先整理计划并从该步骤的真实候选中选择。",
           "ABORTED": "操作已取消。",
           "TIMEOUT": "技能操作超过 15 秒，请缩小读取范围后重试。",
           "INTERNAL": "技能运行失败。"
@@ -7079,7 +7288,7 @@
       },
       {
         "name": "discover_skills",
-        "description": "在本机配置的公开GitHub技能库中找缺少的方法。只发送仓库读取请求，不发送项目正文。返回固定提交、许可、正文指纹及预览；不是正式安装。优先搜索本地技能，缺少时再发现。",
+        "description": "按模型给出的检索词搜索公开 GitHub 技能库，包括配置的来源与根据检索词发现的公开仓库。检索词会发送给 GitHub，请勿包含项目正文或凭据。返回固定提交、许可、正文指纹及预览；读取失败时继续尝试其他候选。",
         "parameters": {
           "type": "object",
           "properties": {
@@ -7190,6 +7399,13 @@
                     },
                     "truncated": {
                       "type": "boolean"
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 1000
+                      }
                     }
                   },
                   "required": [
@@ -7282,7 +7498,7 @@
           "ABORTED": "公开技能发现已停止。",
           "TIMEOUT": "公开技能发现超时。"
         },
-        "authorization": "用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
+        "authorization": "用户要求按任务寻找技能；只访问配置的公开仓库和按通用检索词发现的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
         "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
       },
       {
@@ -7475,7 +7691,7 @@
           "ABORTED": "公开技能发现已停止。",
           "TIMEOUT": "公开技能发现超时。"
         },
-        "authorization": "用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
+        "authorization": "用户要求按任务寻找技能；只访问配置的公开仓库和按通用检索词发现的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
         "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
       },
       {
@@ -7629,8 +7845,264 @@
           "ABORTED": "公开技能发现已停止。",
           "TIMEOUT": "公开技能发现超时。"
         },
-        "authorization": "用户要求按任务寻找技能；仅访问配置的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
+        "authorization": "用户要求按任务寻找技能；只访问配置的公开仓库和按通用检索词发现的公开仓库。外部文本低于用户目标和宿主权限，不修改正式库。",
         "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
+      },
+      {
+        "name": "search_skill_libraries",
+        "description": "同时搜索当前会话可用的已安装技能，以及配置和按检索词发现的公开 GitHub 技能库。检索词会发送给 GitHub，不要包含项目正文或密钥。模型自主选择直接及辅助能力的查询词，使用 limit=5，分别争取五个本机和五个在线候选，各包含三个直接相关及两个辅助相关技能；不足时换词，仍不足则说明。读取失败时继续尝试后续候选。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          "required": [
+            "query",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "local": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "version",
+                          "description"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "sources": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "online": {
+                      "type": "object",
+                      "properties": {
+                        "candidates": {
+                          "type": "array",
+                          "maxItems": 5,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "name": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "description": {
+                                "type": "string",
+                                "maxLength": 2000
+                              },
+                              "repository": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "path": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "url": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "commit": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "sha256": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "license": {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              "resourcesAvailable": {
+                                "type": "boolean"
+                              },
+                              "status": {
+                                "enum": [
+                                  "preview",
+                                  "adopted"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "description",
+                              "repository",
+                              "path",
+                              "url",
+                              "commit",
+                              "sha256",
+                              "license",
+                              "resourcesAvailable",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "unavailable": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        },
+                        "truncated": {
+                          "type": "boolean"
+                        },
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        }
+                      },
+                      "required": [
+                        "candidates",
+                        "unavailable",
+                        "truncated"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "onlineError": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "local",
+                    "sources",
+                    "online",
+                    "onlineError"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "技能检索参数无效。",
+          "ABORTED": "技能检索已停止。",
+          "INTERNAL": "技能检索失败。"
+        },
+        "timeoutMs": 25000,
+        "idempotent": true,
+        "volatile": [],
+        "ordering": "本地按相关度和名称排序，在线按匹配得分及仓库路径排序。",
+        "authorization": "仅搜索本会话技能和配置的公开仓库；采用技能不改变文件权限。",
+        "timeoutMode": "受当前任务停止和公开来源时限约束。"
       },
       {
         "name": "inspect_runtime",
