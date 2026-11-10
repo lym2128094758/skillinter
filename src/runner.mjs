@@ -7,6 +7,7 @@ import { chatSkillModelTools, createChatSkills } from './chat-skills.mjs';
 import { imageMessage } from './images.mjs';
 import { currentPlan } from './task-plan.mjs';
 import { routeSkills } from './skill-routing.mjs';
+import {createSkillRegistry} from './skill-registry.mjs';
 import { createSkillSession, skillSessionRegistry } from './skill-session.mjs';
 import { canRunProjectTests, projectTestTool, runProjectTests } from './project-tests.mjs';
 import { explicitAttachmentCheck, materialReply } from './preflight.mjs';
@@ -191,7 +192,7 @@ function explicitFileRequest(prompt) {
   }
 }
 
-export async function executeRun({id, task, prompt, store, workspace, model, signal, maxSteps = 5, skill, attachment, entry, scope,
+export async function executeRun({id, task, prompt, store, workspace, model, signal, maxSteps = 5, skill, attachment, entry, scope, skillRegistrySnapshot,
   skillAccess = false, customSkill, localSkills = [], context = {}, toolAllowlist}) {
   let session;
   const finish = async (status, result) => {
@@ -203,6 +204,8 @@ export async function executeRun({id, task, prompt, store, workspace, model, sig
     session?.finalize(status); store.finish(id, status, result);
   };
   try {
+    if(skillAccess&&!skillRegistrySnapshot)skillRegistrySnapshot=createSkillRegistry({store,studio:{},projectFor:()=>store.task(task).project_id}).snapshot(task,localSkills);
+    if(skillRegistrySnapshot)store.record(id,'skill_registry_snapshot',skillRegistrySnapshot);
     if (skill) {
       signal.throwIfAborted();
       store.record(id, 'skill_selected', {id: skill.id, label: skill.label, reason: skill.reason, source: attachment.id});
@@ -221,10 +224,11 @@ export async function executeRun({id, task, prompt, store, workspace, model, sig
     if (skillAccess && localSkills.length && !materialRequest) {
       const previousGoal = /^(?:请)?(?:继续|接着|调整|改进|重做|按刚才|根据刚才)/.test(prompt.trim()) ? store.history(task).at(-1)?.prompt ?? '' : '';
       skillGoal = [previousGoal, prompt].filter(Boolean).join('\n');
-      const route = routeSkills({prompt: skillGoal, materials: context.materials ?? [], localSkills, customSkill});
+      const route = routeSkills({prompt: skillGoal, materials: context.materials ?? [], localSkills, customSkill,registrySnapshot:skillRegistrySnapshot});
       session = createSkillSession({store, task, run: id, localSkills, route, scope, tools, signal, context: {...context, goal: skillGoal}});
       automatic = await session.prepare();
-      context = {...context, skillRoute: automatic.route};
+      const {registrySnapshot: frozenRegistry, ...visibleRoute}=automatic.route;
+      context = {...context, skillRoute: visibleRoute};
     }
     const contract = systemContract({taskId: task, ...context, plan: skillAccess ? currentPlan(store, task) : null}, scope, addedTools) + (skillAccess ? `
 复杂多步任务使用 update_plan 维护可见计划，简单问答直接回复。首次 expected_revision=0，已有计划使用任务上下文中的 revision。按实际进展更新，阻塞时解释原因，停止和失败时保留未完成步骤。计划状态由你报告，不能作为独立验证结果。
@@ -380,6 +384,7 @@ For finish_skill.evidence, use operationReceipts from verify_skill_output or the
         const taskOperation = ['read_file', 'create_file', 'replace_in_file', 'material_preflight', 'precheck_table', 'analyze_csv', projectTestTool.name].includes(call.function.name);
         const applicabilityFailure = session && taskOperation ? await session.guardActive() : null;
         if (session && !applicabilityFailure && (['read_file', 'create_file', 'replace_in_file'].includes(call.function.name) || projectTest && projectTestsEnabled)) await session.autoStart();
+        const dependencyFailure=taskOperation?session?.guardDependencies():null;
         const plan = skills ? currentPlan(store, task) : null;
         const planStep = plan?.steps.find(item => item.status === 'in_progress')?.id ?? null;
         const planRef = planStep && call.function.name !== 'update_plan'
@@ -387,7 +392,7 @@ For finish_skill.evidence, use operationReceipts from verify_skill_output or the
         const activeSkill = session?.active();
         const skillRef = activeSkill ? {skillId: activeSkill} : {};
         store.record(id, 'tool', {step, name: call.function.name, ...planRef, ...skillRef});
-        const output = (toolAllowlist && !toolAllowlist.includes(call.function.name) ? failure(fileErrors, 'UNKNOWN_TOOL') : null) ?? applicabilityFailure ?? (projectTest ? await runProjectTests(call, {entry, scope, signal, store, run: id}) :
+        const output = (toolAllowlist && !toolAllowlist.includes(call.function.name) ? failure(fileErrors, 'UNKNOWN_TOOL') : null) ?? applicabilityFailure ?? dependencyFailure ?? (projectTest ? await runProjectTests(call, {entry, scope, signal, store, run: id}) :
           skills && addedTools.some(tool => tool.function.name === call.function.name)
             ? await skills.execute(call) : await executeTool(call, workspace, signal, scope));
         lastOutputs.push(output);

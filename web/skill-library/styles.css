@@ -359,3 +359,9 @@ body { position:fixed; inset:0; }
 .graph-budget {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px;color:var(--muted);font-size:11px;}
 .graph-budget select {max-width:130px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);padding:5px;}
 .list-more {text-align:center;color:var(--muted);border-top:1px solid var(--line);}
+.registry-editor {margin:18px 0;padding-top:16px;border-top:1px solid var(--line);font-size:12px;}
+.registry-editor p {overflow-wrap:anywhere;color:var(--muted);line-height:1.6;}
+.registry-editor code {font-size:10px;overflow-wrap:anywhere;}
+.registry-editor select,.registry-editor input {display:block;width:100%;margin:8px 0;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);}
+.registry-editor button {margin:4px 0;}
+.registry-editor details {margin:14px 0;}

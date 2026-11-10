@@ -251,6 +251,7 @@ function graphMessage(action, data = {}) {
 window.addEventListener('message', async event => {
   if (event.source !== graphFrame.contentWindow || event.origin !== location.origin || event.data?.type !== 'sih-skill-graph') return;
   const {action,id} = event.data;
+  if(action==='selected'&&typeof id==='string'){graphFocus=id;return;}
   if (action === 'ready') {
     try {
       const context=task?.id ? '?task='+encodeURIComponent(task.id) : '';

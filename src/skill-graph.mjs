@@ -1,5 +1,6 @@
 import {RequestError} from './store.mjs';
 import {skillMarkdown} from './skill-files.mjs';
+import {createSkillRegistry} from './skill-registry.mjs';
 
 const normalized = text => text.normalize('NFKC').toLowerCase();
 const pairKey = (a, b) => [a, b].sort().join(':');
@@ -9,7 +10,7 @@ function terms(text) {
     .filter(item => item.isWordLike && item.segment.length >= 2 && !meaningful.has(item.segment)).map(item => item.segment));
 }
 
-export function createSkillGraph({store, studio, projectFor}) {
+export function createSkillGraph({store, studio, projectFor,registry=createSkillRegistry({store,studio,projectFor})}) {
   store.db.exec(`CREATE TABLE IF NOT EXISTS skill_graph_relations (
     scope TEXT NOT NULL, source TEXT NOT NULL, target TEXT NOT NULL, created_at TEXT NOT NULL,
     PRIMARY KEY (scope, source, target)
@@ -21,11 +22,14 @@ export function createSkillGraph({store, studio, projectFor}) {
   let cachedKey = '', cachedGraph;
   function snapshot(context) {
     const installed = skills(context);
+    const registered=registry.snapshot(context,installed);
     const key = JSON.stringify([scopeFor(context),installed.map(skill=>[skill.id,skill.version,skill.storagePath,skill.projectId])]);
     const manualEdges = nodes => {
       const ids = new Set(nodes.map(node=>node.id));
       return store.query('SELECT source,target FROM skill_graph_relations WHERE scope=? ORDER BY source,target','all',scopeFor(context))
-        .filter(edge=>ids.has(edge.source)&&ids.has(edge.target)).map(edge=>({...edge,kind:'manual'}));
+        .filter(edge=>ids.has(edge.source)&&ids.has(edge.target)).map(edge=>({...edge,kind:'manual'}))
+        .concat(registered.relations.filter(edge=>ids.has(edge.source)&&ids.has(edge.target)).map(edge=>({...edge,kind:'manual',registryType:edge.type,
+          forward:false,backward:edge.type==='depend_on'})));
     };
     if (cachedGraph && cachedKey === key) return {...cachedGraph,edges:[...cachedGraph.edges,...manualEdges(cachedGraph.nodes)],issues:studio.issues()};
     const nodes = installed.map(skill => ({id:skill.id, name:skill.name, slug:skill.name,

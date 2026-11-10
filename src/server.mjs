@@ -24,6 +24,9 @@ import { executePreflight, preflightInput } from './preflight.mjs';
 import { parseSkillFile, readSkillDirectory } from './skill-import.mjs';
 import { optimizePrompt } from './prompt-optimizer.mjs';
 import { createSkillLibraries } from './skill-libraries.mjs';
+import {createSkillRegistry,registryContract,registryErrors} from './skill-registry.mjs';
+import {validate} from './schema.mjs';
+import {success,failure} from './tool-contract.mjs';
 
 const assets = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'],
   '/skill-studio.js': ['skill-studio.js', 'text/javascript'],
@@ -143,10 +146,12 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
     if (taskId != null) store.task(taskId);
     return selectedProject ? {projectId: store.project(projectId(selectedProject)).id} : taskId;
   }
-  const skillGraph = createSkillGraph({store,studio:skillStudio,projectFor:context=>{
+  const registryProjectFor=context=>{
     if (!context) return null;
     return typeof context === 'object' ? store.project(context.projectId).id : store.task(context).project_id;
-  }});
+  };
+  const skillRegistry=createSkillRegistry({store,studio:skillStudio,projectFor:registryProjectFor});
+  const skillGraph = createSkillGraph({store,studio:skillStudio,projectFor:registryProjectFor,registry:skillRegistry});
   const settings = await createSettings({store, env});
   let studioController;
   let optimizerController;
@@ -169,6 +174,25 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
         res.writeHead(200, {'content-type': `${type}; charset=utf-8`});
         res.end(body);
         return;
+      }
+      if(pathname==='/api/skill-registry/contract'&&req.method==='GET')return json(res,200,registryContract);
+      const historicalRegistry=/^\/api\/runs\/([a-f\d-]{36})\/skill-registry$/.exec(pathname);
+      if(historicalRegistry&&req.method==='GET'){
+        try{return json(res,200,success(skillRegistry.forRun(historicalRegistry[1])));}
+        catch(error){if(registryErrors[error.code])return json(res,error.status,failure(registryErrors,error.code));throw error;}
+      }
+      if(pathname==='/api/skill-registry'&&req.method==='GET')return json(res,200,success(skillRegistry.snapshot(skillContext(searchParams.get('task')||null,searchParams.get('project')))));
+      const registryAction=/^\/api\/skill-registry\/(relations|bindings|overrides)$/.exec(pathname);
+      if(registryAction&&['POST','DELETE'].includes(req.method)){
+        const body=await input(req,8000);
+        const context=skillContext(searchParams.get('task')||null,searchParams.get('project'));
+        const name={relations:'relation',bindings:'binding',overrides:'override'}[registryAction[1]];
+        const contract=registryContract.operations.find(item=>item.name===name);
+        if(validate(contract.parameters,body).length)return json(res,422,failure(registryErrors,'INVALID_RELATION'));
+        try{
+          const method={relation:'relation',binding:'bind',override:'override'}[name];
+          return json(res,200,success(skillRegistry[method]({context,...body,remove:req.method==='DELETE'})));
+        }catch(error){if(registryErrors[error.code])return json(res,error.status,failure(registryErrors,error.code));throw error;}
       }
       if (pathname.startsWith('/api/skill-graph/')) {
         const context = skillContext(searchParams.get('task') || null,searchParams.get('project'));
@@ -607,6 +631,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             entry.job = (workflow ? executeAudit({id: run.id, task, goal: prompt, request: workflow, store,
               file: attachment, model: config.model, limits, signal: controller.signal, entry}) : executeRun({id: run.id, task, prompt, store, workspace: taskWorkspace, ...config, skill, attachment,
               scope: fileScope ? {...fileScope, state} : null,
+              skillRegistrySnapshot:skillRegistry.snapshot(task,localSkills),
               context: {title: currentTask.title, goal: prompt, selectedFile: attachment ? {id: attachment.id, name: attachment.name, kind: attachment.kind} : null,
                 materials: materials.map(material => ({...material,
                 path: material.path.endsWith('.image') ? '' : fileScope?.mode && fileScope.mode !== 'attachments' ? 'attachment:' + material.path : material.path})),

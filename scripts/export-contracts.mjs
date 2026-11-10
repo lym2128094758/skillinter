@@ -7,11 +7,13 @@ import { mappingDecisionSchema, optionalDecisionSchema } from '../src/audit-plan
 import { applicabilitySchema, applicabilityResultSchema } from '../src/skill-applicability.mjs';
 import { deliverySchema, deliveryResultSchema } from '../src/skill-delivery.mjs';
 import {executionPlanSchema,executionTools} from '../src/skill-execution.mjs';
+import {registryContract} from '../src/skill-registry.mjs';
 
 const docs = new URL('../docs/', import.meta.url);
 await mkdir(docs, {recursive: true});
 await writeFile(new URL('tool-registry.json', docs), JSON.stringify({
   generatedFrom: ['src/tools.mjs', 'src/chat-skills.mjs', 'src/skill-session.mjs', 'src/skill-applicability.mjs', 'src/skill-delivery.mjs', 'src/skill-execution.mjs', 'src/task-plan.mjs', 'src/project-tests.mjs', 'src/preflight.mjs', 'src/audit-tools.mjs', 'src/audit-planner.mjs', 'src/workflow.mjs', 'config.yaml'],
+  skillRegistry:registryContract,
   file: {version: CONTRACT_VERSION, tools: fileToolRegistry},
   conversation: {version: 1, tools: chatSkillRegistry, skillApplicability: {parameters: applicabilitySchema, result: applicabilityResultSchema},
     skillDelivery: {parameters: deliverySchema, result: deliveryResultSchema},

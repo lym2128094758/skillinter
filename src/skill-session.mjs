@@ -37,7 +37,7 @@ const definitions = [
     parameters: object({skill_id: string}), data: object({id: string, name: string, status: {enum: ['running']}})},
   {name: 'verify_skill_output', description: '只读重读技能版本事先声明的项目产物，核对冻结的文本或 JSON 条件与原始输入指纹。返回 passed/failed/unknown/unspecified，只覆盖声明范围。条件未在文件操作前冻结则 unknown；不得把模型自行判断当作验收。',
     parameters: object({skill_id: string}), data: deliveryResultSchema},
-  {name: 'revise_skill_route', description: '按任务实际需要调整技能链，可移除不适用前置技能或换用已安装替代技能。必须解释调整依据；不会清除既有调用记录，不修改文件权限。',
+  {name: 'revise_skill_route', description: '按任务需要换用已安装替代技能或移除不再采用的方法，必须解释依据。本轮冻结的硬依赖不可跳过；保留依赖技能时须保留或先完成其前置。不清除既有回执，不修改权限。',
     parameters: object({skill_ids: {type: 'array', maxItems: 6, items: string}, rationale: {...string, minLength: 1}}),
     data: object({skills: strings, rationale: string})},
   {name: 'finish_skill', description: '记录技能应用结果。applied 仅表示 Agent 报告已应用且存在本轮真实回执，不代表独立质量验收。evidence 为该技能实际工具回执的序号；blocked/failed 可不带回执，但须说明原因。',
@@ -55,7 +55,13 @@ export const skillSessionRegistry = definitions.map(({data, ...definition}) => (
   timeoutMode: '受本轮取消信号和 15 秒工具超时约束。'}));
 
 export function createSkillSession({store, task, run, localSkills, route, scope, tools, signal, context = {}}) {
+  route=structuredClone(route);
+  const registry=route.registrySnapshot;
   const versions = new Map(localSkills.map(skill => [skill.id, skill]));
+  const endpoint=id=>registry?id:localSkills.find(skill=>skill.name===id)?.id;
+  const nodeId=skill=>registry?skill.id:graphNodeId(skill.name);
+  const dependencies=id=>(registry?.relations??route.relations).filter(edge=>edge.type==='depend_on'&&endpoint(edge.source)===id).map(edge=>endpoint(edge.target));
+  const registryBlocked=id=>registry?.issues.some(issue=>issue.skillId===id&&['DEPENDENCY_CYCLE','RELATION_ENDPOINT_UNAVAILABLE','EXTERNAL_DEPENDENCY_UNBOUND'].includes(issue.code));
   const packages = new Map(), loaded = new Set(), states = new Map(), evidence = new Map();
   let active = null;
   let finalized = false;
@@ -226,13 +232,13 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
   }
   function emit() {
     const candidates = [...new Map([...route.candidates.map(item => [item.id, item]), ...[...loaded].map(id => {
-      const skill = skillFor(id); return [id, {id, name: skill.name, version: skill.version, nodeId: graphNodeId(skill.name), reason: '已加载技能'}];
+      const skill = skillFor(id); return [id, {id, name: skill.name, version: skill.version, nodeId: nodeId(skill), reason: '已加载技能'}];
     })]).values()];
     const graph = {nodes: candidates.map(skill => ({...skill, step: skill.id, label: skill.name,
       state: states.get(skill.id)?.state ?? 'planned', started: states.get(skill.id)?.started ?? false,
       evidence: states.get(skill.id)?.evidence ?? [], summary: states.get(skill.id)?.summary ?? ''})),
-    edges: route.relations.filter(edge => edge.type === 'depend_on').map(edge => ({from: candidates.find(item => item.name === edge.target)?.id, to: candidates.find(item => item.name === edge.source)?.id}))
-      .filter(edge => edge.from && edge.to)};
+    edges: (registry?.relations??route.relations).filter(edge => edge.type === 'depend_on').map(edge => ({from: endpoint(edge.target), to: endpoint(edge.source)}))
+      .filter(edge => candidates.some(item=>item.id===edge.from)&&candidates.some(item=>item.id===edge.to))};
     const trace = {kind: 'skill-session', attempt: 1, graph, graphSha256: route.graphSha256};
     store.record(run, 'skill_runtime', trace);
     return trace;
@@ -301,13 +307,16 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
       return {route: {...route, candidates: cards}, guides};
     },
     active: () => active,
+    guardDependencies() {
+      if(!registry||active)return null;
+      if(route.candidates.some(item=>states.get(item.id)?.state!=='applied'&&(registryBlocked(item.id)||dependencies(item.id).some(id=>states.get(id)?.state!=='applied'))))return failure(sessionErrors,'DEPENDENCY_INCOMPLETE');
+      return null;
+    },
     async autoStart() {
       if (active) return active;
       for (const item of route.candidates) {
         if (['applied', 'failed'].includes(states.get(item.id)?.state)) continue;
-        const dependencies = route.relations.filter(edge => edge.type === 'depend_on' && edge.source === item.name)
-          .map(edge => route.candidates.find(skill => skill.name === edge.target));
-        if (dependencies.some(dependency => dependency && states.get(dependency.id)?.state !== 'applied')) continue;
+        if (registryBlocked(item.id)||dependencies(item.id).some(id=>states.get(id)?.state!=='applied')) continue;
         const result = await this.execute('start_skill', {skill_id: item.id});
         if (result.ok) { store.record(run, 'skill_auto_started', {id: item.id, name: item.name, reason: '首个任务操作自动绑定默认技能'}); return item.id; }
       }
@@ -342,10 +351,11 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
         if (name === 'revise_skill_route') {
           if (new Set(args.skill_ids).size !== args.skill_ids.length || active && !args.skill_ids.includes(active)) return failure(sessionErrors, 'SKILL_ACTIVE');
           const chosen = args.skill_ids.map(skillFor);
-          route.candidates = chosen.map(skill => ({id: skill.id, name: skill.name, version: skill.version, nodeId: graphNodeId(skill.name), description: skill.description.slice(0, 500), reason: args.rationale}));
+          if(registry&&chosen.some(skill=>registryBlocked(skill.id)||dependencies(skill.id).some(id=>!args.skill_ids.includes(id)&&states.get(id)?.state!=='applied')))throw namedError('DEPENDENCY_INCOMPLETE');
+          route.candidates = chosen.map(skill => ({id: skill.id, name: skill.name, version: skill.version, nodeId: nodeId(skill), description: skill.description.slice(0, 500), reason: args.rationale}));
           const names = new Set(chosen.map(skill => skill.name));
-          route.relations = relationsForSkills([...names]);
-          route.missingDependencies = [];
+          route.relations = registry?registry.relations.filter(edge=>args.skill_ids.includes(edge.source)&&args.skill_ids.includes(edge.target)):relationsForSkills([...names]);
+          if(!registry)route.missingDependencies = [];
           route.revision = (route.revision ?? 0) + 1;
           store.record(run, 'skill_route', {...route, rationale: args.rationale}); emit();
           return success({skills: chosen.map(skill => skill.name), rationale: args.rationale});
@@ -376,9 +386,8 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
           if (info.readiness.status === 'blocked') throw namedError('REQUIREMENTS_MISSING');
           if (!applicable(info)) rejectApplicability(skill, info);
           if (active && active !== skill.id) throw namedError('SKILL_ACTIVE');
-          if (route.missingDependencies?.some(item => item.skill === skill.name)) throw namedError('DEPENDENCY_INCOMPLETE');
-          const dependencies = route.relations.filter(edge => edge.type === 'depend_on' && edge.source === skill.name).map(edge => route.candidates.find(item => item.name === edge.target));
-          if (dependencies.some(item => item && states.get(item.id)?.state !== 'applied')) throw namedError('DEPENDENCY_INCOMPLETE');
+          if (registryBlocked(skill.id)||dependencies(skill.id).some(id=>states.get(id)?.state!=='applied'))throw namedError('DEPENDENCY_INCOMPLETE');
+          if (route.missingDependencies?.some(item => registry?item.skillId===skill.id:item.skill === skill.name)) throw namedError('DEPENDENCY_INCOMPLETE');
           await load(skill.id);
           active = skill.id; activated.add(skill.id); states.set(skill.id, {state: 'running', started: true}); emit();
           data = {id: skill.id, name: skill.name, status: 'running'};

@@ -132,9 +132,24 @@ try {
     "!document.querySelector('#graph-run-evidence').hidden&&JSON.parse(document.querySelector('#graph-run-evidence').dataset.highlighted||'null')"));
   assert.deepEqual(active, checked.preflight.trace.graph.nodes.map(node => installed.get(node.nodeId)));
   await checkEmbedded(active);
+  const [relationA,relationB]=[...installed.values()];
+  await run("document.querySelector('#skill-graph-frame').contentWindow.SkillLibraryHost.focus("+JSON.stringify(relationA)+");true");
+  await waitFor('执行关系编辑器',()=>run("document.querySelector('#skill-graph-frame').contentDocument.querySelector('#registryEditor code')?.textContent==="+JSON.stringify(relationA)));
+  const edit=(expression)=>run("(()=>{const d=document.querySelector('#skill-graph-frame').contentDocument;"+expression+";return true})()");
+  await edit("d.querySelector('[aria-label=\"关系目标技能\"]').value="+JSON.stringify(relationB)+";[...d.querySelectorAll('#registryEditor button')].find(b=>b.textContent==='保存执行关系').click()");
+  await waitFor('页面保存真实依赖',async()=>{
+    const data=await(await get('/api/skill-registry?task='+task)).json();
+    return data.data.relations.some(edge=>edge.source===relationA&&edge.target===relationB&&edge.type==='depend_on');
+  });
+  await waitFor('关系可从页面移除',()=>run("[...document.querySelector('#skill-graph-frame').contentDocument.querySelectorAll('#registryEditor button')].some(b=>b.textContent==='移除此执行关系')"));
+  await edit("[...d.querySelectorAll('#registryEditor button')].find(b=>b.textContent==='移除此执行关系').click()");
+  await waitFor('页面移除真实依赖',async()=>{
+    const data=await(await get('/api/skill-registry?task='+task)).json();
+    return !data.data.relations.some(edge=>edge.source===relationA&&edge.target===relationB&&edge.type==='depend_on');
+  });
   const output = resolve('.skillinter/evaluation');
   await mkdir(output, {recursive: true});
-  await writeFile(join(output, 'graph-ci.json'), JSON.stringify({passed: true, results}, null, 2) + '\n');
+  await writeFile(join(output, 'graph-ci.json'), JSON.stringify({passed: true, results,registryEditor:{saved:true,removed:true}}, null, 2) + '\n');
   console.log('图谱验收通过：历史链路和空候选与计划一致，材料预检可提交、引用发现并定位执行路径。');
 } finally {
   socket?.close();

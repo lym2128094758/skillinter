@@ -32,6 +32,7 @@
   let executionIds = new Set(), executionStates = new Map(), hostEnabled = true;
   window.SkillLibraryHost = {
     selected: () => state.selectedId,
+    async reload(){const id=state.selectedId;await loadLibrary();if(id&&state.nodes.some(node=>node.id===id))await selectNode(id);},
     focus(id) {
       if (!state.nodes.some(node=>node.id===id)) return;
       $("searchInput").value='';state.hiddenGroups.clear();state.mode='global';rebuild(true);
@@ -408,7 +409,7 @@
       const button=document.createElement("button");button.textContent=other.name;button.className="neighbor-button";
       button.title=e.kinds.map((kind)=>({mention:"正文提及",manual:"自定义关联",topic:"推测主题"}[kind])).join("、");
       button.addEventListener("click",()=>selectNode(other.id));$("detailNeighbors").append(button);
-      if(e.kinds.includes('manual')) {
+      if(e.kinds.includes('manual')&&state.edges.some(raw=>raw.kind==='manual'&&!raw.registryType&&new Set([raw.source,raw.target]).has(id)&&new Set([raw.source,raw.target]).has(other.id))) {
         const remove=document.createElement('button');remove.className='neighbor-button';remove.textContent='移除与 '+other.name+' 的自定义关联';
         remove.addEventListener('click',async()=>{
           try {
@@ -420,6 +421,7 @@
         $('detailNeighbors').append(remove);
       }
     }
+    window.dispatchEvent(new CustomEvent('sih-skill-selected',{detail:{id}}));
     state.detailController?.abort();state.detailController=new AbortController();
     $("detailContent").textContent="正在读取 Skill 文件…";
     try {

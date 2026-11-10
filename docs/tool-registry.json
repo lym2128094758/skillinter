@@ -14,6 +14,1111 @@
     "src/workflow.mjs",
     "config.yaml"
   ],
+  "skillRegistry": {
+    "version": 1,
+    "operations": [
+      {
+        "name": "relation",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "type": {
+              "enum": [
+                "depend_on",
+                "compose_with",
+                "similar_to"
+              ]
+            },
+            "expectedRevision": {
+              "type": "string",
+              "maxLength": 64,
+              "minLength": 64
+            }
+          },
+          "required": [
+            "source",
+            "target",
+            "type",
+            "expectedRevision"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "revision": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    },
+                    "source": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "target": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "type": {
+                      "enum": [
+                        "depend_on",
+                        "compose_with",
+                        "similar_to"
+                      ]
+                    },
+                    "removed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "revision",
+                    "source",
+                    "target",
+                    "type",
+                    "removed"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_RELATION": "关系类型或技能端点无效。",
+          "SKILL_NOT_FOUND": "当前范围内没有该技能。",
+          "DEPENDENCY_CYCLE": "依赖关系存在循环，未保存。",
+          "EXTERNAL_ID_UNKNOWN": "原目录中没有这个外部 ID。",
+          "IDENTITY_CONFLICT": "此外部身份已绑定到其他技能，请先解除原绑定。",
+          "INVALID_OVERRIDE": "覆盖必须由当前项目技能指向一个用户技能。",
+          "REGISTRY_CHANGED": "技能关系已变化，请刷新后重试。",
+          "SNAPSHOT_UNAVAILABLE": "历史运行没有注册表快照，不能用当前关系追认。",
+          "SNAPSHOT_CHANGED": "历史注册表快照指纹不一致。"
+        },
+        "timeoutMs": 5000,
+        "idempotent": true,
+        "volatile": [],
+        "authorization": "本机同源用户在选定项目或用户范围显式编辑；不增加任务权限。",
+        "ordering": "按作用范围与 UUID 固定排序。",
+        "timeoutMode": "有界本机同步数据库事务。"
+      },
+      {
+        "name": "binding",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "skillId": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "externalId": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "expectedRevision": {
+              "type": "string",
+              "maxLength": 64,
+              "minLength": 64
+            }
+          },
+          "required": [
+            "skillId",
+            "externalId",
+            "expectedRevision"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "revision": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "revision"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_RELATION": "关系类型或技能端点无效。",
+          "SKILL_NOT_FOUND": "当前范围内没有该技能。",
+          "DEPENDENCY_CYCLE": "依赖关系存在循环，未保存。",
+          "EXTERNAL_ID_UNKNOWN": "原目录中没有这个外部 ID。",
+          "IDENTITY_CONFLICT": "此外部身份已绑定到其他技能，请先解除原绑定。",
+          "INVALID_OVERRIDE": "覆盖必须由当前项目技能指向一个用户技能。",
+          "REGISTRY_CHANGED": "技能关系已变化，请刷新后重试。",
+          "SNAPSHOT_UNAVAILABLE": "历史运行没有注册表快照，不能用当前关系追认。",
+          "SNAPSHOT_CHANGED": "历史注册表快照指纹不一致。"
+        },
+        "timeoutMs": 5000,
+        "idempotent": true,
+        "volatile": [],
+        "authorization": "本机同源用户在选定项目或用户范围显式编辑；不增加任务权限。",
+        "ordering": "按作用范围与 UUID 固定排序。",
+        "timeoutMode": "有界本机同步数据库事务。"
+      },
+      {
+        "name": "override",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "projectSkillId": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "globalSkillId": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "expectedRevision": {
+              "type": "string",
+              "maxLength": 64,
+              "minLength": 64
+            }
+          },
+          "required": [
+            "projectSkillId",
+            "globalSkillId",
+            "expectedRevision"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "revision": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "revision"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_RELATION": "关系类型或技能端点无效。",
+          "SKILL_NOT_FOUND": "当前范围内没有该技能。",
+          "DEPENDENCY_CYCLE": "依赖关系存在循环，未保存。",
+          "EXTERNAL_ID_UNKNOWN": "原目录中没有这个外部 ID。",
+          "IDENTITY_CONFLICT": "此外部身份已绑定到其他技能，请先解除原绑定。",
+          "INVALID_OVERRIDE": "覆盖必须由当前项目技能指向一个用户技能。",
+          "REGISTRY_CHANGED": "技能关系已变化，请刷新后重试。",
+          "SNAPSHOT_UNAVAILABLE": "历史运行没有注册表快照，不能用当前关系追认。",
+          "SNAPSHOT_CHANGED": "历史注册表快照指纹不一致。"
+        },
+        "timeoutMs": 5000,
+        "idempotent": true,
+        "volatile": [],
+        "authorization": "本机同源用户在选定项目或用户范围显式编辑；不增加任务权限。",
+        "ordering": "按作用范围与 UUID 固定排序。",
+        "timeoutMode": "有界本机同步数据库事务。"
+      }
+    ],
+    "reads": {
+      "snapshot": {
+        "path": "GET /api/skill-registry?task=<id> 或 project=<id>",
+        "parameters": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "schemaVersion": {
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "scope": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "skills": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "skillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "contentSha256": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "minLength": 64
+                          },
+                          "projectId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              {
+                                "enum": [
+                                  null
+                                ]
+                              }
+                            ]
+                          },
+                          "name": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "selectable": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "skillId",
+                          "version",
+                          "contentSha256",
+                          "projectId",
+                          "name",
+                          "description",
+                          "selectable"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "relations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "scope": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "source": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "target": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "type": {
+                            "enum": [
+                              "depend_on",
+                              "compose_with",
+                              "similar_to"
+                            ]
+                          },
+                          "provenance": {
+                            "enum": [
+                              "user-declaration",
+                              "explicit-catalog-binding"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "scope",
+                          "source",
+                          "target",
+                          "type",
+                          "provenance"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "externalRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "scope": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "skillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "provider": {
+                            "enum": [
+                              "skillnet"
+                            ]
+                          },
+                          "revision": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "minLength": 64
+                          }
+                        },
+                        "required": [
+                          "scope",
+                          "externalId",
+                          "skillId",
+                          "provider",
+                          "revision"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "overrides": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "projectSkillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "globalSkillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        },
+                        "required": [
+                          "projectSkillId",
+                          "globalSkillId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "issues": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "skillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "target": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "skillId",
+                          "target"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "catalogSha256": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    },
+                    "revision": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    }
+                  },
+                  "required": [
+                    "schemaVersion",
+                    "scope",
+                    "skills",
+                    "relations",
+                    "externalRefs",
+                    "overrides",
+                    "issues",
+                    "catalogSha256",
+                    "revision",
+                    "sha256"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "history": {
+        "path": "GET /api/runs/<id>/skill-registry",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "runId": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "runId"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "schemaVersion": {
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "scope": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "skills": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "skillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "version": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "contentSha256": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "minLength": 64
+                          },
+                          "projectId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 1000
+                              },
+                              {
+                                "enum": [
+                                  null
+                                ]
+                              }
+                            ]
+                          },
+                          "name": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "selectable": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "skillId",
+                          "version",
+                          "contentSha256",
+                          "projectId",
+                          "name",
+                          "description",
+                          "selectable"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "relations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "scope": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "source": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "target": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "type": {
+                            "enum": [
+                              "depend_on",
+                              "compose_with",
+                              "similar_to"
+                            ]
+                          },
+                          "provenance": {
+                            "enum": [
+                              "user-declaration",
+                              "explicit-catalog-binding"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "scope",
+                          "source",
+                          "target",
+                          "type",
+                          "provenance"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "externalRefs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "scope": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "skillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "provider": {
+                            "enum": [
+                              "skillnet"
+                            ]
+                          },
+                          "revision": {
+                            "type": "string",
+                            "maxLength": 64,
+                            "minLength": 64
+                          }
+                        },
+                        "required": [
+                          "scope",
+                          "externalId",
+                          "skillId",
+                          "provider",
+                          "revision"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "overrides": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "projectSkillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "globalSkillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        },
+                        "required": [
+                          "projectSkillId",
+                          "globalSkillId"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "issues": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "skillId": {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          "target": {
+                            "type": "string",
+                            "maxLength": 1000
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "skillId",
+                          "target"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "catalogSha256": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    },
+                    "revision": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "maxLength": 64,
+                      "minLength": 64
+                    }
+                  },
+                  "required": [
+                    "schemaVersion",
+                    "scope",
+                    "skills",
+                    "relations",
+                    "externalRefs",
+                    "overrides",
+                    "issues",
+                    "catalogSha256",
+                    "revision",
+                    "sha256"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "errors": {
+        "INVALID_RELATION": "关系类型或技能端点无效。",
+        "SKILL_NOT_FOUND": "当前范围内没有该技能。",
+        "DEPENDENCY_CYCLE": "依赖关系存在循环，未保存。",
+        "EXTERNAL_ID_UNKNOWN": "原目录中没有这个外部 ID。",
+        "IDENTITY_CONFLICT": "此外部身份已绑定到其他技能，请先解除原绑定。",
+        "INVALID_OVERRIDE": "覆盖必须由当前项目技能指向一个用户技能。",
+        "REGISTRY_CHANGED": "技能关系已变化，请刷新后重试。",
+        "SNAPSHOT_UNAVAILABLE": "历史运行没有注册表快照，不能用当前关系追认。",
+        "SNAPSHOT_CHANGED": "历史注册表快照指纹不一致。"
+      },
+      "timeoutMs": 5000,
+      "idempotent": true,
+      "volatile": [],
+      "ordering": "作用范围与 UUID 稳定排序。",
+      "authorization": "同源读取本机技能配置及指定运行的固定事件，不授予执行权限。"
+    },
+    "semantics": {
+      "depend_on": "source 依赖 target，target 必须先应用完成",
+      "compose_with": "互补建议，无执行顺序",
+      "similar_to": "替代建议，不自动加入执行链",
+      "legacy": "旧 manual/mention/topic 均为浏览关系，外部目录关系需要显式身份绑定"
+    }
+  },
   "file": {
     "version": 4,
     "tools": [
@@ -3432,7 +4537,7 @@
       },
       {
         "name": "revise_skill_route",
-        "description": "按任务实际需要调整技能链，可移除不适用前置技能或换用已安装替代技能。必须解释调整依据；不会清除既有调用记录，不修改文件权限。",
+        "description": "按任务需要换用已安装替代技能或移除不再采用的方法，必须解释依据。本轮冻结的硬依赖不可跳过；保留依赖技能时须保留或先完成其前置。不清除既有回执，不修改权限。",
         "parameters": {
           "type": "object",
           "properties": {

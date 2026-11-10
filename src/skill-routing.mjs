@@ -14,13 +14,14 @@ function words(text) {
 }
 
 /** Small, deterministic candidate set. Graph relationships never grant execution rights. */
-export function routeSkills({prompt, materials = [], localSkills, customSkill, maxSkills = 6, graphData = graph}) {
+export function routeSkills({prompt, materials = [], localSkills, customSkill, maxSkills = 6, graphData = graph, registrySnapshot,preserveIdentities=false}) {
+  if(registrySnapshot)return routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkills,registrySnapshot});
   const preferred = new Map();
   for (const skill of localSkills) {
     const previous = preferred.get(skill.name);
     if (!previous || !previous.projectId && skill.projectId) preferred.set(skill.name, skill);
   }
-  localSkills = [...preferred.values()];
+  if(!preserveIdentities)localSkills = [...preferred.values()];
   const query = normal(prompt);
   const terms = words(prompt);
   const documents = localSkills.map(skill => ({skill, name: normal(skill.name), text: normal(skill.name + ' ' + skill.description + ' ' + (skill.applicability?.goals ?? []).join(' '))}));
@@ -81,4 +82,46 @@ export function graphNodeId(name) { return graphIds.has(name) ? name : ''; }
 export function relationsForSkills(names) {
   const selected = new Set(names);
   return graph.edges.filter(edge => selected.has(edge.source) && selected.has(edge.target) && ['depend_on', 'compose_with'].includes(edge.type));
+}
+
+function routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkills,registrySnapshot}) {
+  const snapshot=structuredClone(registrySnapshot);
+  const allowed=new Set(snapshot.skills.filter(skill=>skill.selectable).map(skill=>skill.skillId));
+  // Ranking is still deterministic; UUID identity replaces legacy name projection.
+  const ranked=routeSkills({prompt,materials,customSkill,localSkills:localSkills.filter(skill=>allowed.has(skill.id)),
+    maxSkills,graphData:{nodes:[],edges:[]},preserveIdentities:true});
+  const versions=new Map(localSkills.map(skill=>[skill.id,skill]));
+  const selected=new Map(),visiting=new Set(),missing=[],warnings=[...ranked.warnings];
+  function add(id,reason,depth=0){
+    if(selected.has(id))return;
+    if(visiting.has(id)){warnings.push('技能依赖存在循环，已阻止开始。');return;}
+    const skill=versions.get(id);
+    if(!skill)return;
+    if(depth>8||selected.size>=maxSkills){warnings.push('技能链达到上限，缺少的依赖不能被跳过。');return;}
+    visiting.add(id);
+    for(const edge of snapshot.relations.filter(edge=>edge.source===id&&edge.type==='depend_on')){
+      if(versions.has(edge.target))add(edge.target,skill.name+' 的前置技能',depth+1);
+      else missing.push({skillId:id,skill:skill.name,dependency:edge.target});
+    }
+    visiting.delete(id);
+    if(selected.size<maxSkills)selected.set(id,{id,name:skill.name,version:skill.version,nodeId:id,reason,description:skill.description.slice(0,500)});
+  }
+  const primary=customSkill?[{id:customSkill.id,reason:'用户明确选择'}]:ranked.ranking.slice(0,2)
+    .filter(item=>item.score>=ranked.ranking[0].score*.85).map(item=>({...item,reason:'任务匹配：'+item.matched.slice(0,5).join('、')}));
+  for(const item of primary){
+    const skill=versions.get(item.id);
+    if(!customSkill&&localSkills.filter(other=>allowed.has(other.id)&&normal(other.name)===normal(skill.name)).length>1){warnings.push('同名技能身份不唯一：'+skill.name+'，请按作用范围明确选择或声明项目覆盖。');continue;}
+    add(item.id,item.reason);
+  }
+  for(const issue of snapshot.issues)if(selected.has(issue.skillId)){
+    missing.push({skillId:issue.skillId,skill:versions.get(issue.skillId)?.name??issue.skillId,dependency:issue.target,code:issue.code});
+  }
+  const ids=new Set(selected.keys());
+  const relations=snapshot.relations.filter(edge=>ids.has(edge.source)&&ids.has(edge.target));
+  const alternatives=snapshot.relations.filter(edge=>edge.type==='similar_to'&&(ids.has(edge.source)||ids.has(edge.target)))
+    .map(edge=>ids.has(edge.source)?edge.target:edge.source).filter(id=>versions.has(id)&&!ids.has(id));
+  return {...ranked,mode:'registry-task-and-relations',graphSha256:snapshot.sha256,registrySnapshot:snapshot,
+    candidates:[...selected.values()],relations,missingDependencies:missing,warnings:[...new Set(warnings)],
+    alternatives:[...new Set(alternatives)],planRecommended:selected.size>1||ranked.planRecommended,
+    emptyReason:selected.size?'':warnings.join('；')||ranked.emptyReason||'没有适用的已安装技能。'};
 }

@@ -73,12 +73,19 @@ export function renderSkillRuntime(container, run, {taskId, onGraph, onOpen, onR
     card.append(button('查看指南', () => onOpen(node.id)));
     body.append(card);
   }
-  const relationLabels = {depend_on: '依赖', compose_with: '互补'};
-  if (route?.relations.length) body.append(text('p', route.relations.map(edge => edge.source + ' ' + relationLabels[edge.type] + ' ' + edge.target).join('；'), 'status'));
+  const relationLabels = {depend_on: '依赖', compose_with: '互补',similar_to:'可替代'};
+  const relationName=id=>route?.registrySnapshot?.skills.find(skill=>skill.skillId===id)?.name??id;
+  if (route?.relations.length) body.append(text('p', route.relations.map(edge => relationName(edge.source) + ' ' + relationLabels[edge.type] + ' ' + relationName(edge.target)).join('；'), 'status'));
   for (const warning of route?.warnings ?? []) body.append(text('p', warning, 'status'));
   for (const missing of route?.missingDependencies ?? []) body.append(text('p', missing.skill + ' 的目录前置技能尚未安装：' + missing.dependency, 'status'));
   if (route?.alternatives.length) body.append(text('p', '可替代候选：' + route.alternatives.join('、'), 'status'));
   const actions = text('div', '', 'actions');
+  if(route?.registrySnapshot){
+    const snapshot=route.registrySnapshot, frozen=text('details');
+    frozen.append(text('summary','本轮冻结的技能关系 · '+snapshot.revision.slice(0,12)),
+      text('p','固定 '+snapshot.skills.length+' 个技能身份与 '+snapshot.relations.length+' 条关系；后续图谱编辑不改变此记录。','status'));
+    const download=text('a','查看完整关系快照');download.href='/api/runs/'+run.id+'/skill-registry';download.target='_blank';download.rel='noopener';frozen.append(download);body.append(frozen);
+  }
   if (trace) actions.append(button('查看实际技能路径', () => onGraph(trace)));
   actions.append(button('调整计划', onRevise));
   if (run.status === 'completed' && applied) actions.append(button('沉淀此次方法', onCapture));
