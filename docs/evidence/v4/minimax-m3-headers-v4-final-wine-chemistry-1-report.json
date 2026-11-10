@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align total phenols and colour intensity.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-02.csv",
+    "sha256": "80241f7167c485c7c108d426ebf079c2407f6368456cc1ca8b30dfef14d58d21"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "total_phenols",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "colour_strength",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "total_phenols",
+      "source": "总酚含量",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 5,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "80241f7167c485c7c108d426ebf079c2407f6368456cc1ca8b30dfef14d58d21",
+        "record": 1,
+        "column": "总酚含量",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%80%BB%E9%85%9A%E5%90%AB%E9%87%8F"
+      },
+      "rationale": "源表为 UCI 葡萄酒数据集，目标字段总酚含量(total_phenols)对应中文表头'总酚含量'，样本值 2.8/2.65/2.8 符合总酚数值范围；色泽强度(colour_strength)对应中文表头'色泽强度'，样本值 5.64/4.38/5.68 符合色度数值范围。两个映射均为唯一、明确的语义对应，表头中无单位信息，sourceUnit 留空。"
+    },
+    {
+      "target": "colour_strength",
+      "source": "色泽强度",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 9,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "80241f7167c485c7c108d426ebf079c2407f6368456cc1ca8b30dfef14d58d21",
+        "record": 1,
+        "column": "色泽强度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%89%B2%E6%B3%BD%E5%BC%BA%E5%BA%A6"
+      },
+      "rationale": "源表为 UCI 葡萄酒数据集，目标字段总酚含量(total_phenols)对应中文表头'总酚含量'，样本值 2.8/2.65/2.8 符合总酚数值范围；色泽强度(colour_strength)对应中文表头'色泽强度'，样本值 5.64/4.38/5.68 符合色度数值范围。两个映射均为唯一、明确的语义对应，表头中无单位信息，sourceUnit 留空。"
+    }
+  ],
+  "validation": {
+    "rows": 178,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "80241f7167c485c7c108d426ebf079c2407f6368456cc1ca8b30dfef14d58d21",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "80241f7167c485c7c108d426ebf079c2407f6368456cc1ca8b30dfef14d58d21",
+      "record": 1,
+      "column": "总酚含量",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%80%BB%E9%85%9A%E5%90%AB%E9%87%8F"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "80241f7167c485c7c108d426ebf079c2407f6368456cc1ca8b30dfef14d58d21",
+      "record": 1,
+      "column": "色泽强度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%89%B2%E6%B3%BD%E5%BC%BA%E5%BA%A6"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "源表为 UCI 葡萄酒数据集，目标字段总酚含量(total_phenols)对应中文表头'总酚含量'，样本值 2.8/2.65/2.8 符合总酚数值范围；色泽强度(colour_strength)对应中文表头'色泽强度'，样本值 5.64/4.38/5.68 符合色度数值范围。两个映射均为唯一、明确的语义对应，表头中无单位信息，sourceUnit 留空。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "total_phenols",
+                "source": "总酚含量",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表为 UCI 葡萄酒数据集，目标字段总酚含量(total_phenols)对应中文表头'总酚含量'，样本值 2.8/2.65/2.8 符合总酚数值范围；色泽强度(colour_strength)对应中文表头'色泽强度'，样本值 5.64/4.38/5.68 符合色度数值范围。两个映射均为唯一、明确的语义对应，表头中无单位信息，sourceUnit 留空。"
+              },
+              {
+                "target": "colour_strength",
+                "source": "色泽强度",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表为 UCI 葡萄酒数据集，目标字段总酚含量(total_phenols)对应中文表头'总酚含量'，样本值 2.8/2.65/2.8 符合总酚数值范围；色泽强度(colour_strength)对应中文表头'色泽强度'，样本值 5.64/4.38/5.68 符合色度数值范围。两个映射均为唯一、明确的语义对应，表头中无单位信息，sourceUnit 留空。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1596,
+    "outputTokens": 755,
+    "usageComplete": true,
+    "reservedInputBytes": 5396,
+    "reservedOutputTokens": 755,
+    "elapsedMs": 11600,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

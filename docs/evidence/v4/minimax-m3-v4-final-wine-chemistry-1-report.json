@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align total phenols and colour intensity.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "wine-chemistry.csv",
+    "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "total_phenols",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "colour_strength",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "total_phenols",
+      "source": "Total_phenols",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 5,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+        "record": 1,
+        "column": "Total_phenols",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Total_phenols"
+      },
+      "rationale": "Total_phenols header directly matches total_phenols target. Color_intensity matches colour_strength semantically (color↔colour, intensity↔strength). Both source headers contain no unit information, so sourceUnit is empty."
+    },
+    {
+      "target": "colour_strength",
+      "source": "Color_intensity",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 9,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+        "record": 1,
+        "column": "Color_intensity",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Color_intensity"
+      },
+      "rationale": "Total_phenols header directly matches total_phenols target. Color_intensity matches colour_strength semantically (color↔colour, intensity↔strength). Both source headers contain no unit information, so sourceUnit is empty."
+    }
+  ],
+  "validation": {
+    "rows": 178,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+      "record": 1,
+      "column": "Total_phenols",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Total_phenols"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+      "record": 1,
+      "column": "Color_intensity",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Color_intensity"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Total_phenols header directly matches total_phenols target. Color_intensity matches colour_strength semantically (color↔colour, intensity↔strength). Both source headers contain no unit information, so sourceUnit is empty.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "total_phenols",
+                "source": "Total_phenols",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Total_phenols header directly matches total_phenols target. Color_intensity matches colour_strength semantically (color↔colour, intensity↔strength). Both source headers contain no unit information, so sourceUnit is empty."
+              },
+              {
+                "target": "colour_strength",
+                "source": "Color_intensity",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Total_phenols header directly matches total_phenols target. Color_intensity matches colour_strength semantically (color↔colour, intensity↔strength). Both source headers contain no unit information, so sourceUnit is empty."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1545,
+    "outputTokens": 696,
+    "usageComplete": true,
+    "reservedInputBytes": 5257,
+    "reservedOutputTokens": 696,
+    "elapsedMs": 10799,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

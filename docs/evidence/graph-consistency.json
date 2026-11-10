@@ -1,0 +1,53 @@
+[
+  {
+    "variant": "unit",
+    "status": "completed",
+    "modelCalls": 0,
+    "plannedIds": [
+      "xlsx",
+      "eda-profiling",
+      "gh-scientific-uncertainty-and-units-ccb540",
+      "gh-claude-data-quality-auditor-9d8e63"
+    ],
+    "rendererIds": [
+      "xlsx",
+      "eda-profiling",
+      "gh-scientific-uncertainty-and-units-ccb540",
+      "gh-claude-data-quality-auditor-9d8e63"
+    ],
+    "skillIds": [
+      "csv-inspect",
+      "column-profile",
+      "unit-align",
+      "row-validate"
+    ]
+  },
+  {
+    "variant": "plain",
+    "status": "completed",
+    "modelCalls": 0,
+    "plannedIds": [
+      "xlsx",
+      "gh-claude-database-schema-designer-aff360",
+      "gh-claude-data-quality-auditor-9d8e63"
+    ],
+    "rendererIds": [
+      "xlsx",
+      "gh-claude-database-schema-designer-aff360",
+      "gh-claude-data-quality-auditor-9d8e63"
+    ],
+    "skillIds": [
+      "csv-inspect",
+      "field-align",
+      "row-validate"
+    ]
+  },
+  {
+    "variant": "missing-unit",
+    "status": "needs_input",
+    "modelCalls": 0,
+    "plannedIds": [],
+    "rendererIds": [],
+    "skillIds": []
+  }
+]

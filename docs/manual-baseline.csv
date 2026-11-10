@@ -1,0 +1,1 @@
+operator_id,role,table_id,condition,order,start_utc,end_utc,elapsed_seconds,targets,incorrect_mappings,checks_run,reviewed_mappings,overturned_mappings,review_seconds,notes

@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align residual sugar and alcohol content.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-07.csv",
+    "sha256": "97e2ddb609de2abc6139e37f999efa9ace526a6288e38f50937d677ee77e9348"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "residual_sugar",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "ethanol_content",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "residual_sugar",
+      "source": "残糖含量",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 3,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "97e2ddb609de2abc6139e37f999efa9ace526a6288e38f50937d677ee77e9348",
+        "record": 1,
+        "column": "残糖含量",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%AE%8B%E7%B3%96%E5%90%AB%E9%87%8F"
+      },
+      "rationale": "残糖含量直接对应 residual_sugar，样本值 1.9/2.6/2.3 为正数且类型为数值。酒精度直接对应 ethanol_content，样本值 9.4/9.8/9.8 为正数且类型为数值。两个映射在表头语义与样本观测上均一致，无需进一步澄清。表头中未包含单位信息，因此 sourceUnit 留空。"
+    },
+    {
+      "target": "ethanol_content",
+      "source": "酒精度",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 10,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "97e2ddb609de2abc6139e37f999efa9ace526a6288e38f50937d677ee77e9348",
+        "record": 1,
+        "column": "酒精度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E9%85%92%E7%B2%BE%E5%BA%A6"
+      },
+      "rationale": "残糖含量直接对应 residual_sugar，样本值 1.9/2.6/2.3 为正数且类型为数值。酒精度直接对应 ethanol_content，样本值 9.4/9.8/9.8 为正数且类型为数值。两个映射在表头语义与样本观测上均一致，无需进一步澄清。表头中未包含单位信息，因此 sourceUnit 留空。"
+    }
+  ],
+  "validation": {
+    "rows": 1599,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "97e2ddb609de2abc6139e37f999efa9ace526a6288e38f50937d677ee77e9348",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "97e2ddb609de2abc6139e37f999efa9ace526a6288e38f50937d677ee77e9348",
+      "record": 1,
+      "column": "残糖含量",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%AE%8B%E7%B3%96%E5%90%AB%E9%87%8F"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "97e2ddb609de2abc6139e37f999efa9ace526a6288e38f50937d677ee77e9348",
+      "record": 1,
+      "column": "酒精度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E9%85%92%E7%B2%BE%E5%BA%A6"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "残糖含量直接对应 residual_sugar，样本值 1.9/2.6/2.3 为正数且类型为数值。酒精度直接对应 ethanol_content，样本值 9.4/9.8/9.8 为正数且类型为数值。两个映射在表头语义与样本观测上均一致，无需进一步澄清。表头中未包含单位信息，因此 sourceUnit 留空。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "residual_sugar",
+                "source": "残糖含量",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "残糖含量直接对应 residual_sugar，样本值 1.9/2.6/2.3 为正数且类型为数值。酒精度直接对应 ethanol_content，样本值 9.4/9.8/9.8 为正数且类型为数值。两个映射在表头语义与样本观测上均一致，无需进一步澄清。表头中未包含单位信息，因此 sourceUnit 留空。"
+              },
+              {
+                "target": "ethanol_content",
+                "source": "酒精度",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "残糖含量直接对应 residual_sugar，样本值 1.9/2.6/2.3 为正数且类型为数值。酒精度直接对应 ethanol_content，样本值 9.4/9.8/9.8 为正数且类型为数值。两个映射在表头语义与样本观测上均一致，无需进一步澄清。表头中未包含单位信息，因此 sourceUnit 留空。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1548,
+    "outputTokens": 842,
+    "usageComplete": true,
+    "reservedInputBytes": 5276,
+    "reservedOutputTokens": 842,
+    "elapsedMs": 12391,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

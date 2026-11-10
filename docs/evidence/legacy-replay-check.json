@@ -1,0 +1,10 @@
+{
+  "archiveSha256": "2f4ed4773e1c7a50e23eda9863dce75fcf6a6db8bcdf04936541c658b153d88d",
+  "replayVersion": 2,
+  "verifiedReportFingerprint": "e07a73ae01486492ee0747b35fe3cb9bf04b2e6b19d3906ac49201ef7239a6d4",
+  "status": "completed",
+  "rows": 150,
+  "issueCount": 0,
+  "tool": "node scripts/demo.mjs replays/public-iris-minimax.json",
+  "exitCode": 0
+}

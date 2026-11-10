@@ -1,0 +1,57 @@
+{
+  "mode": "project_read",
+  "sourceReadChecks": [
+    {
+      "path": "skillinter/docs/skill-design.md",
+      "ok": true
+    },
+    {
+      "path": "skillinter/src/workflow.mjs",
+      "ok": true
+    },
+    {
+      "path": "skillnet-demo/docs/architecture-review.md",
+      "ok": true
+    }
+  ],
+  "results": [
+    {
+      "code": "EMPTY_WORKSPACE",
+      "message": "工作区为空"
+    },
+    {
+      "code": "NOT_FOUND",
+      "message": "路径不存在。"
+    },
+    {
+      "code": "PATH_OUTSIDE_WORKSPACE",
+      "message": "路径超出工作区。"
+    },
+    {
+      "code": "NOT_TEXT",
+      "message": "文件不是 UTF-8 文本。"
+    },
+    {
+      "code": "FILE_TOO_LARGE",
+      "message": "文件超过 1 MiB 读取上限。"
+    },
+    {
+      "code": "SYMLINK_NOT_ALLOWED",
+      "message": "不允许跟随符号链接。"
+    },
+    {
+      "code": "RESULT_TRUNCATED",
+      "message": "结果不完整。"
+    },
+    {
+      "code": "PERMISSION_DENIED",
+      "message": "没有读取权限。"
+    },
+    {
+      "code": "FILE_CHANGED",
+      "message": "文件在读取期间发生变化，请重试。"
+    }
+  ],
+  "concurrentChangeObserved": true,
+  "currentPromptContainsRegisteredToolsWording": false
+}

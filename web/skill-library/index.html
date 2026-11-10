@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f8f8f8" />
+  <title>我的 Skill 库</title>
+  <link rel="stylesheet" href="/skill-library/styles.css?v=20261110-2" />
+  <script defer src="/skill-library/sih-bridge.js"></script>
+  <script defer src="/skill-library/theme.js"></script>
+  <script defer src="/skill-library/vendor/d3.min.js"></script>
+  <script defer src="/skill-library/sphere.js?v=20261110-2"></script>
+  <script defer src="/skill-library/view-morph.js"></script>
+  <script defer src="/skill-library/graph-model.js"></script>
+  <script defer src="/skill-library/app.js?v=20261110-2"></script>
+  <script defer src="/skill-library/liquid-controls.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/skill-library/index.html" aria-label="我的 Skill 库首页">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span>Skill 图谱</span>
+    </a>
+    <div class="topbar-center"><strong id="topTitle">关系图谱</strong></div>
+    <div class="topbar-actions">
+      <button id="expandGraph" class="icon-button" title="应用内全屏" aria-label="应用内全屏" hidden>⛶</button>
+      <button id="refreshButton" class="icon-button" title="重新扫描本地 Skill" aria-label="重新扫描本地 Skill">⟳</button>
+      <button id="settingsButton" class="icon-button" title="图谱设置" aria-label="图谱设置">⚙</button>
+    </div>
+  </header>
+  <main class="workspace">
+    <aside class="sidebar">
+      <div class="side-heading">
+        <div><h1>我的技能</h1></div>
+        <span id="skillCount" class="count-pill">…</span>
+      </div>
+      <label class="searchbox">
+        <span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="搜索 Skill" autocomplete="off" />
+        <kbd>/</kbd>
+      </label>
+      <div class="sidebar-tabs" role="tablist" aria-label="视图模式">
+        <button id="globalTab" class="tab active" role="tab" aria-selected="true">全部技能</button>
+        <button id="localTab" class="tab" role="tab" aria-selected="false" disabled>局部图</button>
+      </div>
+      <div class="list-title"><span>浏览技能</span><button id="clearFilters" class="text-button">重置筛选</button></div>
+      <details class="source-fold"><summary>来源筛选</summary><div id="groupsList" class="groups-list"></div></details>
+      <label class="graph-budget"><span>图谱节点上限</span><select id="maxNodes" aria-label="图谱节点上限"><option value="100">100</option><option value="200" selected>200（推荐）</option><option value="500">500</option><option value="0">全部（较慢）</option></select></label>
+      <div id="skillList" class="skill-list" aria-label="Skill 列表"></div>
+      <div class="sidebar-bottom">
+        <div class="library-stat"><span class="stat-dot"></span><span id="scanStatus">正在扫描本机 Skill…</span></div>
+        <p>拖动节点整理视野 · 点击节点查看 Skill</p>
+      </div>
+    </aside>
+
+    <section class="graph-shell" aria-label="Skill 关系图谱">
+      <div class="graph-heading">
+        <div class="view-controls">
+          <div class="view-switch" role="group" aria-label="图谱范围">
+            <button id="globalViewButton" class="view-button active">全局</button>
+            <button id="localViewButton" class="view-button" disabled>局部</button>
+          </div>
+          <div class="view-switch dimension-switch" role="group" aria-label="图谱维度">
+            <button id="planeViewButton" class="view-button active" aria-pressed="true">平面</button>
+            <button id="sphereViewButton" class="view-button" aria-pressed="false">球体</button>
+          </div>
+        </div>
+      </div>
+      <div class="graph-stage" id="graphStage">
+        <svg id="graph" role="img" aria-label="可交互 Skill 关系图谱">
+          <defs>
+            <marker id="arrowEnd" viewBox="0 -4 8 8" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,-3L7,0L0,3" fill="none" stroke="#9a9a9a"/></marker>
+            <marker id="arrowStart" viewBox="0 -4 8 8" refX="8" refY="0" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,-3L7,0L0,3" fill="none" stroke="#9a9a9a"/></marker>
+            <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <g id="zoomLayer"><g id="linksLayer"></g><g id="nodesLayer"></g></g>
+        </svg>
+        <canvas id="sphereGraph" tabindex="0" aria-label="可拖动旋转的三维 Skill 关系球体" hidden></canvas>
+        <div id="sphereTooltip" class="sphere-tooltip" hidden></div>
+        <div id="emptyState" class="empty-state" hidden><span class="empty-orbit"></span><h3>还没有找到 Skill</h3><p>在技能中心导入技能，或清除筛选条件。</p></div>
+        <div id="connectHint" class="connect-hint" hidden>依次点击两个节点来建立关联 <button id="cancelConnect">取消</button></div>
+        <div id="graphTools" class="graph-tools" aria-label="图谱控制">
+          <button id="zoomIn" title="放大" aria-label="放大">＋</button>
+          <button id="zoomOut" title="缩小" aria-label="缩小">−</button>
+          <span class="tool-divider"></span>
+          <button id="fitGraph" title="居中全部节点" aria-label="居中全部节点">⌖</button>
+          <button id="addRelation" title="建立 Skill 关联" aria-label="建立 Skill 关联">↗</button>
+        </div>
+        <div id="graphFootnote" class="graph-footnote"><span class="legend-line"></span><span>正文提及</span><span class="legend-line topic"></span><span>推测主题（可选）</span><span class="legend-line manual"></span><span>自定义关联</span></div>
+        <div id="nodeTooltip" class="node-tooltip" hidden></div>
+      </div>
+      <div class="graph-status"><span id="graphSummary">正在构建图谱</span><span id="activeFilter"></span></div>
+    </section>
+
+    <aside id="settingsPanel" class="settings-panel" aria-label="图谱设置" hidden>
+      <div class="panel-heading"><h2 id="settingsTitle">平面设置</h2><div class="panel-actions"><button id="resetSettings" class="icon-button" title="恢复当前视图的默认设置" aria-label="恢复当前视图的默认设置">↺</button><button id="closeSettings" class="icon-button" aria-label="关闭设置">×</button></div></div>
+      <details class="setting-section" open><summary>筛选</summary>
+        <label class="setting-row"><span>正文提及</span><input id="showMentions" type="checkbox" checked /></label>
+        <label class="setting-row"><span>推测主题关联</span><input id="showTopics" type="checkbox" /></label>
+        <label class="setting-row"><span>自定义关联</span><input id="showManual" type="checkbox" checked /></label>
+        <label class="setting-row"><span>显示孤立 Skill</span><input id="showOrphans" type="checkbox" checked /></label>
+        <label class="range-row"><span>局部图深度 <output id="depthOutput">1</output></span><input id="depthInput" class="range" type="range" min="1" max="5" step="1" value="1" /></label>
+      </details>
+      <details class="setting-section"><summary>颜色组</summary>
+        <label class="setting-row"><span>按来源着色</span><input id="colorBySource" type="checkbox" /></label>
+        <div id="colorGroups"></div>
+      </details>
+      <details class="setting-section"><summary>外观</summary>
+        <label class="setting-row" data-plane-only><span>显示引用方向箭头</span><input id="showArrows" type="checkbox" /></label>
+        <label class="setting-row"><span>悬停时聚焦关联节点</span><input id="focusOnHover" type="checkbox" checked /></label>
+        <label class="setting-row"><span>显示节点名称</span><input id="showLabels" type="checkbox" checked /></label>
+        <label class="setting-row"><span>按关联数量调整节点大小</span><input id="scaleNodes" type="checkbox" checked /></label>
+        <label class="range-row"><span>名称显现阈值 <output id="labelThresholdOutput"></output></span><input id="labelThreshold" class="range" type="range" min="0.3" max="3" step="0.05" value="1.1" /></label>
+        <label class="range-row"><span>节点大小 <output id="nodeSizeOutput"></output></span><input id="nodeSize" class="range" type="range" min="0.5" max="2.5" step="0.1" value="1" /></label>
+        <label class="range-row"><span>连线粗细 <output id="linkWidthOutput"></output></span><input id="linkWidth" class="range" type="range" min="0.3" max="3" step="0.1" value="0.8" /></label>
+      </details>
+      <details class="setting-section" data-plane-only><summary>力学</summary>
+        <label class="range-row"><span>图谱向心力 <output id="centerForceOutput"></output></span><input id="centerForce" class="range" type="range" min="0.01" max="0.15" step="0.005" value="0.04" /></label>
+        <label class="range-row"><span>节点排斥力 <output id="repelForceOutput"></output></span><input id="repelForce" class="range" type="range" min="30" max="350" step="10" value="150" /></label>
+        <label class="range-row"><span>相连节点吸引力 <output id="linkStrengthOutput"></output></span><input id="linkStrength" class="range" type="range" min="0.05" max="1" step="0.05" value="0.35" /></label>
+        <label class="range-row"><span>连线长度 <output id="linkDistanceOutput"></output></span><input id="linkDistance" class="range" type="range" min="30" max="200" step="5" value="90" /></label>
+      </details>
+    </aside>
+
+    <aside id="detailPanel" class="detail-panel" aria-label="Skill 详情" hidden>
+      <div class="detail-top"><span class="eyebrow">SKILL DETAILS</span><button id="closeDetail" class="icon-button" aria-label="关闭详情">×</button></div>
+      <div class="detail-scroll">
+        <div id="detailGroup" class="detail-group"></div>
+        <h2 id="detailName">选择一个节点</h2>
+        <p id="detailDescription" class="detail-description"></p>
+        <div class="detail-actions"><button id="showLocalButton" class="primary-button">查看局部图</button><button id="copyPathButton" class="secondary-button">复制路径</button></div>
+        <div class="detail-metrics"><div><strong id="detailDegree">0</strong><span>关联</span></div><div><strong id="detailSource">—</strong><span>来源</span></div></div>
+        <div id="detailNeighbors" class="detail-neighbors"></div>
+        <div class="detail-subheading"><h3>Skill 文件</h3><span id="detailPath"></span></div>
+        <pre id="detailContent" class="content-preview">点击图中的 Skill 节点查看文件内容。</pre>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

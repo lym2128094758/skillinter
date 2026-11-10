@@ -1,0 +1,402 @@
+[
+  {
+    "table": "iris",
+    "source": "https://archive.ics.uci.edu/dataset/53/iris",
+    "retrievedAt": "2026-11-09T07:41:52.226Z",
+    "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+    "originalSha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+    "dataRowsHash": "2fd65681351a11ee36a160e4291bc67268f4dc863c74fadf1a8151b631ef1788",
+    "headers": "original",
+    "sourceRows": 150,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "sepal_length",
+        "gold": "sepal length",
+        "predicted": "sepal length",
+        "outcome": "correct"
+      },
+      {
+        "target": "flower_petal_width",
+        "gold": "petal width",
+        "predicted": "petal width",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1419,
+    "outputTokens": 346,
+    "cost": null,
+    "elapsedMs": 5861,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "wine-chemistry",
+    "source": "https://archive.ics.uci.edu/dataset/109/wine",
+    "retrievedAt": "2026-11-09T07:41:52.665Z",
+    "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+    "originalSha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+    "dataRowsHash": "d0d9710bf41e52a70e9b0e8e16d89478b5e5f03d94bc4abd81df7674ff4bf79c",
+    "headers": "original",
+    "sourceRows": 178,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "total_phenols",
+        "gold": "Total_phenols",
+        "predicted": "Total_phenols",
+        "outcome": "correct"
+      },
+      {
+        "target": "colour_strength",
+        "gold": "Color_intensity",
+        "predicted": "Color_intensity",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1545,
+    "outputTokens": 696,
+    "cost": null,
+    "elapsedMs": 10799,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "abalone",
+    "source": "https://archive.ics.uci.edu/dataset/1/abalone",
+    "retrievedAt": "2026-11-09T07:41:54.206Z",
+    "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+    "originalSha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+    "dataRowsHash": "7a927168dcbf3a2124e8c18a04731792e9634e5ad15a2b748905247b74a2f48a",
+    "headers": "original",
+    "sourceRows": 4177,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "shell_diameter",
+        "gold": "Diameter",
+        "predicted": "Diameter",
+        "outcome": "correct"
+      },
+      {
+        "target": "dry_shell_mass",
+        "gold": "Shell_weight",
+        "predicted": "Shell_weight",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1476,
+    "outputTokens": 1050,
+    "cost": null,
+    "elapsedMs": 13642,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "glass",
+    "source": "https://archive.ics.uci.edu/dataset/42/glass+identification",
+    "retrievedAt": "2026-11-09T07:41:54.627Z",
+    "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+    "originalSha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+    "dataRowsHash": "f582e96ad3408c2fdcc7cf8404afe398f4e71090c4b71569bc4fcb51cd0aa6a7",
+    "headers": "original",
+    "sourceRows": 214,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "refractive_index",
+        "gold": "RI",
+        "predicted": "RI",
+        "outcome": "correct"
+      },
+      {
+        "target": "sodium",
+        "gold": "Na",
+        "predicted": "Na",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1472,
+    "outputTokens": 476,
+    "cost": null,
+    "elapsedMs": 6790,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "airfoil",
+    "source": "https://archive.ics.uci.edu/dataset/291/airfoil+self-noise",
+    "retrievedAt": "2026-11-09T07:41:55.771Z",
+    "sha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a",
+    "originalSha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a",
+    "dataRowsHash": "aeb81684fce2cf6d2912d019136425c292cf11be1a642ea0f3c594c752cbd8d4",
+    "headers": "original",
+    "sourceRows": 1503,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "frequency",
+        "gold": "frequency",
+        "predicted": "frequency",
+        "outcome": "correct"
+      },
+      {
+        "target": "air_speed",
+        "gold": "free-stream-velocity",
+        "predicted": "free-stream-velocity",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1450,
+    "outputTokens": 442,
+    "cost": null,
+    "elapsedMs": 6950,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "concrete",
+    "source": "https://archive.ics.uci.edu/dataset/165/concrete+compressive+strength",
+    "retrievedAt": "2026-11-09T07:41:56.768Z",
+    "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+    "originalSha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+    "dataRowsHash": "bb0fa0c87cb03bbe4bc24bb382b32929fa93bd09946b3412e08bd703db6030a4",
+    "headers": "original",
+    "sourceRows": 1030,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "age",
+        "gold": "Age",
+        "predicted": "Age",
+        "outcome": "correct"
+      },
+      {
+        "target": "compression_strength",
+        "gold": "Concrete compressive strength",
+        "predicted": "Concrete compressive strength",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1445,
+    "outputTokens": 406,
+    "cost": null,
+    "elapsedMs": 6782,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "wine-red",
+    "source": "https://archive.ics.uci.edu/dataset/186/wine+quality",
+    "retrievedAt": "2026-11-09T07:41:59.438Z",
+    "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+    "originalSha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+    "dataRowsHash": "7a7411e30d593364c65e9001390a23aed2772e99772ee52e036da0736a9a141c",
+    "headers": "original",
+    "sourceRows": 1599,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "residual_sugar",
+        "gold": "residual_sugar",
+        "predicted": "residual_sugar",
+        "outcome": "correct"
+      },
+      {
+        "target": "ethanol_content",
+        "gold": "alcohol",
+        "predicted": "alcohol",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1524,
+    "outputTokens": 620,
+    "cost": null,
+    "elapsedMs": 13369,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "wine-white",
+    "source": "https://archive.ics.uci.edu/dataset/186/wine+quality",
+    "retrievedAt": "2026-11-09T07:41:59.438Z",
+    "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+    "originalSha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+    "dataRowsHash": "1068a6222de09863321e829d72cdc5312890f4c9c449fe92e7bd168c1f812cf4",
+    "headers": "original",
+    "sourceRows": 4898,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "density",
+        "gold": "density",
+        "predicted": "density",
+        "outcome": "correct"
+      },
+      {
+        "target": "free_so2",
+        "gold": "free_sulfur_dioxide",
+        "predicted": "free_sulfur_dioxide",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1502,
+    "outputTokens": 407,
+    "cost": null,
+    "elapsedMs": 10543,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "rice",
+    "source": "https://archive.ics.uci.edu/dataset/545/rice+cammeo+and+osmancik",
+    "retrievedAt": "2026-11-09T07:42:01.522Z",
+    "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+    "originalSha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+    "dataRowsHash": "1921dfcb694e98670ad8cc0113fc590f1c4daca59688277842cf2a8b1064992a",
+    "headers": "original",
+    "sourceRows": 3810,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "perimeter",
+        "gold": "Perimeter",
+        "predicted": "Perimeter",
+        "outcome": "correct"
+      },
+      {
+        "target": "major_axis_length",
+        "gold": "Major_Axis_Length",
+        "predicted": "Major_Axis_Length",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1498,
+    "outputTokens": 469,
+    "cost": null,
+    "elapsedMs": 7264,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  },
+  {
+    "table": "raisin",
+    "source": "https://archive.ics.uci.edu/dataset/850/raisin",
+    "retrievedAt": "2026-11-09T07:42:02.910Z",
+    "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+    "originalSha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+    "dataRowsHash": "8fe9ac0601388cf8a5fb46cb085b7cc1cb1eb30a364840e7a8d9a7e54b144b90",
+    "headers": "original",
+    "sourceRows": 900,
+    "repeat": 1,
+    "status": "completed",
+    "taskCorrect": true,
+    "issueCount": 0,
+    "errorCode": null,
+    "fields": [
+      {
+        "target": "area",
+        "gold": "Area",
+        "predicted": "Area",
+        "outcome": "correct"
+      },
+      {
+        "target": "outline_length",
+        "gold": "Perimeter",
+        "predicted": "Perimeter",
+        "outcome": "correct"
+      }
+    ],
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "inputTokens": 1491,
+    "outputTokens": 500,
+    "cost": null,
+    "elapsedMs": 7307,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  }
+]

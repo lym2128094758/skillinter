@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="audit submission replans, persists, cites the uploaded cell and replays the recorded plan" time="0.658703" classname="test" file="D:\gpt\projects\skillinter\audit.test.mjs"/>
+	<testcase name="real audit events project two distinct skill plans and an empty selection" time="0.847299" classname="test" file="D:\gpt\projects\skillinter\audit.test.mjs"/>
+	<testcase name="truncated mapping and optional decisions fail without executing a partial plan" time="0.001391" classname="test" file="D:\gpt\projects\skillinter\audit.test.mjs"/>
+	<testcase name="expanded audit retry reaches the provider and is part of submission identity" time="0.552399" classname="test" file="D:\gpt\projects\skillinter\audit.test.mjs"/>
+	<testcase name="invalid optional output retries that stage while preserving the accepted mapping" time="0.002027" classname="test" file="D:\gpt\projects\skillinter\audit.test.mjs"/>
+	<testcase name="main chat discovers and runs skills without a workflow form, persisting the same audit graph and exports" time="0.891374" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="skill search is deterministic and executable claims are limited to the two implemented CSV capabilities" time="0.005876" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="chat skill calls enforce attachment ownership, schemas, cancellation and cached analysis receipts" time="0.002120" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="nested planning consumes the main chat model budget and preserves an unfinished report" time="0.003014" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="main chat guidance and stop reach a nested precheck while preserving its execution record" time="0.005689" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="equivalent precheck retries reuse one report and a different goal needs a new turn" time="0.002819" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="an execution announcement cannot finish the main chat before the promised skill is invoked" time="0.004293" classname="test" file="D:\gpt\projects\skillinter\chat-skills.test.mjs"/>
+	<testcase name="H1–H5: schemas, exact errors, stable results, depth and bounded range" time="0.036122" classname="test" file="D:\gpt\projects\skillinter\contracts.test.mjs"/>
+	<testcase name="H6–H9: identical contract and terminal replies with two divergent model adapters" time="0.016040" classname="test" file="D:\gpt\projects\skillinter\contracts.test.mjs"/>
+	<testcase name="audit registry validates every registered tool, stable results and missing dependency" time="0.002520" classname="test" file="D:\gpt\projects\skillinter\contracts.test.mjs"/>
+	<testcase name="file tools enforce project boundaries and change only the requested UTF-8 text" time="0.085419" classname="test" file="D:\gpt\projects\skillinter\file-access.test.mjs"/>
+	<testcase name="the chosen chat scope reaches the model and persists with projects across restarts" time="1.162753" classname="test" file="D:\gpt\projects\skillinter\file-access.test.mjs"/>
+	<testcase name="read-only contracts list nested files deterministically and classify failures" time="0.032874" classname="test" file="D:\gpt\projects\skillinter\runtime.test.mjs"/>
+	<testcase name="stream idle timeout resets on data and 429 uses bounded retries" time="0.646570" classname="test" file="D:\gpt\projects\skillinter\runtime.test.mjs"/>
+	<testcase name="tools enforce filters, limits, links, binary detection and cancellation" time="0.029630" classname="test" file="D:\gpt\projects\skillinter\runtime.test.mjs"/>
+	<testcase name="Windows denied files have a fixed permission error" time="0.220518" classname="test" file="D:\gpt\projects\skillinter\runtime.test.mjs"/>
+	<testcase name="session choices survive restart and reach the provider as real request parameters" time="0.657094" classname="test" file="D:\gpt\projects\skillinter\session.test.mjs"/>
+	<testcase name="streamed tool calls, incremental replies and stop retain partial output" time="0.566692" classname="test" file="D:\gpt\projects\skillinter\session.test.mjs"/>
+	<testcase name="guidance interrupts an in-flight request once and survives history reload" time="0.559491" classname="test" file="D:\gpt\projects\skillinter\session.test.mjs"/>
+	<testcase name="tools, event replay, request deduplication, stop and restart" time="3.021228" classname="test" file="D:\gpt\projects\skillinter\smoke.test.mjs"/>
+	<testcase name="settings test a draft, encrypt the key, preserve origin boundaries and apply the budget" time="2.147110" classname="test" file="D:\gpt\projects\skillinter\smoke.test.mjs"/>
+	<testcase name="CSV attachments produce a downloadable, traceable skill result" time="0.044482" classname="test" file="D:\gpt\projects\skillinter\smoke.test.mjs"/>
+	<testcase name="uploaded text is readable through the real task and tool entry points" time="0.364872" classname="test" file="D:\gpt\projects\skillinter\tools.integration.test.mjs"/>
+	<!-- tests 28 -->
+	<!-- suites 0 -->
+	<!-- pass 28 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 5424.024 -->
+</testsuites>

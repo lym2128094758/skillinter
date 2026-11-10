@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "license": "CC BY 4.0",
+  "tables": [
+    {
+      "id": "iris",
+      "sourceId": 53,
+      "source": "https://archive.ics.uci.edu/dataset/53/iris",
+      "download": "https://archive.ics.uci.edu/static/public/53/data.csv",
+      "goal": "Align the sepal length and petal width measurements.",
+      "color": null,
+      "gold": {
+        "sepal_length": "sepal length",
+        "flower_petal_width": "petal width"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "sepal_length",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "flower_petal_width",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "iris.csv",
+      "rows": 150,
+      "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+      "originalSha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+      "retrievedAt": "2026-11-09T07:41:52.226Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "wine-chemistry",
+      "sourceId": 109,
+      "source": "https://archive.ics.uci.edu/dataset/109/wine",
+      "download": "https://archive.ics.uci.edu/static/public/109/data.csv",
+      "goal": "Align total phenols and colour intensity.",
+      "color": null,
+      "gold": {
+        "total_phenols": "Total_phenols",
+        "colour_strength": "Color_intensity"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "total_phenols",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "colour_strength",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "wine-chemistry.csv",
+      "rows": 178,
+      "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+      "originalSha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a",
+      "retrievedAt": "2026-11-09T07:41:52.665Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "abalone",
+      "sourceId": 1,
+      "source": "https://archive.ics.uci.edu/dataset/1/abalone",
+      "download": "https://archive.ics.uci.edu/static/public/1/data.csv",
+      "goal": "Align shell diameter and mass of the dried shell.",
+      "color": null,
+      "gold": {
+        "shell_diameter": "Diameter",
+        "dry_shell_mass": "Shell_weight"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "shell_diameter",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "dry_shell_mass",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "abalone.csv",
+      "rows": 4177,
+      "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+      "originalSha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+      "retrievedAt": "2026-11-09T07:41:54.206Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "glass",
+      "sourceId": 42,
+      "source": "https://archive.ics.uci.edu/dataset/42/glass+identification",
+      "download": "https://archive.ics.uci.edu/static/public/42/data.csv",
+      "goal": "Align optical refractive index and sodium measurement.",
+      "color": null,
+      "gold": {
+        "refractive_index": "RI",
+        "sodium": "Na"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "refractive_index",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "sodium",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "glass.csv",
+      "rows": 214,
+      "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+      "originalSha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+      "retrievedAt": "2026-11-09T07:41:54.627Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "airfoil",
+      "sourceId": 291,
+      "source": "https://archive.ics.uci.edu/dataset/291/airfoil+self-noise",
+      "download": "https://archive.ics.uci.edu/static/public/291/data.csv",
+      "goal": "Align acoustic frequency and free stream air speed.",
+      "color": null,
+      "gold": {
+        "frequency": "frequency",
+        "air_speed": "free-stream-velocity"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "frequency",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "air_speed",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "airfoil.csv",
+      "rows": 1503,
+      "sha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a",
+      "originalSha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a",
+      "retrievedAt": "2026-11-09T07:41:55.771Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "concrete",
+      "sourceId": 165,
+      "source": "https://archive.ics.uci.edu/dataset/165/concrete+compressive+strength",
+      "download": "https://archive.ics.uci.edu/static/public/165/data.csv",
+      "goal": "Align the curing age and measured compressive strength.",
+      "color": null,
+      "gold": {
+        "age": "Age",
+        "compression_strength": "Concrete compressive strength"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "age",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "compression_strength",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "concrete.csv",
+      "rows": 1030,
+      "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+      "originalSha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+      "retrievedAt": "2026-11-09T07:41:56.768Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "wine-red",
+      "sourceId": 186,
+      "source": "https://archive.ics.uci.edu/dataset/186/wine+quality",
+      "download": "https://archive.ics.uci.edu/static/public/186/data.csv",
+      "goal": "Align residual sugar and alcohol content.",
+      "color": "red",
+      "gold": {
+        "residual_sugar": "residual_sugar",
+        "ethanol_content": "alcohol"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "residual_sugar",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "ethanol_content",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "wine-red.csv",
+      "rows": 1599,
+      "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+      "originalSha256": "428bd8df7313b159988405ae5e3be6d363993d73f7ffc2adedfdc1d496508191",
+      "retrievedAt": "2026-11-09T07:41:59.438Z",
+      "transform": "Filter the original CSV by color, then serialize its unchanged cells."
+    },
+    {
+      "id": "wine-white",
+      "sourceId": 186,
+      "source": "https://archive.ics.uci.edu/dataset/186/wine+quality",
+      "download": "https://archive.ics.uci.edu/static/public/186/data.csv",
+      "goal": "Align density and free sulfur dioxide.",
+      "color": "white",
+      "gold": {
+        "density": "density",
+        "free_so2": "free_sulfur_dioxide"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "density",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "free_so2",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "wine-white.csv",
+      "rows": 4898,
+      "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+      "originalSha256": "428bd8df7313b159988405ae5e3be6d363993d73f7ffc2adedfdc1d496508191",
+      "retrievedAt": "2026-11-09T07:41:59.438Z",
+      "transform": "Filter the original CSV by color, then serialize its unchanged cells."
+    },
+    {
+      "id": "rice",
+      "sourceId": 545,
+      "source": "https://archive.ics.uci.edu/dataset/545/rice+cammeo+and+osmancik",
+      "download": "https://archive.ics.uci.edu/static/public/545/data.csv",
+      "goal": "Align outline perimeter and length of the major axis.",
+      "color": null,
+      "gold": {
+        "perimeter": "Perimeter",
+        "major_axis_length": "Major_Axis_Length"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "perimeter",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "major_axis_length",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "rice.csv",
+      "rows": 3810,
+      "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+      "originalSha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+      "retrievedAt": "2026-11-09T07:42:01.522Z",
+      "transform": "Unmodified published CSV text."
+    },
+    {
+      "id": "raisin",
+      "sourceId": 850,
+      "source": "https://archive.ics.uci.edu/dataset/850/raisin",
+      "download": "https://archive.ics.uci.edu/static/public/850/data.csv",
+      "goal": "Align area and outline perimeter.",
+      "color": null,
+      "gold": {
+        "area": "Area",
+        "outline_length": "Perimeter"
+      },
+      "request": {
+        "fields": [
+          {
+            "name": "area",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          },
+          {
+            "name": "outline_length",
+            "type": "number",
+            "required": true,
+            "minimum": 0
+          }
+        ]
+      },
+      "name": "raisin.csv",
+      "rows": 900,
+      "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+      "originalSha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+      "retrievedAt": "2026-11-09T07:42:02.910Z",
+      "transform": "Unmodified published CSV text."
+    }
+  ]
+}

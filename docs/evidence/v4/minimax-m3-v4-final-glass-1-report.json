@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align optical refractive index and sodium measurement.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "glass.csv",
+    "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "refractive_index",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "sodium",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "refractive_index",
+      "source": "RI",
+      "sourceUnit": "dimensionless",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 1,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+        "record": 1,
+        "column": "RI",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=RI"
+      },
+      "rationale": "Source headers RI and Na directly match the target fields. Sample values confirm RI (~1.51–1.52) is dimensionless refractive index and Na (~13.5–13.9) is sodium content in weight percent for glass composition."
+    },
+    {
+      "target": "sodium",
+      "source": "Na",
+      "sourceUnit": "wt%",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 2,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+        "record": 1,
+        "column": "Na",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Na"
+      },
+      "rationale": "Source headers RI and Na directly match the target fields. Sample values confirm RI (~1.51–1.52) is dimensionless refractive index and Na (~13.5–13.9) is sodium content in weight percent for glass composition."
+    }
+  ],
+  "validation": {
+    "rows": 214,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+      "record": 1,
+      "column": "RI",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=RI"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9",
+      "record": 1,
+      "column": "Na",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Na"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Source headers RI and Na directly match the target fields. Sample values confirm RI (~1.51–1.52) is dimensionless refractive index and Na (~13.5–13.9) is sodium content in weight percent for glass composition.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "refractive_index",
+                "source": "RI",
+                "sourceUnit": "dimensionless",
+                "evidence": 1,
+                "rationale": "Source headers RI and Na directly match the target fields. Sample values confirm RI (~1.51–1.52) is dimensionless refractive index and Na (~13.5–13.9) is sodium content in weight percent for glass composition."
+              },
+              {
+                "target": "sodium",
+                "source": "Na",
+                "sourceUnit": "wt%",
+                "evidence": 1,
+                "rationale": "Source headers RI and Na directly match the target fields. Sample values confirm RI (~1.51–1.52) is dimensionless refractive index and Na (~13.5–13.9) is sodium content in weight percent for glass composition."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1472,
+    "outputTokens": 476,
+    "usageComplete": true,
+    "reservedInputBytes": 5009,
+    "reservedOutputTokens": 476,
+    "elapsedMs": 6790,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

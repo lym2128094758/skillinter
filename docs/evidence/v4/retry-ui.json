@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "browser": "Chrome headless",
+  "button": "扩大预算重试",
+  "status": "completed",
+  "perRequestLimits": [
+    2048,
+    4096,
+    4096
+  ],
+  "sourcePreserved": true
+}

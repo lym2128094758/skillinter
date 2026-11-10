@@ -1,0 +1,26 @@
+{
+  "name": "skillinter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.9.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env start.mjs",
+    "test": "node --test smoke.test.mjs session.test.mjs runtime.test.mjs tools.integration.test.mjs audit.test.mjs file-access.test.mjs contracts.test.mjs chat-skills.test.mjs images.test.mjs skill-studio.test.mjs preflight.test.mjs skill-files.test.mjs skill-libraries.test.mjs skill-session.test.mjs task-plan.test.mjs prompt-optimizer.test.mjs project-tests.test.mjs skill-candidates.test.mjs skill-delivery.test.mjs skill-execution.test.mjs skill-experiences.test.mjs skill-graph.test.mjs",
+    "check:contracts": "node --test runtime.test.mjs contracts.test.mjs file-access.test.mjs chat-skills.test.mjs skill-studio.test.mjs skill-files.test.mjs skill-libraries.test.mjs skill-session.test.mjs task-plan.test.mjs project-tests.test.mjs skill-candidates.test.mjs skill-delivery.test.mjs skill-execution.test.mjs skill-experiences.test.mjs skill-graph.test.mjs",
+    "check:graph": "node scripts/check-graph.mjs",
+    "check:scores": "node scripts/check-scorecard.mjs",
+    "check:browser-live": "node --env-file-if-exists=.env scripts/check-browser-live.mjs",
+    "test:record": "node scripts/record-tests.mjs",
+    "check:models": "node --env-file-if-exists=.env scripts/check-harness-models.mjs",
+    "setup": "node scripts/setup.mjs",
+    "demo": "node scripts/demo.mjs",
+    "demo:check": "node scripts/check-offline-demo.mjs",
+    "eval": "node scripts/evaluate.mjs",
+    "eval:reuse": "node scripts/check-reuse.mjs",
+    "eval:routing": "node scripts/compare-routing.mjs",
+    "eval:public": "node --env-file-if-exists=.env scripts/compare-public.mjs"
+  }
+}

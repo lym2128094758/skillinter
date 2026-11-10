@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align optical refractive index and sodium measurement.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-04.csv",
+    "sha256": "fa120ccc37f85cc824d9ac700e255f769c22ca7c3fec31c54712aaffc25746a1"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "refractive_index",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "sodium",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "refractive_index",
+      "source": "折射率",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 1,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "fa120ccc37f85cc824d9ac700e255f769c22ca7c3fec31c54712aaffc25746a1",
+        "record": 1,
+        "column": "折射率",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%8A%98%E5%B0%84%E7%8E%87"
+      },
+      "rationale": "Source headers include 折射率 (refractive index, dimensionless, matches refractive_index) and 钠含量 (sodium content, numeric, matches sodium). Sample values are consistent with both targets. No unit columns exist in the headers, so sourceUnit is left empty."
+    },
+    {
+      "target": "sodium",
+      "source": "钠含量",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 2,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "fa120ccc37f85cc824d9ac700e255f769c22ca7c3fec31c54712aaffc25746a1",
+        "record": 1,
+        "column": "钠含量",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E9%92%A0%E5%90%AB%E9%87%8F"
+      },
+      "rationale": "Source headers include 折射率 (refractive index, dimensionless, matches refractive_index) and 钠含量 (sodium content, numeric, matches sodium). Sample values are consistent with both targets. No unit columns exist in the headers, so sourceUnit is left empty."
+    }
+  ],
+  "validation": {
+    "rows": 214,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "fa120ccc37f85cc824d9ac700e255f769c22ca7c3fec31c54712aaffc25746a1",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "fa120ccc37f85cc824d9ac700e255f769c22ca7c3fec31c54712aaffc25746a1",
+      "record": 1,
+      "column": "折射率",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%8A%98%E5%B0%84%E7%8E%87"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "fa120ccc37f85cc824d9ac700e255f769c22ca7c3fec31c54712aaffc25746a1",
+      "record": 1,
+      "column": "钠含量",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E9%92%A0%E5%90%AB%E9%87%8F"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Source headers include 折射率 (refractive index, dimensionless, matches refractive_index) and 钠含量 (sodium content, numeric, matches sodium). Sample values are consistent with both targets. No unit columns exist in the headers, so sourceUnit is left empty.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "refractive_index",
+                "source": "折射率",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Source headers include 折射率 (refractive index, dimensionless, matches refractive_index) and 钠含量 (sodium content, numeric, matches sodium). Sample values are consistent with both targets. No unit columns exist in the headers, so sourceUnit is left empty."
+              },
+              {
+                "target": "sodium",
+                "source": "钠含量",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Source headers include 折射率 (refractive index, dimensionless, matches refractive_index) and 钠含量 (sodium content, numeric, matches sodium). Sample values are consistent with both targets. No unit columns exist in the headers, so sourceUnit is left empty."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1482,
+    "outputTokens": 806,
+    "usageComplete": true,
+    "reservedInputBytes": 5127,
+    "reservedOutputTokens": 806,
+    "elapsedMs": 10524,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

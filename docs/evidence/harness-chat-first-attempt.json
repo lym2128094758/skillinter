@@ -1,0 +1,54 @@
+{
+  "mode": "live-main-chat-without-workflow-form",
+  "model": "minimax-m3",
+  "budget": 5,
+  "passed": false,
+  "status": "completed",
+  "answer": "已找到可执行技能 `csv-precheck`（通过 `precheck_table`），并读取了原始文件。\n\n**原始文件内容**（`fc04c925-dd03-4088-8874-ca2933893a7d.csv`，共 4 行）：\n```\nsample_id,mass_g\nA,0.02\nB,-0.01\n,abc\n```\n原始列：`sample_id`、`mass_g`（共 2 列，3 行数据）。\n\n**目标映射**：\n- `sample_id` → 原列 `sample_id`，类型 text，必填\n- `mass` → 原列 `mass_g`，需单位换算 g → mg（×1000），类型 numeric，必填，最小值 0\n\n现在执行预检：",
+  "error": null,
+  "noWorkflowForm": true,
+  "search": {
+    "query": "CSV 数据预检",
+    "matches": [
+      {
+        "id": "csv-precheck",
+        "label": "CSV 数据质量预检",
+        "domain": "数据与分析",
+        "nodeId": "data-cleaning",
+        "executable": true,
+        "tool": "precheck_table",
+        "version": "4",
+        "description": "按目标字段做语义映射、单位换算、缺失值、类型和数值范围检查，生成报告、引用和执行图。"
+      },
+      {
+        "id": "csv-overview",
+        "label": "CSV 数据概览",
+        "domain": "数据与分析",
+        "nodeId": "xlsx",
+        "executable": true,
+        "tool": "analyze_csv",
+        "version": "1",
+        "description": "统计表格列的空值、数值数、均值、最小值和最大值，生成可下载报告。"
+      }
+    ],
+    "truncated": false,
+    "catalogSha256": "f04da1a943aad10a7bdcb18e62417f285508fc466d7a44f3e1a29eb7e7acf1d0"
+  },
+  "report": null,
+  "skillTrace": null,
+  "toolCalls": [
+    "search_skills",
+    "list_workspace",
+    "analyze_csv",
+    "read_file"
+  ],
+  "outerModelCalls": 3,
+  "nestedModelCalls": 0,
+  "artifacts": [
+    {
+      "name": "csv-analysis.txt",
+      "sha256": "c4e2b42882ca7307e10f479edac1d86aa001c831a43dfa1257bf4113d6109134",
+      "size": 573
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align outline perimeter and length of the major axis.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "rice.csv",
+    "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "perimeter",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "major_axis_length",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "perimeter",
+      "source": "Perimeter",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 1,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+        "record": 1,
+        "column": "Perimeter",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Perimeter"
+      },
+      "rationale": "Source headers contain exact matches for both target fields. Sample values (Perimeter ~494-525, Major_Axis_Length ~206-230) are positive and consistent with required numeric type. No unit information present in headers, so sourceUnit left empty."
+    },
+    {
+      "target": "major_axis_length",
+      "source": "Major_Axis_Length",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 2,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+        "record": 1,
+        "column": "Major_Axis_Length",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Major_Axis_Length"
+      },
+      "rationale": "Source headers contain exact matches for both target fields. Sample values (Perimeter ~494-525, Major_Axis_Length ~206-230) are positive and consistent with required numeric type. No unit information present in headers, so sourceUnit left empty."
+    }
+  ],
+  "validation": {
+    "rows": 3810,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+      "record": 1,
+      "column": "Perimeter",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Perimeter"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3",
+      "record": 1,
+      "column": "Major_Axis_Length",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Major_Axis_Length"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Source headers contain exact matches for both target fields. Sample values (Perimeter ~494-525, Major_Axis_Length ~206-230) are positive and consistent with required numeric type. No unit information present in headers, so sourceUnit left empty.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "perimeter",
+                "source": "Perimeter",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Source headers contain exact matches for both target fields. Sample values (Perimeter ~494-525, Major_Axis_Length ~206-230) are positive and consistent with required numeric type. No unit information present in headers, so sourceUnit left empty."
+              },
+              {
+                "target": "major_axis_length",
+                "source": "Major_Axis_Length",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Source headers contain exact matches for both target fields. Sample values (Perimeter ~494-525, Major_Axis_Length ~206-230) are positive and consistent with required numeric type. No unit information present in headers, so sourceUnit left empty."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1498,
+    "outputTokens": 469,
+    "usageComplete": true,
+    "reservedInputBytes": 5142,
+    "reservedOutputTokens": 469,
+    "elapsedMs": 7264,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

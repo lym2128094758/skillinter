@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align the curing age and measured compressive strength.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "concrete.csv",
+    "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "age",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "compression_strength",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "age",
+      "source": "Age",
+      "sourceUnit": "days",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 7,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+        "record": 1,
+        "column": "Age",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Age"
+      },
+      "rationale": "Source headers 'Age' and 'Concrete compressive strength' match the target fields directly. Sample values (28, 270 for Age; 79.99, 61.89, 40.27 for strength) align with the UCI concrete dataset conventions: Age in days, strength in MPa."
+    },
+    {
+      "target": "compression_strength",
+      "source": "Concrete compressive strength",
+      "sourceUnit": "MPa",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 8,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+        "record": 1,
+        "column": "Concrete compressive strength",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Concrete%20compressive%20strength"
+      },
+      "rationale": "Source headers 'Age' and 'Concrete compressive strength' match the target fields directly. Sample values (28, 270 for Age; 79.99, 61.89, 40.27 for strength) align with the UCI concrete dataset conventions: Age in days, strength in MPa."
+    }
+  ],
+  "validation": {
+    "rows": 1030,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+      "record": 1,
+      "column": "Age",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Age"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af",
+      "record": 1,
+      "column": "Concrete compressive strength",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Concrete%20compressive%20strength"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Source headers 'Age' and 'Concrete compressive strength' match the target fields directly. Sample values (28, 270 for Age; 79.99, 61.89, 40.27 for strength) align with the UCI concrete dataset conventions: Age in days, strength in MPa.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "age",
+                "source": "Age",
+                "sourceUnit": "days",
+                "evidence": 1,
+                "rationale": "Source headers 'Age' and 'Concrete compressive strength' match the target fields directly. Sample values (28, 270 for Age; 79.99, 61.89, 40.27 for strength) align with the UCI concrete dataset conventions: Age in days, strength in MPa."
+              },
+              {
+                "target": "compression_strength",
+                "source": "Concrete compressive strength",
+                "sourceUnit": "MPa",
+                "evidence": 1,
+                "rationale": "Source headers 'Age' and 'Concrete compressive strength' match the target fields directly. Sample values (28, 270 for Age; 79.99, 61.89, 40.27 for strength) align with the UCI concrete dataset conventions: Age in days, strength in MPa."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1445,
+    "outputTokens": 406,
+    "usageComplete": true,
+    "reservedInputBytes": 5064,
+    "reservedOutputTokens": 406,
+    "elapsedMs": 6782,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align outline perimeter and length of the major axis.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-09.csv",
+    "sha256": "19e3e0f29da4add6b65f5d8683eb38c5dad6640adc7c26018879c48bc2466c88"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "perimeter",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "major_axis_length",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "perimeter",
+      "source": "轮廓周长",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 1,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "19e3e0f29da4add6b65f5d8683eb38c5dad6640adc7c26018879c48bc2466c88",
+        "record": 1,
+        "column": "轮廓周长",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%BD%AE%E5%BB%93%E5%91%A8%E9%95%BF"
+      },
+      "rationale": "源表头已包含轮廓周长（轮廓周长）和长轴长度（长轴长度），与目标字段语义一一对应；样本数据均为正数，满足 minimum=0 要求。"
+    },
+    {
+      "target": "major_axis_length",
+      "source": "长轴长度",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 2,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "19e3e0f29da4add6b65f5d8683eb38c5dad6640adc7c26018879c48bc2466c88",
+        "record": 1,
+        "column": "长轴长度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E9%95%BF%E8%BD%B4%E9%95%BF%E5%BA%A6"
+      },
+      "rationale": "源表头已包含轮廓周长（轮廓周长）和长轴长度（长轴长度），与目标字段语义一一对应；样本数据均为正数，满足 minimum=0 要求。"
+    }
+  ],
+  "validation": {
+    "rows": 3810,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "19e3e0f29da4add6b65f5d8683eb38c5dad6640adc7c26018879c48bc2466c88",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "19e3e0f29da4add6b65f5d8683eb38c5dad6640adc7c26018879c48bc2466c88",
+      "record": 1,
+      "column": "轮廓周长",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%BD%AE%E5%BB%93%E5%91%A8%E9%95%BF"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "19e3e0f29da4add6b65f5d8683eb38c5dad6640adc7c26018879c48bc2466c88",
+      "record": 1,
+      "column": "长轴长度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E9%95%BF%E8%BD%B4%E9%95%BF%E5%BA%A6"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "源表头已包含轮廓周长（轮廓周长）和长轴长度（长轴长度），与目标字段语义一一对应；样本数据均为正数，满足 minimum=0 要求。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "perimeter",
+                "source": "轮廓周长",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表头已包含轮廓周长（轮廓周长）和长轴长度（长轴长度），与目标字段语义一一对应；样本数据均为正数，满足 minimum=0 要求。"
+              },
+              {
+                "target": "major_axis_length",
+                "source": "长轴长度",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表头已包含轮廓周长（轮廓周长）和长轴长度（长轴长度），与目标字段语义一一对应；样本数据均为正数，满足 minimum=0 要求。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1478,
+    "outputTokens": 537,
+    "usageComplete": true,
+    "reservedInputBytes": 5072,
+    "reservedOutputTokens": 537,
+    "elapsedMs": 7360,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

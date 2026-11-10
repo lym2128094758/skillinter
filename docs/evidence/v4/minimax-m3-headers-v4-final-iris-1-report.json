@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align the sepal length and petal width measurements.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-01.csv",
+    "sha256": "5145e567806b7af03318d9a2dc723a1b16546a0e49e6c3bd36c472def70c7b21"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "sepal_length",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "flower_petal_width",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "sepal_length",
+      "source": "萼片长度",
+      "sourceUnit": "cm",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 0,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "5145e567806b7af03318d9a2dc723a1b16546a0e49e6c3bd36c472def70c7b21",
+        "record": 1,
+        "column": "萼片长度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%90%BC%E7%89%87%E9%95%BF%E5%BA%A6"
+      },
+      "rationale": "表头为中文鸢尾花数据集列名：萼片长度、萼片宽度、花瓣长度、花瓣宽度、类别。目标字段 sepal_length 对应萼片长度，flower_petal_width 对应花瓣宽度。样本值（5.1、3.5、1.4、0.2）符合鸢尾花标准厘米制测量，类型为 number 且为正数，满足 minimum=0 约束。"
+    },
+    {
+      "target": "flower_petal_width",
+      "source": "花瓣宽度",
+      "sourceUnit": "cm",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 3,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "5145e567806b7af03318d9a2dc723a1b16546a0e49e6c3bd36c472def70c7b21",
+        "record": 1,
+        "column": "花瓣宽度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%8A%B1%E7%93%A3%E5%AE%BD%E5%BA%A6"
+      },
+      "rationale": "表头为中文鸢尾花数据集列名：萼片长度、萼片宽度、花瓣长度、花瓣宽度、类别。目标字段 sepal_length 对应萼片长度，flower_petal_width 对应花瓣宽度。样本值（5.1、3.5、1.4、0.2）符合鸢尾花标准厘米制测量，类型为 number 且为正数，满足 minimum=0 约束。"
+    }
+  ],
+  "validation": {
+    "rows": 150,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "5145e567806b7af03318d9a2dc723a1b16546a0e49e6c3bd36c472def70c7b21",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "5145e567806b7af03318d9a2dc723a1b16546a0e49e6c3bd36c472def70c7b21",
+      "record": 1,
+      "column": "萼片长度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%90%BC%E7%89%87%E9%95%BF%E5%BA%A6"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "5145e567806b7af03318d9a2dc723a1b16546a0e49e6c3bd36c472def70c7b21",
+      "record": 1,
+      "column": "花瓣宽度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E8%8A%B1%E7%93%A3%E5%AE%BD%E5%BA%A6"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "表头为中文鸢尾花数据集列名：萼片长度、萼片宽度、花瓣长度、花瓣宽度、类别。目标字段 sepal_length 对应萼片长度，flower_petal_width 对应花瓣宽度。样本值（5.1、3.5、1.4、0.2）符合鸢尾花标准厘米制测量，类型为 number 且为正数，满足 minimum=0 约束。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "sepal_length",
+                "source": "萼片长度",
+                "sourceUnit": "cm",
+                "evidence": 1,
+                "rationale": "表头为中文鸢尾花数据集列名：萼片长度、萼片宽度、花瓣长度、花瓣宽度、类别。目标字段 sepal_length 对应萼片长度，flower_petal_width 对应花瓣宽度。样本值（5.1、3.5、1.4、0.2）符合鸢尾花标准厘米制测量，类型为 number 且为正数，满足 minimum=0 约束。"
+              },
+              {
+                "target": "flower_petal_width",
+                "source": "花瓣宽度",
+                "sourceUnit": "cm",
+                "evidence": 1,
+                "rationale": "表头为中文鸢尾花数据集列名：萼片长度、萼片宽度、花瓣长度、花瓣宽度、类别。目标字段 sepal_length 对应萼片长度，flower_petal_width 对应花瓣宽度。样本值（5.1、3.5、1.4、0.2）符合鸢尾花标准厘米制测量，类型为 number 且为正数，满足 minimum=0 约束。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1468,
+    "outputTokens": 434,
+    "usageComplete": true,
+    "reservedInputBytes": 5011,
+    "reservedOutputTokens": 434,
+    "elapsedMs": 6868,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

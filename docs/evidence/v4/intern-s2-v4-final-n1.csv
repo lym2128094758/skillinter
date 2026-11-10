@@ -1,0 +1,3 @@
+table,repeat,target,gold,predicted,outcome,status,taskCorrect,inputTokens,outputTokens,elapsedMs,cost,source,retrievedAt
+"iris","1","sepal_length","sepal length","","missing","failed","false","","","120017","","https://archive.ics.uci.edu/dataset/53/iris","2026-11-09T07:41:52.226Z"
+"iris","1","flower_petal_width","petal width","","missing","failed","false","","","120017","","https://archive.ics.uci.edu/dataset/53/iris","2026-11-09T07:41:52.226Z"

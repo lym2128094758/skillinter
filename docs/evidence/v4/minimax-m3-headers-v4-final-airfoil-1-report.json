@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align acoustic frequency and free stream air speed.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-05.csv",
+    "sha256": "237909feda18d418ca73924d936a74634a68a591d8b8093b7fd03cb021af58ef"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "frequency",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "air_speed",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "frequency",
+      "source": "声学频率",
+      "sourceUnit": "Hz",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 0,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "237909feda18d418ca73924d936a74634a68a591d8b8093b7fd03cb021af58ef",
+        "record": 1,
+        "column": "声学频率",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%A3%B0%E5%AD%A6%E9%A2%91%E7%8E%87"
+      },
+      "rationale": "声学频率直接对应 acoustic frequency (Hz sample: 800/1000/1250). 来流速度对应 free stream air speed (sample 71.3, consistent with m/s). Both targets have unique, unambiguous mappings."
+    },
+    {
+      "target": "air_speed",
+      "source": "来流速度",
+      "sourceUnit": "m/s",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 3,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "237909feda18d418ca73924d936a74634a68a591d8b8093b7fd03cb021af58ef",
+        "record": 1,
+        "column": "来流速度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%9D%A5%E6%B5%81%E9%80%9F%E5%BA%A6"
+      },
+      "rationale": "声学频率直接对应 acoustic frequency (Hz sample: 800/1000/1250). 来流速度对应 free stream air speed (sample 71.3, consistent with m/s). Both targets have unique, unambiguous mappings."
+    }
+  ],
+  "validation": {
+    "rows": 1503,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "237909feda18d418ca73924d936a74634a68a591d8b8093b7fd03cb021af58ef",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "237909feda18d418ca73924d936a74634a68a591d8b8093b7fd03cb021af58ef",
+      "record": 1,
+      "column": "声学频率",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%A3%B0%E5%AD%A6%E9%A2%91%E7%8E%87"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "237909feda18d418ca73924d936a74634a68a591d8b8093b7fd03cb021af58ef",
+      "record": 1,
+      "column": "来流速度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%9D%A5%E6%B5%81%E9%80%9F%E5%BA%A6"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "声学频率直接对应 acoustic frequency (Hz sample: 800/1000/1250). 来流速度对应 free stream air speed (sample 71.3, consistent with m/s). Both targets have unique, unambiguous mappings.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "frequency",
+                "source": "声学频率",
+                "sourceUnit": "Hz",
+                "evidence": 1,
+                "rationale": "声学频率直接对应 acoustic frequency (Hz sample: 800/1000/1250). 来流速度对应 free stream air speed (sample 71.3, consistent with m/s). Both targets have unique, unambiguous mappings."
+              },
+              {
+                "target": "air_speed",
+                "source": "来流速度",
+                "sourceUnit": "m/s",
+                "evidence": 1,
+                "rationale": "声学频率直接对应 acoustic frequency (Hz sample: 800/1000/1250). 来流速度对应 free stream air speed (sample 71.3, consistent with m/s). Both targets have unique, unambiguous mappings."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1425,
+    "outputTokens": 495,
+    "usageComplete": true,
+    "reservedInputBytes": 4903,
+    "reservedOutputTokens": 495,
+    "elapsedMs": 11663,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

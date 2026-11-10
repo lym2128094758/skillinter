@@ -1,0 +1,83 @@
+[
+  {
+    "model": "qwen3.8-27b",
+    "status": "completed",
+    "error": {},
+    "metrics": {
+      "model": "qwen3.8-27b",
+      "modelCalls": 1,
+      "toolCalls": 3,
+      "replans": 0,
+      "inputTokens": 3557,
+      "outputTokens": 1947,
+      "usageComplete": true,
+      "reservedInputBytes": 16319,
+      "reservedOutputTokens": 1947,
+      "elapsedMs": 28778,
+      "cost": null,
+      "runtime": "v24.16.0"
+    },
+    "rows": 3,
+    "issues": 2,
+    "sourceColumns": [
+      "样本编号",
+      "质量_g"
+    ],
+    "stepTools": [
+      "align_fields",
+      "validate_rows"
+    ]
+  },
+  {
+    "model": "intern-s2",
+    "status": "budget_exhausted",
+    "error": {
+      "code": "BUDGET_EXHAUSTED",
+      "message": "The operation was aborted due to timeout"
+    },
+    "metrics": {
+      "model": "intern-s2",
+      "modelCalls": 1,
+      "toolCalls": 1,
+      "replans": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "usageComplete": true,
+      "reservedInputBytes": 16319,
+      "reservedOutputTokens": 2048,
+      "elapsedMs": 40010,
+      "cost": null,
+      "runtime": "v24.16.0"
+    },
+    "sourceColumns": []
+  },
+  {
+    "model": "minimax-m3",
+    "status": "completed",
+    "error": {},
+    "metrics": {
+      "model": "minimax-m3",
+      "modelCalls": 1,
+      "toolCalls": 3,
+      "replans": 0,
+      "inputTokens": 3550,
+      "outputTokens": 1736,
+      "usageComplete": true,
+      "reservedInputBytes": 16311,
+      "reservedOutputTokens": 1736,
+      "elapsedMs": 22576,
+      "cost": null,
+      "runtime": "v24.16.0"
+    },
+    "rows": 3,
+    "issues": 2,
+    "sourceColumns": [
+      "样本编号",
+      "质量_g"
+    ],
+    "stepTools": [
+      "align_fields",
+      "validate_rows"
+    ]
+  }
+]

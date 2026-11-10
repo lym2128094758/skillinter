@@ -1,0 +1,57 @@
+{
+  "browser": {
+    "passed": true,
+    "startedAt": "2026-11-09T12:18:03.012Z",
+    "finishedAt": "2026-11-09T12:18:39.304Z",
+    "model": "minimax-m3",
+    "browser": "Chrome/156.0.8078.81",
+    "fixtureProvider": false,
+    "modelRequests": 4,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "workflowFormOpened": false,
+    "sourceUnchanged": true,
+    "sourceKind": "合成接口联调样例",
+    "rows": 3,
+    "issues": 3,
+    "graphMatchedExecution": true,
+    "rawRecord": "harness-browser-live.json",
+    "expectedHighlighted": [
+      "xlsx",
+      "gh-scientific-uncertainty-and-units-ccb540",
+      "gh-claude-data-quality-auditor-9d8e63",
+      "eda-profiling"
+    ],
+    "actualHighlighted": [
+      "xlsx",
+      "gh-scientific-uncertainty-and-units-ccb540",
+      "gh-claude-data-quality-auditor-9d8e63",
+      "eda-profiling"
+    ]
+  },
+  "tests": {
+    "passed": true,
+    "startedAt": "2026-11-09T12:18:02.996Z",
+    "finishedAt": "2026-11-09T12:18:08.686Z",
+    "counts": {
+      "testFiles": 8,
+      "testCases": 28,
+      "failures": 0,
+      "skipped": 0,
+      "unit": "node:test 测试用例，非 assert 断言次数"
+    },
+    "rawRecord": "test-run.json",
+    "junit": "test-run.junit.xml"
+  },
+  "sourceSha256": "9f15f6133cdccb231c2211052b795ea4539ebd46b3b4f63e721e88d1f1e2e60e",
+  "commit": null,
+  "commitNote": "No .git checkout is available. The source snapshot is identified by the per-file SHA-256 manifest.",
+  "evidenceHashes": {
+    "harness-browser-live.json": "e925d72f64288df534fea24d7281d8bbf193002d7e83255c23f6305bed263b38",
+    "test-run.json": "7ba71ce3180e39b82a0cc02a7e20a2c8f8fec96e8dfb6735ff21a098443423f6",
+    "test-run.junit.xml": "96dcafd13a7bec7dbc08bed459c24615a300f4d613771025f9c9e42ca48e4021",
+    "harness-browser-live-chat.png": "a809ad0073b2552828d234878a438736942d9e238b64bdaf57ef75a6f659b4d2",
+    "harness-browser-live-graph.png": "08fea33a8b875ce458a1b67c29da3d6af213a46679f372827653f5543c95d1d9"
+  }
+}

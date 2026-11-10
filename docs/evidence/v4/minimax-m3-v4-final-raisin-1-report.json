@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align area and outline perimeter.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "raisin.csv",
+    "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "area",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "outline_length",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "area",
+      "source": "Area",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 0,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+        "record": 1,
+        "column": "Area",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Area"
+      },
+      "rationale": "Header 'Area' matches target 'area' directly (sample values 87524/75166/90856 are raw pixel counts, no unit declared). Header 'Perimeter' matches target 'outline_length' as it represents the outline boundary length (sample values ~1184/1121/1208, no unit declared). No header exists for any other target; no unit conversion required."
+    },
+    {
+      "target": "outline_length",
+      "source": "Perimeter",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 6,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+        "record": 1,
+        "column": "Perimeter",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Perimeter"
+      },
+      "rationale": "Header 'Area' matches target 'area' directly (sample values 87524/75166/90856 are raw pixel counts, no unit declared). Header 'Perimeter' matches target 'outline_length' as it represents the outline boundary length (sample values ~1184/1121/1208, no unit declared). No header exists for any other target; no unit conversion required."
+    }
+  ],
+  "validation": {
+    "rows": 900,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+      "record": 1,
+      "column": "Area",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Area"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab",
+      "record": 1,
+      "column": "Perimeter",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Perimeter"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Header 'Area' matches target 'area' directly (sample values 87524/75166/90856 are raw pixel counts, no unit declared). Header 'Perimeter' matches target 'outline_length' as it represents the outline boundary length (sample values ~1184/1121/1208, no unit declared). No header exists for any other target; no unit conversion required.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "area",
+                "source": "Area",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Header 'Area' matches target 'area' directly (sample values 87524/75166/90856 are raw pixel counts, no unit declared). Header 'Perimeter' matches target 'outline_length' as it represents the outline boundary length (sample values ~1184/1121/1208, no unit declared). No header exists for any other target; no unit conversion required."
+              },
+              {
+                "target": "outline_length",
+                "source": "Perimeter",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "Header 'Area' matches target 'area' directly (sample values 87524/75166/90856 are raw pixel counts, no unit declared). Header 'Perimeter' matches target 'outline_length' as it represents the outline boundary length (sample values ~1184/1121/1208, no unit declared). No header exists for any other target; no unit conversion required."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1491,
+    "outputTokens": 500,
+    "usageComplete": true,
+    "reservedInputBytes": 5140,
+    "reservedOutputTokens": 500,
+    "elapsedMs": 7307,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

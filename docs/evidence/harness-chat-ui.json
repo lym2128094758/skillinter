@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "browser": "Chrome headless",
+  "entry": "main composer",
+  "workflowFormOpened": false,
+  "status": "completed",
+  "artifactCount": 6,
+  "graphButton": true,
+  "providerRequests": 5
+}

@@ -1,0 +1,129 @@
+{
+  "tariff": {
+    "price": {
+      "uncachedInputPerMillion": 2.1,
+      "outputPerMillion": 8.4
+    },
+    "currency": "墨点",
+    "checkedOn": "2026-11-09",
+    "source": "https://discovery.intern-ai.org.cn/token-plan/home?dockey=04-model-limits-and-pricing.md&tabIndex=3"
+  },
+  "basis": "按实测 usage 和未命中缓存单价估算；实际扣费查账户账单。",
+  "attempts": 10,
+  "completed": 10,
+  "estimatedMeanCost": 0.007658699999999999,
+  "p50Ms": 7264,
+  "p95Ms": 13642,
+  "rows": [
+    {
+      "table": "iris",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1419,
+      "outputTokens": 346,
+      "elapsedMs": 5861,
+      "estimatedCost": 0.0058863,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "wine-chemistry",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1545,
+      "outputTokens": 696,
+      "elapsedMs": 10799,
+      "estimatedCost": 0.0090909,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "abalone",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1476,
+      "outputTokens": 1050,
+      "elapsedMs": 13642,
+      "estimatedCost": 0.0119196,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "glass",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1472,
+      "outputTokens": 476,
+      "elapsedMs": 6790,
+      "estimatedCost": 0.0070896,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "airfoil",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1450,
+      "outputTokens": 442,
+      "elapsedMs": 6950,
+      "estimatedCost": 0.0067578,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "concrete",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1445,
+      "outputTokens": 406,
+      "elapsedMs": 6782,
+      "estimatedCost": 0.0064449,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "wine-red",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1524,
+      "outputTokens": 620,
+      "elapsedMs": 13369,
+      "estimatedCost": 0.0084084,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "wine-white",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1502,
+      "outputTokens": 407,
+      "elapsedMs": 10543,
+      "estimatedCost": 0.006573,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "rice",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1498,
+      "outputTokens": 469,
+      "elapsedMs": 7264,
+      "estimatedCost": 0.0070854,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    },
+    {
+      "table": "raisin",
+      "model": "minimax-m3",
+      "status": "completed",
+      "inputTokens": 1491,
+      "outputTokens": 500,
+      "elapsedMs": 7307,
+      "estimatedCost": 0.0073311,
+      "currency": "墨点",
+      "remotePeakGpuBytes": null
+    }
+  ]
+}

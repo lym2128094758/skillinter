@@ -1,0 +1,164 @@
+{
+  "version": 4,
+  "mode": "recorded-api-responses",
+  "modelKind": "model",
+  "compact": true,
+  "task": "00000000-0000-0000-0000-000000000002",
+  "goal": "Align the sepal length and petal width measurements.",
+  "request": {
+    "fields": [
+      {
+        "name": "sepal_length",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "flower_petal_width",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "iris.csv",
+    "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+    "text": "sepal length,sepal width,petal length,petal width,class\r\n5.1,3.5,1.4,0.2,Iris-setosa\r\n4.9,3,1.4,0.2,Iris-setosa\r\n4.7,3.2,1.3,0.2,Iris-setosa\r\n4.6,3.1,1.5,0.2,Iris-setosa\r\n5,3.6,1.4,0.2,Iris-setosa\r\n5.4,3.9,1.7,0.4,Iris-setosa\r\n4.6,3.4,1.4,0.3,Iris-setosa\r\n5,3.4,1.5,0.2,Iris-setosa\r\n4.4,2.9,1.4,0.2,Iris-setosa\r\n4.9,3.1,1.5,0.1,Iris-setosa\r\n5.4,3.7,1.5,0.2,Iris-setosa\r\n4.8,3.4,1.6,0.2,Iris-setosa\r\n4.8,3,1.4,0.1,Iris-setosa\r\n4.3,3,1.1,0.1,Iris-setosa\r\n5.8,4,1.2,0.2,Iris-setosa\r\n5.7,4.4,1.5,0.4,Iris-setosa\r\n5.4,3.9,1.3,0.4,Iris-setosa\r\n5.1,3.5,1.4,0.3,Iris-setosa\r\n5.7,3.8,1.7,0.3,Iris-setosa\r\n5.1,3.8,1.5,0.3,Iris-setosa\r\n5.4,3.4,1.7,0.2,Iris-setosa\r\n5.1,3.7,1.5,0.4,Iris-setosa\r\n4.6,3.6,1,0.2,Iris-setosa\r\n5.1,3.3,1.7,0.5,Iris-setosa\r\n4.8,3.4,1.9,0.2,Iris-setosa\r\n5,3,1.6,0.2,Iris-setosa\r\n5,3.4,1.6,0.4,Iris-setosa\r\n5.2,3.5,1.5,0.2,Iris-setosa\r\n5.2,3.4,1.4,0.2,Iris-setosa\r\n4.7,3.2,1.6,0.2,Iris-setosa\r\n4.8,3.1,1.6,0.2,Iris-setosa\r\n5.4,3.4,1.5,0.4,Iris-setosa\r\n5.2,4.1,1.5,0.1,Iris-setosa\r\n5.5,4.2,1.4,0.2,Iris-setosa\r\n4.9,3.1,1.5,0.1,Iris-setosa\r\n5,3.2,1.2,0.2,Iris-setosa\r\n5.5,3.5,1.3,0.2,Iris-setosa\r\n4.9,3.1,1.5,0.1,Iris-setosa\r\n4.4,3,1.3,0.2,Iris-setosa\r\n5.1,3.4,1.5,0.2,Iris-setosa\r\n5,3.5,1.3,0.3,Iris-setosa\r\n4.5,2.3,1.3,0.3,Iris-setosa\r\n4.4,3.2,1.3,0.2,Iris-setosa\r\n5,3.5,1.6,0.6,Iris-setosa\r\n5.1,3.8,1.9,0.4,Iris-setosa\r\n4.8,3,1.4,0.3,Iris-setosa\r\n5.1,3.8,1.6,0.2,Iris-setosa\r\n4.6,3.2,1.4,0.2,Iris-setosa\r\n5.3,3.7,1.5,0.2,Iris-setosa\r\n5,3.3,1.4,0.2,Iris-setosa\r\n7,3.2,4.7,1.4,Iris-versicolor\r\n6.4,3.2,4.5,1.5,Iris-versicolor\r\n6.9,3.1,4.9,1.5,Iris-versicolor\r\n5.5,2.3,4,1.3,Iris-versicolor\r\n6.5,2.8,4.6,1.5,Iris-versicolor\r\n5.7,2.8,4.5,1.3,Iris-versicolor\r\n6.3,3.3,4.7,1.6,Iris-versicolor\r\n4.9,2.4,3.3,1,Iris-versicolor\r\n6.6,2.9,4.6,1.3,Iris-versicolor\r\n5.2,2.7,3.9,1.4,Iris-versicolor\r\n5,2,3.5,1,Iris-versicolor\r\n5.9,3,4.2,1.5,Iris-versicolor\r\n6,2.2,4,1,Iris-versicolor\r\n6.1,2.9,4.7,1.4,Iris-versicolor\r\n5.6,2.9,3.6,1.3,Iris-versicolor\r\n6.7,3.1,4.4,1.4,Iris-versicolor\r\n5.6,3,4.5,1.5,Iris-versicolor\r\n5.8,2.7,4.1,1,Iris-versicolor\r\n6.2,2.2,4.5,1.5,Iris-versicolor\r\n5.6,2.5,3.9,1.1,Iris-versicolor\r\n5.9,3.2,4.8,1.8,Iris-versicolor\r\n6.1,2.8,4,1.3,Iris-versicolor\r\n6.3,2.5,4.9,1.5,Iris-versicolor\r\n6.1,2.8,4.7,1.2,Iris-versicolor\r\n6.4,2.9,4.3,1.3,Iris-versicolor\r\n6.6,3,4.4,1.4,Iris-versicolor\r\n6.8,2.8,4.8,1.4,Iris-versicolor\r\n6.7,3,5,1.7,Iris-versicolor\r\n6,2.9,4.5,1.5,Iris-versicolor\r\n5.7,2.6,3.5,1,Iris-versicolor\r\n5.5,2.4,3.8,1.1,Iris-versicolor\r\n5.5,2.4,3.7,1,Iris-versicolor\r\n5.8,2.7,3.9,1.2,Iris-versicolor\r\n6,2.7,5.1,1.6,Iris-versicolor\r\n5.4,3,4.5,1.5,Iris-versicolor\r\n6,3.4,4.5,1.6,Iris-versicolor\r\n6.7,3.1,4.7,1.5,Iris-versicolor\r\n6.3,2.3,4.4,1.3,Iris-versicolor\r\n5.6,3,4.1,1.3,Iris-versicolor\r\n5.5,2.5,4,1.3,Iris-versicolor\r\n5.5,2.6,4.4,1.2,Iris-versicolor\r\n6.1,3,4.6,1.4,Iris-versicolor\r\n5.8,2.6,4,1.2,Iris-versicolor\r\n5,2.3,3.3,1,Iris-versicolor\r\n5.6,2.7,4.2,1.3,Iris-versicolor\r\n5.7,3,4.2,1.2,Iris-versicolor\r\n5.7,2.9,4.2,1.3,Iris-versicolor\r\n6.2,2.9,4.3,1.3,Iris-versicolor\r\n5.1,2.5,3,1.1,Iris-versicolor\r\n5.7,2.8,4.1,1.3,Iris-versicolor\r\n6.3,3.3,6,2.5,Iris-virginica\r\n5.8,2.7,5.1,1.9,Iris-virginica\r\n7.1,3,5.9,2.1,Iris-virginica\r\n6.3,2.9,5.6,1.8,Iris-virginica\r\n6.5,3,5.8,2.2,Iris-virginica\r\n7.6,3,6.6,2.1,Iris-virginica\r\n4.9,2.5,4.5,1.7,Iris-virginica\r\n7.3,2.9,6.3,1.8,Iris-virginica\r\n6.7,2.5,5.8,1.8,Iris-virginica\r\n7.2,3.6,6.1,2.5,Iris-virginica\r\n6.5,3.2,5.1,2,Iris-virginica\r\n6.4,2.7,5.3,1.9,Iris-virginica\r\n6.8,3,5.5,2.1,Iris-virginica\r\n5.7,2.5,5,2,Iris-virginica\r\n5.8,2.8,5.1,2.4,Iris-virginica\r\n6.4,3.2,5.3,2.3,Iris-virginica\r\n6.5,3,5.5,1.8,Iris-virginica\r\n7.7,3.8,6.7,2.2,Iris-virginica\r\n7.7,2.6,6.9,2.3,Iris-virginica\r\n6,2.2,5,1.5,Iris-virginica\r\n6.9,3.2,5.7,2.3,Iris-virginica\r\n5.6,2.8,4.9,2,Iris-virginica\r\n7.7,2.8,6.7,2,Iris-virginica\r\n6.3,2.7,4.9,1.8,Iris-virginica\r\n6.7,3.3,5.7,2.1,Iris-virginica\r\n7.2,3.2,6,1.8,Iris-virginica\r\n6.2,2.8,4.8,1.8,Iris-virginica\r\n6.1,3,4.9,1.8,Iris-virginica\r\n6.4,2.8,5.6,2.1,Iris-virginica\r\n7.2,3,5.8,1.6,Iris-virginica\r\n7.4,2.8,6.1,1.9,Iris-virginica\r\n7.9,3.8,6.4,2,Iris-virginica\r\n6.4,2.8,5.6,2.2,Iris-virginica\r\n6.3,2.8,5.1,1.5,Iris-virginica\r\n6.1,2.6,5.6,1.4,Iris-virginica\r\n7.7,3,6.1,2.3,Iris-virginica\r\n6.3,3.4,5.6,2.4,Iris-virginica\r\n6.4,3.1,5.5,1.8,Iris-virginica\r\n6,3,4.8,1.8,Iris-virginica\r\n6.9,3.1,5.4,2.1,Iris-virginica\r\n6.7,3.1,5.6,2.4,Iris-virginica\r\n6.9,3.1,5.1,2.3,Iris-virginica\r\n5.8,2.7,5.1,1.9,Iris-virginica\r\n6.8,3.2,5.9,2.3,Iris-virginica\r\n6.7,3.3,5.7,2.5,Iris-virginica\r\n6.7,3,5.2,2.3,Iris-virginica\r\n6.3,2.5,5,1.9,Iris-virginica\r\n6.5,3,5.2,2,Iris-virginica\r\n6.2,3.4,5.4,2.3,Iris-virginica\r\n5.9,3,5.1,1.8,Iris-virginica\r\n"
+  },
+  "limits": {
+    "maxModelCalls": 4,
+    "maxToolCalls": 12,
+    "maxReplans": 2,
+    "maxSeconds": 180,
+    "maxInputTokens": 64000,
+    "maxOutputTokens": 8192,
+    "maxRows": 50000,
+    "maxIssues": 200,
+    "maxTokensPerPlan": 2048,
+    "internS2MaxSeconds": 180,
+    "sampleRows": 3,
+    "sampleChars": 120,
+    "inputPricePerMillion": null,
+    "outputPricePerMillion": null
+  },
+  "model": "intern-s2",
+  "transcript": [],
+  "observations": [
+    {
+      "tool": "inspect_table",
+      "arguments": {},
+      "result": {
+        "ok": true,
+        "data": {
+          "headers": [
+            "sepal length",
+            "sepal width",
+            "petal length",
+            "petal width",
+            "class"
+          ],
+          "rows": 150,
+          "sample": [
+            [
+              "5.1",
+              "3.5",
+              "1.4",
+              "0.2",
+              "Iris-setosa"
+            ],
+            [
+              "4.9",
+              "3",
+              "1.4",
+              "0.2",
+              "Iris-setosa"
+            ],
+            [
+              "4.7",
+              "3.2",
+              "1.3",
+              "0.2",
+              "Iris-setosa"
+            ]
+          ],
+          "citations": [
+            {
+              "file": "00000000-0000-0000-0000-000000000001",
+              "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+              "record": 1,
+              "column": "",
+              "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+            }
+          ]
+        },
+        "error": {
+          "code": "OK",
+          "message": ""
+        }
+      },
+      "volatile": {
+        "elapsedMs": 1
+      }
+    }
+  ],
+  "status": "failed",
+  "offlineExecutable": false,
+  "skillEvents": [
+    {
+      "type": "audit_skill_step",
+      "payload": {
+        "attempt": 0,
+        "step": "$input",
+        "id": "csv-inspect",
+        "state": "succeeded",
+        "artifact": {
+          "type": "inspected_csv",
+          "sha256": "1769ae2b1c9ede79205b0ab2850d94cc8e52e81ae1bade4dca2b5405c8cce228"
+        }
+      }
+    },
+    {
+      "type": "audit_skill_selection",
+      "payload": {
+        "method": "deterministic-eligibility",
+        "outcome": "candidates_available",
+        "candidates": [
+          {
+            "id": "field-align",
+            "version": "1.0.0",
+            "tool": "align_fields",
+            "label": "字段映射",
+            "nodeId": "gh-claude-database-schema-designer-aff360"
+          },
+          {
+            "id": "row-validate",
+            "version": "1.0.0",
+            "tool": "validate_rows",
+            "label": "逐行质量检查",
+            "nodeId": "gh-claude-data-quality-auditor-9d8e63"
+          },
+          {
+            "id": "column-profile",
+            "version": "1.0.0",
+            "tool": "profile_table",
+            "label": "原始列统计",
+            "nodeId": "eda-profiling"
+          }
+        ],
+        "missing": []
+      }
+    }
+  ],
+  "skillRegistry": {
+    "version": 1,
+    "sha256": "9d3b3fd694e272b45f2e47fa9c97e9ca6f987d0548f7aab797e4b055cbe92bf9"
+  },
+  "runtime": {
+    "version": 4,
+    "sha256": "1229861ae101e3dca01ff26d6c830a6d4d0790209cd5325be5bcc7028ce27b08"
+  },
+  "skillTraceHash": "6327c178c58cc2b307f8c8525eb508c3780451724e77ff30b042e0880866cdcd",
+  "reportHash": "bbac942f79dd30b55f1d27dbc09745b9f8151af1d13adda118e69585166eb2ef"
+}

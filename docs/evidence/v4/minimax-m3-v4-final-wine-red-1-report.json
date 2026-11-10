@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align residual sugar and alcohol content.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "wine-red.csv",
+    "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "residual_sugar",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "ethanol_content",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "residual_sugar",
+      "source": "residual_sugar",
+      "sourceUnit": "g/dm³",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 3,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+        "record": 1,
+        "column": "residual_sugar",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=residual_sugar"
+      },
+      "rationale": "源表头中存在 residual_sugar 与 alcohol 两列，分别与目标 residual_sugar、ethanol_content 直接对应；该数据集为 UCI 红酒质量数据集（1599 行），residual_sugar 单位为 g/dm³，alcohol 为乙醇体积百分比（% vol）。"
+    },
+    {
+      "target": "ethanol_content",
+      "source": "alcohol",
+      "sourceUnit": "% vol",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 10,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+        "record": 1,
+        "column": "alcohol",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=alcohol"
+      },
+      "rationale": "源表头中存在 residual_sugar 与 alcohol 两列，分别与目标 residual_sugar、ethanol_content 直接对应；该数据集为 UCI 红酒质量数据集（1599 行），residual_sugar 单位为 g/dm³，alcohol 为乙醇体积百分比（% vol）。"
+    }
+  ],
+  "validation": {
+    "rows": 1599,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+      "record": 1,
+      "column": "residual_sugar",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=residual_sugar"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+      "record": 1,
+      "column": "alcohol",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=alcohol"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "源表头中存在 residual_sugar 与 alcohol 两列，分别与目标 residual_sugar、ethanol_content 直接对应；该数据集为 UCI 红酒质量数据集（1599 行），residual_sugar 单位为 g/dm³，alcohol 为乙醇体积百分比（% vol）。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "residual_sugar",
+                "source": "residual_sugar",
+                "sourceUnit": "g/dm³",
+                "evidence": 1,
+                "rationale": "源表头中存在 residual_sugar 与 alcohol 两列，分别与目标 residual_sugar、ethanol_content 直接对应；该数据集为 UCI 红酒质量数据集（1599 行），residual_sugar 单位为 g/dm³，alcohol 为乙醇体积百分比（% vol）。"
+              },
+              {
+                "target": "ethanol_content",
+                "source": "alcohol",
+                "sourceUnit": "% vol",
+                "evidence": 1,
+                "rationale": "源表头中存在 residual_sugar 与 alcohol 两列，分别与目标 residual_sugar、ethanol_content 直接对应；该数据集为 UCI 红酒质量数据集（1599 行），residual_sugar 单位为 g/dm³，alcohol 为乙醇体积百分比（% vol）。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1524,
+    "outputTokens": 620,
+    "usageComplete": true,
+    "reservedInputBytes": 5218,
+    "reservedOutputTokens": 620,
+    "elapsedMs": 13369,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

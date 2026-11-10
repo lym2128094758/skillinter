@@ -1,0 +1,32 @@
+{
+  "host": "127.0.0.1",
+  "port": 3095,
+  "statePath": ".skillinter/native",
+  "tools": {"depth": 8, "entries": 300, "visited": 3000, "fileBytes": 1048576, "lines": 200, "characters": 32000,
+    "timeoutMs": 5000},
+  "pricing": {
+    "currency": "墨点",
+    "checkedOn": "2026-11-09",
+    "source": "https://discovery.intern-ai.org.cn/token-plan/home?dockey=04-model-limits-and-pricing.md&tabIndex=3",
+    "models": {
+      "minimax-m3": {"uncachedInputPerMillion": 2.1, "outputPerMillion": 8.4},
+      "intern-s2": {"uncachedInputPerMillion": 0, "outputPerMillion": 0}
+    }
+  },
+  "audit": {
+    "maxModelCalls": 4,
+    "maxToolCalls": 12,
+    "maxReplans": 2,
+    "maxSeconds": 120,
+    "maxInputTokens": 64000,
+    "maxOutputTokens": 8192,
+    "maxRows": 50000,
+    "maxIssues": 200,
+    "maxTokensPerPlan": 2048,
+    "internS2MaxSeconds": 180,
+    "sampleRows": 3,
+    "sampleChars": 120,
+    "inputPricePerMillion": null,
+    "outputPricePerMillion": null
+  }
+}

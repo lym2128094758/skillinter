@@ -1,0 +1,11 @@
+table,model,status,inputTokens,outputTokens,elapsedMs,estimatedCost,currency,remotePeakGpuBytes
+iris,minimax-m3,completed,1468,434,6868,0.0067284,墨点,
+wine-chemistry,minimax-m3,completed,1596,755,11600,0.0096936,墨点,
+abalone,minimax-m3,completed,1522,1054,13548,0.0120498,墨点,
+glass,minimax-m3,completed,1482,806,10524,0.0098826,墨点,
+airfoil,minimax-m3,completed,1425,495,11663,0.0071505,墨点,
+concrete,minimax-m3,completed,1478,737,15213,0.0092946,墨点,
+wine-red,minimax-m3,completed,1548,842,12391,0.0103236,墨点,
+wine-white,minimax-m3,completed,1495,390,6211,0.0064155,墨点,
+rice,minimax-m3,completed,1478,537,7360,0.0076146,墨点,
+raisin,minimax-m3,completed,1500,902,11431,0.0107268,墨点,

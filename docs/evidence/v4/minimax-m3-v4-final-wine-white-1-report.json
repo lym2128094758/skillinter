@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align density and free sulfur dioxide.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "wine-white.csv",
+    "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "density",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "free_so2",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "density",
+      "source": "density",
+      "sourceUnit": "g/cm^3",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 7,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+        "record": 1,
+        "column": "density",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=density"
+      },
+      "rationale": "目标 density 直接匹配表头 density；目标 free_so2 与 free_sulfur_dioxide 语义一致（白葡萄酒常用 mg/L）。两条映射均为精确或语义直接对应，无歧义。"
+    },
+    {
+      "target": "free_so2",
+      "source": "free_sulfur_dioxide",
+      "sourceUnit": "mg/L",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 5,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+        "record": 1,
+        "column": "free_sulfur_dioxide",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=free_sulfur_dioxide"
+      },
+      "rationale": "目标 density 直接匹配表头 density；目标 free_so2 与 free_sulfur_dioxide 语义一致（白葡萄酒常用 mg/L）。两条映射均为精确或语义直接对应，无歧义。"
+    }
+  ],
+  "validation": {
+    "rows": 4898,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+      "record": 1,
+      "column": "density",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=density"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+      "record": 1,
+      "column": "free_sulfur_dioxide",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=free_sulfur_dioxide"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "目标 density 直接匹配表头 density；目标 free_so2 与 free_sulfur_dioxide 语义一致（白葡萄酒常用 mg/L）。两条映射均为精确或语义直接对应，无歧义。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "density",
+                "source": "density",
+                "sourceUnit": "g/cm^3",
+                "evidence": 1,
+                "rationale": "目标 density 直接匹配表头 density；目标 free_so2 与 free_sulfur_dioxide 语义一致（白葡萄酒常用 mg/L）。两条映射均为精确或语义直接对应，无歧义。"
+              },
+              {
+                "target": "free_so2",
+                "source": "free_sulfur_dioxide",
+                "sourceUnit": "mg/L",
+                "evidence": 1,
+                "rationale": "目标 density 直接匹配表头 density；目标 free_so2 与 free_sulfur_dioxide 语义一致（白葡萄酒常用 mg/L）。两条映射均为精确或语义直接对应，无歧义。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1502,
+    "outputTokens": 407,
+    "usageComplete": true,
+    "reservedInputBytes": 5115,
+    "reservedOutputTokens": 407,
+    "elapsedMs": 10543,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

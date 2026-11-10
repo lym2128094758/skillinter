@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align shell diameter and mass of the dried shell.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "abalone.csv",
+    "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "shell_diameter",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "dry_shell_mass",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "shell_diameter",
+      "source": "Diameter",
+      "sourceUnit": "mm",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 2,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+        "record": 1,
+        "column": "Diameter",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Diameter"
+      },
+      "rationale": "Header 'Diameter' semantically matches target shell_diameter; 'Shell_weight' corresponds to dry_shell_mass (UCI abalone convention: weights in grams, dimensions in mm). Both targets map unambiguously to existing headers with numeric values ≥0 in samples."
+    },
+    {
+      "target": "dry_shell_mass",
+      "source": "Shell_weight",
+      "sourceUnit": "grams",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 7,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+        "record": 1,
+        "column": "Shell_weight",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Shell_weight"
+      },
+      "rationale": "Header 'Diameter' semantically matches target shell_diameter; 'Shell_weight' corresponds to dry_shell_mass (UCI abalone convention: weights in grams, dimensions in mm). Both targets map unambiguously to existing headers with numeric values ≥0 in samples."
+    }
+  ],
+  "validation": {
+    "rows": 4177,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+      "record": 1,
+      "column": "Diameter",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Diameter"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f",
+      "record": 1,
+      "column": "Shell_weight",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=Shell_weight"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "Header 'Diameter' semantically matches target shell_diameter; 'Shell_weight' corresponds to dry_shell_mass (UCI abalone convention: weights in grams, dimensions in mm). Both targets map unambiguously to existing headers with numeric values ≥0 in samples.",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "shell_diameter",
+                "source": "Diameter",
+                "sourceUnit": "mm",
+                "evidence": 1,
+                "rationale": "Header 'Diameter' semantically matches target shell_diameter; 'Shell_weight' corresponds to dry_shell_mass (UCI abalone convention: weights in grams, dimensions in mm). Both targets map unambiguously to existing headers with numeric values ≥0 in samples."
+              },
+              {
+                "target": "dry_shell_mass",
+                "source": "Shell_weight",
+                "sourceUnit": "grams",
+                "evidence": 1,
+                "rationale": "Header 'Diameter' semantically matches target shell_diameter; 'Shell_weight' corresponds to dry_shell_mass (UCI abalone convention: weights in grams, dimensions in mm). Both targets map unambiguously to existing headers with numeric values ≥0 in samples."
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1476,
+    "outputTokens": 1050,
+    "usageComplete": true,
+    "reservedInputBytes": 5073,
+    "reservedOutputTokens": 1050,
+    "elapsedMs": 13642,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

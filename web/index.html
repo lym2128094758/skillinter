@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skillinter</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <aside id="sidebar">
+    <nav class="rail" aria-label="工作区">
+      <div id="rail-views" class="rail-views" role="group" aria-label="切换工作区视图">
+      <span id="rail-lens" class="rail-lens" aria-hidden="true"></span>
+      <button id="workbench" type="button" title="任务工作台" aria-label="任务工作台" aria-controls="task-panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/></svg>
+      </button>
+      <button id="open-graph" type="button" title="技能图谱" aria-label="技能图谱" aria-controls="graph-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></button>
+      <button id="skill-center-nav" type="button" title="技能中心" aria-label="技能中心" aria-controls="skill-studio-dialog" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 2 1 3 3 0 0 1 2-1h6v16h-6a3 3 0 0 0-2 1 3 3 0 0 0-2-1H4zM12 5v16M7 8h2M15 8h2M7 12h2M15 12h2"/></svg></button>
+      </div>
+      <button id="settings" type="button" title="设置" aria-label="设置">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6"/></svg>
+      </button>
+    </nav>
+    <div id="task-panel">
+      <strong>Skillinter</strong>
+      <button id="new" type="button">＋ 新聊天</button>
+      <label for="search" class="sr">搜索任务标题</label>
+      <input id="search" type="search" placeholder="搜索任务" autocomplete="off">
+      <nav id="tasks" aria-label="任务历史"></nav>
+    </div>
+  </aside>
+  <main>
+    <header>
+      <button id="toggle" type="button" aria-controls="task-panel" aria-expanded="true" aria-label="切换任务列表">☰</button>
+      <h1 id="title">新任务</h1>
+      <span id="model" aria-label="当前模型"></span>
+    </header>
+    <section id="graph-panel" aria-label="技能图谱" hidden>
+      <div class="graph-tools"><span id="graph-status" role="status">我的 Skill 图谱</span></div>
+      <iframe id="skill-graph-frame" title="我的 Skill 图谱 · 平面与球体" allow="clipboard-write"></iframe>
+      <section id="graph-run-evidence" aria-label="计划和执行证据" hidden></section>
+    </section>
+    <section id="transcript" aria-label="任务记录" tabindex="0"><div id="transcript-content"></div></section>
+    <form id="composer">
+      <button id="jump-to-latest" type="button" aria-label="跳到最新消息" title="跳到最新消息" aria-controls="transcript" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6"/></svg>
+      </button>
+      <p id="error" role="alert" hidden></p>
+      <p id="archived-note" class="status" hidden>此任务已归档。恢复后可以继续发送消息。</p>
+      <div id="active-custom-skill" hidden><span id="active-custom-skill-label"></span><button id="remove-custom-skill" type="button" aria-label="取消使用技能" title="取消使用技能">×</button></div>
+      <div id="composer-files" hidden>
+        <div id="task-files" aria-label="任务附件" hidden></div>
+        <label class="sr" for="analysis-file">当前分析输入</label>
+        <select id="analysis-file" title="本轮使用的附件" hidden><option value="">不选本轮附件</option></select>
+      </div>
+      <label for="prompt" class="sr">任务消息</label>
+      <textarea id="prompt" placeholder="告诉 Skillinter 你想做什么" title="Enter 发送，Ctrl+Enter 换行" rows="2" maxlength="16000"></textarea>
+      <div class="composer-toolbar">
+        <div class="composer-tools">
+          <button id="composer-add" class="composer-icon" type="button" popovertarget="composer-menu" aria-label="添加或使用工具" title="添加或使用工具">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <input type="file" id="task-upload" hidden>
+          <button id="open-file-access" class="composer-icon" type="button" aria-label="文件权限" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 7 3v5c0 4.5-3 7.9-7 10-4-2.1-7-5.5-7-10V6zM12 8v4m0 4h.01"/></svg>
+          </button>
+          <button id="open-audit" class="composer-icon" type="button" aria-label="材料预检" title="材料预检">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5zM15 4v4h4M8 12h7m-7 4h3m3 0 1 1 3-3"/></svg>
+          </button>
+          <button id="choose-custom-skill" class="composer-icon" type="button" aria-label="选择对话技能" title="选择对话技能" aria-controls="skill-studio-dialog" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h4"/></svg>
+          </button>
+        </div>
+        <div class="composer-model-tools">
+          <button id="optimize-prompt" class="composer-icon" type="button" title="优化提示词" aria-label="优化提示词">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 12-12m-2-2 4 4M7 3l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8z"/></svg>
+          </button>
+          <button id="choose-model" type="button" popovertarget="model-picker" aria-label="选择会话模型">连接模型</button>
+          <label for="thinking" class="sr">思考强度</label>
+          <select id="thinking" title="思考强度"><option value="default">默认思考</option></select>
+          <button id="stop" class="composer-icon composer-stop" type="button" aria-label="停止执行" title="停止执行" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="8" height="8" rx="1" fill="currentColor" stroke="none"/></svg>
+          </button>
+          <button id="send" class="composer-icon" type="submit" aria-label="发送" title="发送">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <p id="selection-status" role="status"></p>
+    </form>
+  </main>
+  <div id="task-menu" popover="auto" aria-label="任务操作">
+    <button id="pin-task" type="button">置顶</button>
+    <button id="rename-task" type="button">重命名</button>
+    <button id="archive-task" type="button">归档</button>
+    <button id="export-task" type="button">导出会话</button>
+  </div>
+  <dialog id="project-dialog" aria-labelledby="project-title">
+    <form id="project-form" class="folder-form">
+      <h2 id="project-title">添加项目</h2>
+      <label for="project-path">本机文件夹路径</label>
+      <input id="project-path" placeholder="例如 D:\gpt\projects\my-project" maxlength="1000" autocomplete="off" spellcheck="false" required>
+      <p class="status">可从资源管理器地址栏复制路径。添加后会打开该项目的新会话，权限默认为项目读写。</p>
+      <p class="dialog-error" role="alert" hidden></p>
+      <div class="actions"><button type="button" id="cancel-project">取消</button><button class="primary-action" type="submit">添加并打开</button></div>
+    </form>
+  </dialog>
+  <dialog id="file-access-dialog" aria-labelledby="file-access-title">
+    <form id="file-access-form" class="folder-form">
+      <h2 id="file-access-title">会话文件权限</h2>
+      <label for="access-project">所属项目</label>
+      <select id="access-project"></select>
+      <label for="access-mode">访问范围</label>
+      <select id="access-mode">
+        <option value="attachments">仅附件</option>
+        <option value="project_read">项目只读</option>
+        <option value="project_write">项目读写</option>
+        <option value="full">全盘读写</option>
+      </select>
+      <p id="access-help" class="status"></p>
+      <p id="access-runtime-note" class="status" role="status" hidden>当前任务正在运行，可查看权限。请等待结束或停止执行后修改。</p>
+      <label id="confirm-full-row" hidden><input id="confirm-full" type="checkbox"> 允许本会话跨盘访问本机文件</label>
+      <p class="dialog-error" role="alert" hidden></p>
+      <div class="actions"><button type="button" id="cancel-file-access">取消</button><button class="primary-action" type="submit">保存权限</button></div>
+    </form>
+  </dialog>
+  <div id="composer-menu" class="composer-popover" popover="auto" aria-label="附件与工具">
+    <button id="attach" type="button">添加附件</button>
+    <button id="try-tool" type="button" title="在本地试跑一次工作区文件工具">试跑工具</button>
+    <details id="saved-attachments" hidden><summary>会话附件</summary><div id="saved-attachment-list"></div></details>
+    <p id="attachment-runtime-note" class="status" hidden>任务运行中，新增附件从下一轮使用。本轮引导仅发送文字。</p>
+  </div>
+  <div id="model-picker" class="composer-popover" popover="auto" aria-label="选择模型">
+    <div class="model-picker-header"><input id="model-search" type="search" aria-label="搜索模型" placeholder="搜索模型"><button id="refresh-models" type="button" aria-label="刷新模型列表">刷新</button></div>
+    <p id="catalog-status" role="status"></p>
+    <div id="model-choices"></div>
+  </div>
+  <dialog id="prompt-optimizer-dialog" aria-labelledby="prompt-optimizer-title">
+    <div class="audit-heading"><h2 id="prompt-optimizer-title">优化提示词</h2><button id="close-prompt-optimizer" type="button" aria-label="关闭提示词优化">×</button></div>
+    <p class="status">使用当前模型，结合最近两轮对话和附件名称整理表达。检查并编辑后可替换到输入框。</p>
+    <label for="prompt-original">原始草稿</label><textarea id="prompt-original" rows="3" readonly></textarea>
+    <p id="prompt-optimizer-status" class="status" role="status"></p>
+    <p id="prompt-optimizer-error" class="dialog-error" role="alert" hidden></p>
+    <div id="prompt-optimizer-result" hidden>
+      <label for="prompt-optimized">优化后的任务（可编辑）</label><textarea id="prompt-optimized" rows="8" maxlength="16000"></textarea>
+      <p id="prompt-plan-hint" class="status"></p>
+      <ul id="prompt-improvements"></ul>
+      <div id="prompt-questions" hidden><strong>待你补充的信息</strong><ul id="prompt-question-list"></ul></div>
+    </div>
+    <div class="actions"><button id="cancel-prompt-optimizer" type="button">保留原文</button><button id="retry-prompt-optimizer" type="button">重新优化</button><button id="apply-prompt-optimizer" type="button" class="primary-action" disabled>替换到输入框</button></div>
+  </dialog>
+  <dialog id="preflight-dialog" aria-labelledby="preflight-title">
+    <form id="preflight-form">
+      <div class="audit-heading"><h2 id="preflight-title">材料预检</h2><button type="button" id="close-preflight" aria-label="关闭预检">×</button></div>
+      <p class="status">检查本会话附件或已授权的项目文件。结果会随任务保存，可查看证据和执行路径。</p>
+      <label for="preflight-source">检查来源</label>
+      <select id="preflight-source"><option value="attachments">本会话附件</option><option value="project">项目目录</option></select>
+      <p id="preflight-coverage" class="status"></p>
+      <div id="preflight-paths-row" hidden>
+        <label for="preflight-paths">指定材料路径（可选，每行一条）</label>
+        <textarea id="preflight-paths" rows="3" maxlength="10000" placeholder="例如 README.md 或 data/records.jsonl"></textarea>
+      </div>
+      <label for="preflight-goal">检查目标</label>
+      <select id="preflight-goal"><option value="structure">检查完整性和数据结构</option><option value="integrity">只检查可读性和重复内容</option><option value="reproducibility">检查结构和复现准备</option></select>
+      <p id="preflight-error" class="dialog-error" role="alert" hidden></p>
+      <div class="actions">
+        <button id="preflight-add" type="button">添加材料</button>
+        <button id="preflight-access" type="button" hidden>设置项目权限</button>
+        <button id="preflight-start" type="submit" class="primary-action">开始预检</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="audit-dialog" aria-labelledby="audit-title">
+    <form id="audit-form">
+      <div class="audit-heading"><div><h2 id="audit-title">实验数据预检</h2><p>上传 CSV，指定目标字段，生成映射建议与质量问题清单。</p></div><button type="button" id="close-audit" aria-label="关闭预检">×</button></div>
+      <p id="audit-source" class="status"></p>
+      <p id="audit-runtime-note" class="status" role="status" hidden>当前任务正在运行，可以先填写目标。请等待结束或停止执行后发起预检。</p>
+      <label for="audit-goal">本次检查目标</label><input id="audit-goal" maxlength="1000" required placeholder="例如：统一质量单位，检查缺失值和异常数值">
+      <div class="audit-heading"><h3>目标字段</h3><button id="add-audit-field" type="button">＋ 添加字段</button></div>
+      <p class="status">字段含义和单位存在歧义时会询问你，映射建议需人工复核。</p>
+      <div class="audit-table-wrap"><table class="audit-fields"><thead><tr><th>名称</th><th>类型</th><th>必填</th><th>单位</th><th>最小值</th><th>最大值</th><th></th></tr></thead><tbody id="audit-fields"></tbody></table></div>
+      <p id="audit-error" role="alert" class="dialog-error" hidden></p>
+      <div class="actions">
+        <select id="offline-audit-variant" aria-label="离线演示用例">
+          <option value="replan">错误映射与重规划</option><option value="missing-unit">净重缺单位</option>
+          <option value="unit">单位换算和列统计</option><option value="plain">只做逐行检查</option>
+        </select>
+        <button id="offline-audit" type="button">离线演示</button><button id="audit-example" type="button">载入示例 CSV</button><button id="rules-audit" type="submit">规则预检</button><button id="start-audit" type="submit">模型预检</button>
+      </div>
+      <p class="status">模型负责规划与映射建议，本地工具校验原始数据。报告可定位到来源记录；回放包包含输入数据。</p>
+    </form>
+  </dialog>
+  <dialog id="rename-dialog" aria-labelledby="rename-title">
+    <form id="rename-form">
+      <h2 id="rename-title">重命名任务</h2>
+      <label for="task-name">任务名称</label>
+      <input id="task-name" required maxlength="60" autofocus>
+      <p class="dialog-error" role="alert" hidden></p>
+      <div class="actions"><button type="button" id="cancel-rename">取消</button><button type="submit">保存</button></div>
+    </form>
+  </dialog>
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="settings-shell">
+    <header class="settings-header"><h2 id="settings-title">设置</h2><button type="button" id="close-settings" aria-label="关闭设置"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></header>
+    <nav class="settings-nav" aria-label="设置页面">
+      <button type="button" data-settings-page="model" aria-controls="model-view" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 4 14 4 14 0V6M5 12v6c0 4 14 4 14 0v-6"/></svg>模型</button>
+      <button type="button" data-settings-page="run" aria-controls="run-view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16M8 4v6m8-1v6m-6-1v6"/></svg>运行</button>
+      <button type="button" data-settings-page="archive" aria-controls="archive-view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v5H4zm2 5v10h12V9m-8 4h4"/></svg>已归档</button>
+    </nav>
+    <div class="settings-content">
+    <p id="settings-load" class="settings-message" role="status" hidden></p>
+    <section id="model-view" aria-labelledby="model-heading">
+      <div class="settings-intro"><h3 id="model-heading">模型</h3><p>选择 Skillinter 处理任务时使用的模型连接。</p></div>
+      <dl class="settings-summary" aria-label="当前生效配置">
+        <div><dt>当前连接方式</dt><dd id="active-mode">—</dd></div>
+        <div><dt>当前模型</dt><dd id="active-model">—</dd></div>
+      </dl>
+      <form id="model-form">
+        <div class="settings-card">
+        <div class="settings-card-heading"><h4>模型连接</h4><p>更改后对下一轮任务生效。</p></div>
+        <div class="settings-fields">
+        <label for="model-mode">连接方式</label>
+        <select id="model-mode">
+          <option value="api">自定义 API</option>
+          <option value="environment" id="environment-option" hidden>环境配置</option>
+        </select>
+        <p id="mode-help" class="settings-hint"></p>
+        </div>
+        <div id="api-fields" class="settings-fields" hidden>
+          <label for="api-endpoint">API 基地址</label>
+          <input id="api-endpoint" type="url" maxlength="2048" placeholder="https://example.com/v1" autocomplete="off" required>
+          <label for="api-key">API 密钥</label>
+          <input id="api-key" type="password" maxlength="4096" autocomplete="new-password" spellcheck="false" aria-describedby="key-help">
+          <p id="key-help" class="settings-hint"></p>
+          <label id="clear-key-row" hidden><input id="clear-key" type="checkbox"> 清除已保存密钥</label>
+          <p class="settings-hint">保存连接后自动读取可用模型，在会话输入框下方选择使用。</p>
+          <div id="available-models" class="available-models" aria-label="此 API 可用模型"></div>
+        </div>
+        </div>
+        <p class="settings-hint">连接测试会验证 API 并读取可用模型列表。</p>
+        <p id="model-feedback" class="settings-message" role="status" hidden></p>
+        <div class="settings-actions"><button id="test-model" type="button">测试连接</button><button class="primary-action" id="save-model" type="submit">保存模型设置</button></div>
+      </form>
+    </section>
+    <section id="run-view" aria-labelledby="run-heading" hidden>
+      <div class="settings-intro"><h3 id="run-heading">运行</h3><p>限制单轮任务的模型调用和工具循环。</p></div>
+      <form id="run-form">
+        <div class="settings-card">
+          <div class="settings-setting-row"><div><label for="max-steps">每轮最多模型调用次数</label><p id="steps-help" class="settings-hint">可设为 1 到 12 次。保存后从下一轮起生效。</p></div>
+          <input id="max-steps" type="number" min="1" max="12" step="1" required aria-describedby="steps-help"></div>
+        </div>
+        <p id="run-feedback" class="settings-message" role="status" hidden></p>
+        <div class="settings-actions"><button id="reset-run" type="button">恢复默认值</button><button class="primary-action" id="save-run" type="submit">保存运行设置</button></div>
+      </form>
+    </section>
+    <section id="archive-view" aria-labelledby="archive-heading" hidden>
+      <div class="settings-intro"><h3 id="archive-heading">已归档</h3><p>查看以前的任务记录，或恢复后继续处理。</p></div>
+      <label for="archive-search" class="sr">搜索已归档任务标题</label>
+      <input id="archive-search" type="search" placeholder="搜索归档任务" autocomplete="off">
+      <p class="dialog-error" role="alert" hidden></p>
+      <div id="archived-tasks"></div>
+    </section>
+    </div>
+    </div>
+  </dialog>
+  <dialog id="skill-studio-dialog" aria-labelledby="skill-studio-title">
+    <header class="studio-heading">
+      <div><h2 id="skill-studio-title">技能中心</h2><p id="studio-subtitle">管理可在会话中复用的做法，保留每次改进。</p></div>
+      <button type="button" id="close-skill-studio" aria-label="返回对话">返回对话 ↗</button>
+    </header>
+    <nav class="studio-tabs" aria-label="技能中心导航">
+      <button id="studio-tab-library" type="button" aria-current="page">技能</button>
+      <button id="studio-tab-create" type="button">创建</button>
+      <button id="studio-tab-import" type="button">导入</button>
+      <button id="studio-tab-candidates" type="button">候选改进</button>
+      <button id="studio-tab-experiences" type="button">经验</button>
+    </nav>
+    <p id="studio-status" class="status" role="status" hidden></p>
+    <p id="studio-error" class="dialog-error" role="alert" hidden></p>
+    <div id="studio-project-row" hidden>
+      <label for="studio-target-project">目标项目</label>
+      <select id="studio-target-project"><option value="">请选择项目</option></select>
+      <p id="studio-project-path" class="status studio-file-path"></p>
+    </div>
+    <div id="studio-library">
+      <div class="studio-toolbar">
+        <input id="studio-search" type="search" placeholder="按名称或描述筛选" aria-label="搜索技能">
+        <select id="studio-filter" aria-label="技能范围"><option value="all">所有范围</option><option value="global">用户技能</option><option value="project">项目技能</option></select>
+        <button id="studio-refresh" type="button">刷新</button><button id="studio-create" type="button">＋ 新建技能</button>
+      </div>
+      <p id="studio-count" class="status"></p>
+      <p id="studio-storage-paths" class="status studio-file-path"></p>
+      <div id="studio-storage-issues" class="dialog-error" role="status" hidden></div>
+      <div id="studio-list" class="studio-list"></div>
+    </div>
+    <section id="studio-import" hidden>
+      <h3>导入技能</h3>
+      <label for="studio-import-scope">导入到</label>
+      <select id="studio-import-scope"><option value="global">用户技能（所有项目可用）</option><option value="project">项目技能（仅当前项目可用）</option></select>
+      <label for="studio-import-source">导入来源</label>
+      <select id="studio-import-source"><option value="libraries">扫描本机 Agent 技能库（推荐）</option><option value="library-path">扫描其他技能库目录</option><option value="file">单个技能文件</option><option value="directory">本地目录（逐项编辑）</option></select>
+      <div id="studio-library-row">
+        <p class="status">自动发现 Codex、Claude、DSH、Agent Skills 等用户目录及目标项目中的技能库。按技能名和正文检查重复，只补充缺少的技能，保留配套文件。</p>
+        <div id="studio-library-sources" class="studio-list"></div>
+      </div>
+      <div id="studio-import-file-row" hidden>
+      <label for="studio-import-file">技能文件</label>
+      <input id="studio-import-file" type="file" accept=".md,.json">
+      </div>
+      <div id="studio-import-path-row" hidden>
+        <label for="studio-import-path">目录路径（本机绝对路径）</label>
+        <input id="studio-import-path" type="text" maxlength="1000" placeholder="包含 SKILL.md 或多个技能文件夹的目录">
+      </div>
+      <button id="studio-import-start" type="button" class="primary-action">扫描并检查重复</button>
+      <p id="studio-import-help" class="status">支持含 SKILL.md 的标准技能包；扫描不调用模型、不运行脚本。结果分为待导入、已有、同名冲突和无法读取，导入前可选择。不会自动覆盖已有技能。</p>
+      <div id="studio-library-review" hidden>
+        <p id="studio-library-summary" role="status"></p>
+        <div class="actions">
+          <button id="studio-library-select" type="button">全选待导入</button>
+          <button id="studio-library-clear" type="button">取消全选</button>
+          <button id="studio-library-import" type="button" class="primary-action">导入选中的缺少技能</button>
+          <select id="studio-library-filter" aria-label="筛选扫描结果"><option value="missing">待导入</option><option value="all">全部结果</option><option value="exists">已有</option><option value="conflict">同名冲突</option><option value="invalid">无法读取</option></select>
+        </div>
+      </div>
+      <div id="studio-import-results" class="studio-list"></div>
+    </section>
+    <section id="studio-detail" aria-labelledby="studio-detail-title" hidden>
+      <div class="studio-heading studio-section-heading"><h3 id="studio-detail-title"></h3><button id="studio-back-detail" type="button">返回技能库</button></div>
+      <p id="studio-detail-description"></p>
+      <p id="studio-detail-path" class="status studio-file-path"></p>
+      <div id="studio-detail-actions" class="actions"></div>
+      <h4>版本记录</h4>
+      <div id="studio-versions" class="studio-list"></div>
+    </section>
+    <section id="studio-experiences" hidden>
+      <div class="studio-heading"><h3>执行经验</h3><button id="studio-refresh-experiences" type="button">刷新线索</button></div>
+      <p class="status">自动从验收、工具错误和用户纠正中发现线索。生成候选才调用模型；候选须独立验证，不会直接替换已启用技能。</p>
+      <div id="studio-experience-list" class="studio-list"></div>
+    </section>
+    <section id="studio-candidates" hidden>
+      <div class="studio-heading"><h3>候选改进</h3><button id="studio-refresh-candidates" type="button">刷新</button></div>
+      <p class="status">先隔离保存，再用冻结用例比较。候选不会自动进入聊天；失败、信息不足或未测出增益时保留原版本。</p>
+      <div id="studio-candidate-list" class="studio-list"></div>
+      <div id="studio-candidate-detail" hidden></div>
+    </section>
+    <section id="studio-editor" aria-labelledby="studio-editor-title" hidden>
+      <div class="studio-heading studio-section-heading"><h3 id="studio-editor-title"></h3><button id="studio-back-editor" type="button">返回技能库</button></div>
+      <p id="studio-source" class="status" hidden></p>
+      <label for="studio-scope">保存范围</label>
+      <select id="studio-scope"><option value="global">用户技能 · 所有项目可用</option><option value="project">项目技能 · 仅当前项目可用</option></select>
+      <div class="studio-authoring-modes"><button id="studio-manual" type="button">手动填写</button><button id="studio-ai" type="button">AI 辅助起草</button></div>
+      <div id="studio-ai-fields">
+      <label for="studio-feedback">希望保留或改进什么</label>
+      <textarea id="studio-feedback" rows="2" maxlength="8000" placeholder="例如：保留逐项核对的方法，发现证据不足时先询问"></textarea>
+      <div class="actions"><button id="studio-generate" type="button">生成草案</button></div>
+      </div>
+      <div id="studio-draft" hidden>
+        <label for="studio-name">技能名称</label><input id="studio-name" maxlength="120" autocomplete="off">
+        <label for="studio-description">适用条件</label><textarea id="studio-description" rows="2" maxlength="2000" placeholder="何时使用此技能"></textarea>
+        <label for="studio-instructions">操作步骤与约束</label><textarea id="studio-instructions" rows="7" maxlength="200000" spellcheck="false"></textarea>
+        <details class="studio-case">
+          <summary>机器检查的适用条件</summary>
+          <label><input id="studio-applicability-enabled" type="checkbox"> 为此版本启用适用条件检查</label>
+          <p class="status">开始技能前逐项检查。目标按原文片段匹配，不满足或缺信息时暂停采用；通过只代表这些声明满足。</p>
+          <label for="studio-goals">适用目标片段（每行一条，匹配任一条）</label><textarea id="studio-goals" rows="2" maxlength="2412" placeholder="只分析完整记录"></textarea>
+          <label for="studio-exclusions">禁用目标片段（匹配任一条则不采用）</label><textarea id="studio-exclusions" rows="2" maxlength="2412" placeholder="保留原始记录"></textarea>
+          <label for="studio-input-formats">所需输入格式（至少一份有效输入匹配）</label>
+          <select id="studio-input-formats" multiple size="4"><option value="text">UTF-8 文本</option><option value="json">JSON</option><option value="jsonl">JSON Lines</option><option value="notebook">Notebook 基本结构</option><option value="image">图片文件头</option><option value="pdf">PDF 文件头</option><option value="archive">压缩容器文件头</option></select>
+          <label for="studio-project-files">所需项目材料（每行一个项目相对路径）</label><textarea id="studio-project-files" rows="2" maxlength="3612" placeholder="experiment.json"></textarea>
+          <label for="studio-required-tools">所需工具（可选，每行一个工具名）</label><textarea id="studio-required-tools" rows="2" maxlength="1212" placeholder="read_file"></textarea>
+        </details>
+        <div class="studio-heading studio-section-heading"><h4>对照测试</h4><button id="studio-add-test" type="button">＋ 添加用例</button></div>
+        <details class="studio-case">
+          <summary>实际产物验收（可选）</summary>
+          <p class="status">声明项目相对路径和明确的文本或 JSON 判据。运行前冻结，完成时 SIH 重读实际文件；不满足时不能标记技能应用完成。条件需由你按任务目标核对。</p>
+          <button id="studio-delivery-example" type="button">填入结构示例</button>
+          <label for="studio-delivery">产物契约 JSON（留空表示未声明）</label><textarea id="studio-delivery" rows="9" maxlength="24000" spellcheck="false" placeholder='{"version":1,"preserve_inputs":[],"artifacts":[{"path":"report.json","format":"json","require_change":true,"checks":[{"kind":"json_type","pointer":"/records","expected":"array"}]}]}'></textarea>
+          <p class="status">支持 text_contains / text_excludes（pointer 为空），json_equals（expected 为 JSON 字符串）、json_type、json_length。JSON Pointer 例如 /records/0/value，空字符串指整个文件对象。</p>
+        </details>
+        <p id="studio-baseline" class="status"></p>
+        <div id="studio-tests" class="studio-list"></div>
+        <div class="studio-publish actions"><button id="studio-save-candidate" class="primary-action" type="button">保存为待验证候选</button><button id="studio-review" type="button">手动审核发布</button></div>
+        <div id="studio-review-panel" class="studio-case" hidden>
+          <p id="studio-publish-scope" class="status"></p>
+          <label><input id="studio-confirm" type="checkbox"> 我已核对内容和保存范围，确认发布这个版本。</label>
+          <div class="actions"><button id="studio-cancel-review" type="button">取消</button><button id="studio-publish" class="primary-action" type="button" disabled>确认发布</button></div>
+        </div>
+      </div>
+    </section>
+  </dialog>
+</body>
+</html>

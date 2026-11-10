@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align shell diameter and mass of the dried shell.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-03.csv",
+    "sha256": "366ac66356afe0b9856dfce6df4b9cf5738059385be28b33b2eeae887fac5178"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "shell_diameter",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "dry_shell_mass",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "shell_diameter",
+      "source": "直径",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 2,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "366ac66356afe0b9856dfce6df4b9cf5738059385be28b33b2eeae887fac5178",
+        "record": 1,
+        "column": "直径",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E7%9B%B4%E5%BE%84"
+      },
+      "rationale": "源表为经典鲍鱼数据集。目标字段 shell_diameter 直接对应 直径（鲍鱼壳直径）；dry_shell_mass 对应 壳重（去肉后干壳质量）。两个字段在样本行中均为数值且大于 0，满足 required 与 minimum>=0 的约束。其余表头（性别/长度/高度/整体重量/去壳肉重/内脏重量/环数）无对应目标字段。源表头未包含单位信息，故 sourceUnit 为空。"
+    },
+    {
+      "target": "dry_shell_mass",
+      "source": "壳重",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 7,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "366ac66356afe0b9856dfce6df4b9cf5738059385be28b33b2eeae887fac5178",
+        "record": 1,
+        "column": "壳重",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%A3%B3%E9%87%8D"
+      },
+      "rationale": "源表为经典鲍鱼数据集。目标字段 shell_diameter 直接对应 直径（鲍鱼壳直径）；dry_shell_mass 对应 壳重（去肉后干壳质量）。两个字段在样本行中均为数值且大于 0，满足 required 与 minimum>=0 的约束。其余表头（性别/长度/高度/整体重量/去壳肉重/内脏重量/环数）无对应目标字段。源表头未包含单位信息，故 sourceUnit 为空。"
+    }
+  ],
+  "validation": {
+    "rows": 4177,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "366ac66356afe0b9856dfce6df4b9cf5738059385be28b33b2eeae887fac5178",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "366ac66356afe0b9856dfce6df4b9cf5738059385be28b33b2eeae887fac5178",
+      "record": 1,
+      "column": "直径",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E7%9B%B4%E5%BE%84"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "366ac66356afe0b9856dfce6df4b9cf5738059385be28b33b2eeae887fac5178",
+      "record": 1,
+      "column": "壳重",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%A3%B3%E9%87%8D"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "源表为经典鲍鱼数据集。目标字段 shell_diameter 直接对应 直径（鲍鱼壳直径）；dry_shell_mass 对应 壳重（去肉后干壳质量）。两个字段在样本行中均为数值且大于 0，满足 required 与 minimum>=0 的约束。其余表头（性别/长度/高度/整体重量/去壳肉重/内脏重量/环数）无对应目标字段。源表头未包含单位信息，故 sourceUnit 为空。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "shell_diameter",
+                "source": "直径",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表为经典鲍鱼数据集。目标字段 shell_diameter 直接对应 直径（鲍鱼壳直径）；dry_shell_mass 对应 壳重（去肉后干壳质量）。两个字段在样本行中均为数值且大于 0，满足 required 与 minimum>=0 的约束。其余表头（性别/长度/高度/整体重量/去壳肉重/内脏重量/环数）无对应目标字段。源表头未包含单位信息，故 sourceUnit 为空。"
+              },
+              {
+                "target": "dry_shell_mass",
+                "source": "壳重",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表为经典鲍鱼数据集。目标字段 shell_diameter 直接对应 直径（鲍鱼壳直径）；dry_shell_mass 对应 壳重（去肉后干壳质量）。两个字段在样本行中均为数值且大于 0，满足 required 与 minimum>=0 的约束。其余表头（性别/长度/高度/整体重量/去壳肉重/内脏重量/环数）无对应目标字段。源表头未包含单位信息，故 sourceUnit 为空。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1522,
+    "outputTokens": 1054,
+    "usageComplete": true,
+    "reservedInputBytes": 5218,
+    "reservedOutputTokens": 1054,
+    "elapsedMs": 13548,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

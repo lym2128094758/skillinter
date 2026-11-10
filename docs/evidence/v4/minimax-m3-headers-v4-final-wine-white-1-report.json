@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align density and free sulfur dioxide.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-08.csv",
+    "sha256": "2e460f9a80e81580731fec9a5fe8792242b5fd926de37a084fb2f68d8ea8dd88"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "density",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "free_so2",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "density",
+      "source": "密度",
+      "sourceUnit": "g/cm³",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 7,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "2e460f9a80e81580731fec9a5fe8792242b5fd926de37a084fb2f68d8ea8dd88",
+        "record": 1,
+        "column": "密度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%AF%86%E5%BA%A6"
+      },
+      "rationale": "目标字段密度直接对应表头‘密度’，自由二氧化硫直接对应‘游离二氧化硫’，名称语义完全一致；样本中两者均为正数，满足minimum=0约束。"
+    },
+    {
+      "target": "free_so2",
+      "source": "游离二氧化硫",
+      "sourceUnit": "mg/L",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 5,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "2e460f9a80e81580731fec9a5fe8792242b5fd926de37a084fb2f68d8ea8dd88",
+        "record": 1,
+        "column": "游离二氧化硫",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%B8%B8%E7%A6%BB%E4%BA%8C%E6%B0%A7%E5%8C%96%E7%A1%AB"
+      },
+      "rationale": "目标字段密度直接对应表头‘密度’，自由二氧化硫直接对应‘游离二氧化硫’，名称语义完全一致；样本中两者均为正数，满足minimum=0约束。"
+    }
+  ],
+  "validation": {
+    "rows": 4898,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "2e460f9a80e81580731fec9a5fe8792242b5fd926de37a084fb2f68d8ea8dd88",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "2e460f9a80e81580731fec9a5fe8792242b5fd926de37a084fb2f68d8ea8dd88",
+      "record": 1,
+      "column": "密度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%AF%86%E5%BA%A6"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "2e460f9a80e81580731fec9a5fe8792242b5fd926de37a084fb2f68d8ea8dd88",
+      "record": 1,
+      "column": "游离二氧化硫",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%B8%B8%E7%A6%BB%E4%BA%8C%E6%B0%A7%E5%8C%96%E7%A1%AB"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "目标字段密度直接对应表头‘密度’，自由二氧化硫直接对应‘游离二氧化硫’，名称语义完全一致；样本中两者均为正数，满足minimum=0约束。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "density",
+                "source": "密度",
+                "sourceUnit": "g/cm³",
+                "evidence": 1,
+                "rationale": "目标字段密度直接对应表头‘密度’，自由二氧化硫直接对应‘游离二氧化硫’，名称语义完全一致；样本中两者均为正数，满足minimum=0约束。"
+              },
+              {
+                "target": "free_so2",
+                "source": "游离二氧化硫",
+                "sourceUnit": "mg/L",
+                "evidence": 1,
+                "rationale": "目标字段密度直接对应表头‘密度’，自由二氧化硫直接对应‘游离二氧化硫’，名称语义完全一致；样本中两者均为正数，满足minimum=0约束。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1495,
+    "outputTokens": 390,
+    "usageComplete": true,
+    "reservedInputBytes": 5111,
+    "reservedOutputTokens": 390,
+    "elapsedMs": 6211,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

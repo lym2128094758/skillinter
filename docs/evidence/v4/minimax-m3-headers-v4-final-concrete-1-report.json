@@ -1,0 +1,154 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "completed",
+  "goal": "Align the curing age and measured compressive strength.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "table-06.csv",
+    "sha256": "845da41040d0e6fb6d32b0418570a93cea966758e0ac15e2efa6a880fbb71439"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "age",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "compression_strength",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [
+    {
+      "target": "age",
+      "source": "养护龄期",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 7,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "845da41040d0e6fb6d32b0418570a93cea966758e0ac15e2efa6a880fbb71439",
+        "record": 1,
+        "column": "养护龄期",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%85%BB%E6%8A%A4%E9%BE%84%E6%9C%9F"
+      },
+      "rationale": "源表头中存在 养护龄期 和 混凝土抗压强度 两列，与目标 age 和 compression_strength 在语义上直接对应。样本中 养护龄期 取值 28、270，混凝土抗压强度 取值 79.99、61.89、40.27，均为典型混凝土配合比与龄期/强度数据。表头中未包含显式单位列，因此 sourceUnit 置空。"
+    },
+    {
+      "target": "compression_strength",
+      "source": "混凝土抗压强度",
+      "sourceUnit": "",
+      "targetUnit": "",
+      "factor": 1,
+      "sourceIndex": 8,
+      "evidence": {
+        "file": "00000000-0000-0000-0000-000000000001",
+        "sha256": "845da41040d0e6fb6d32b0418570a93cea966758e0ac15e2efa6a880fbb71439",
+        "record": 1,
+        "column": "混凝土抗压强度",
+        "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%B7%B7%E5%87%9D%E5%9C%9F%E6%8A%97%E5%8E%8B%E5%BC%BA%E5%BA%A6"
+      },
+      "rationale": "源表头中存在 养护龄期 和 混凝土抗压强度 两列，与目标 age 和 compression_strength 在语义上直接对应。样本中 养护龄期 取值 28、270，混凝土抗压强度 取值 79.99、61.89、40.27，均为典型混凝土配合比与龄期/强度数据。表头中未包含显式单位列，因此 sourceUnit 置空。"
+    }
+  ],
+  "validation": {
+    "rows": 1030,
+    "issueCount": 0,
+    "issues": [],
+    "truncated": false
+  },
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "845da41040d0e6fb6d32b0418570a93cea966758e0ac15e2efa6a880fbb71439",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "845da41040d0e6fb6d32b0418570a93cea966758e0ac15e2efa6a880fbb71439",
+      "record": 1,
+      "column": "养护龄期",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E5%85%BB%E6%8A%A4%E9%BE%84%E6%9C%9F"
+    },
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "845da41040d0e6fb6d32b0418570a93cea966758e0ac15e2efa6a880fbb71439",
+      "record": 1,
+      "column": "混凝土抗压强度",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1&column=%E6%B7%B7%E5%87%9D%E5%9C%9F%E6%8A%97%E5%8E%8B%E5%BC%BA%E5%BA%A6"
+    }
+  ],
+  "plans": [
+    {
+      "status": "ready",
+      "questions": [],
+      "rationale": "源表头中存在 养护龄期 和 混凝土抗压强度 两列，与目标 age 和 compression_strength 在语义上直接对应。样本中 养护龄期 取值 28、270，混凝土抗压强度 取值 79.99、61.89、40.27，均为典型混凝土配合比与龄期/强度数据。表头中未包含显式单位列，因此 sourceUnit 置空。",
+      "steps": [
+        {
+          "id": "align",
+          "tool": "align_fields",
+          "depends_on": [],
+          "arguments": {
+            "mappings": [
+              {
+                "target": "age",
+                "source": "养护龄期",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表头中存在 养护龄期 和 混凝土抗压强度 两列，与目标 age 和 compression_strength 在语义上直接对应。样本中 养护龄期 取值 28、270，混凝土抗压强度 取值 79.99、61.89、40.27，均为典型混凝土配合比与龄期/强度数据。表头中未包含显式单位列，因此 sourceUnit 置空。"
+              },
+              {
+                "target": "compression_strength",
+                "source": "混凝土抗压强度",
+                "sourceUnit": "",
+                "evidence": 1,
+                "rationale": "源表头中存在 养护龄期 和 混凝土抗压强度 两列，与目标 age 和 compression_strength 在语义上直接对应。样本中 养护龄期 取值 28、270，混凝土抗压强度 取值 79.99、61.89、40.27，均为典型混凝土配合比与龄期/强度数据。表头中未包含显式单位列，因此 sourceUnit 置空。"
+              }
+            ]
+          },
+          "acceptance": "目标字段和单位证据通过校验"
+        },
+        {
+          "id": "validate",
+          "tool": "validate_rows",
+          "depends_on": [
+            "align"
+          ],
+          "arguments": {},
+          "acceptance": "检查全部原始记录"
+        }
+      ]
+    }
+  ],
+  "error": {},
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 3,
+    "replans": 0,
+    "inputTokens": 1478,
+    "outputTokens": 737,
+    "usageComplete": true,
+    "reservedInputBytes": 5156,
+    "reservedOutputTokens": 737,
+    "elapsedMs": 15213,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

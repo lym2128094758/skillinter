@@ -1,0 +1,111 @@
+{
+  "status": "retained_as_candidate",
+  "automaticDeployment": false,
+  "threshold": {
+    "minimumPositiveBatches": 3,
+    "minimumNegativeBatches": 5,
+    "requireAllPositiveBatchesPass": true,
+    "maximumWrongOrMissingFields": 0,
+    "maximumFalseActivations": 0
+  },
+  "candidate": {
+    "id": "wine-quality-mapping",
+    "version": 1,
+    "scope": 186,
+    "headerHash": "91078c3e59ea53ef09f5be61f0bfff4e0ca639559100d228b5c1b88b3c45bca4",
+    "trainingFingerprint": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371",
+    "targetFingerprint": "45dd9f4bf39630ce70c4f34f296c2d9baf38b530f5fd884d078c4f6e73fd8300",
+    "mappings": [
+      {
+        "target": "residual_sugar",
+        "source": "residual_sugar",
+        "sourceUnit": "",
+        "evidence": 1,
+        "rationale": "由公开变量说明核对的候选规则"
+      },
+      {
+        "target": "ethanol_content",
+        "source": "alcohol",
+        "sourceUnit": "",
+        "evidence": 1,
+        "rationale": "由公开变量说明核对的候选规则"
+      }
+    ]
+  },
+  "measured": {
+    "positiveBatches": 1,
+    "negativeBatches": 10,
+    "coverage": 1,
+    "positiveBatchesPassed": 1,
+    "wrongOrMissingFields": 0,
+    "falseActivations": 0,
+    "mappingAccuracy": 1,
+    "falseActivationRate": 0
+  },
+  "negative": [
+    {
+      "batch": "iris",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "wine-chemistry",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "abalone",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "glass",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "airfoil",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "concrete",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "rice",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "raisin",
+      "synthetic": false,
+      "activated": false
+    },
+    {
+      "batch": "unit-header-changed",
+      "synthetic": true,
+      "activated": false
+    },
+    {
+      "batch": "calibration-file-reused",
+      "synthetic": true,
+      "activated": false
+    }
+  ],
+  "evaluation": {
+    "calibration": "wine-red",
+    "heldOut": "wine-white",
+    "independentSource": false,
+    "heldOutSha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627",
+    "source": "https://archive.ics.uci.edu/dataset/186/wine+quality",
+    "rows": 4898,
+    "findings": 0,
+    "rulesOnlyMatched": 1,
+    "shadowReuseMatched": 2,
+    "correctMappings": 2,
+    "rulesOnlyWouldAsk": 1,
+    "shadowWouldAsk": 0
+  }
+}

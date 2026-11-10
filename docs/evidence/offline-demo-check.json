@@ -1,0 +1,22 @@
+{
+  "health": {
+    "ok": true,
+    "toolContractVersion": 4,
+    "reportVersion": 2,
+    "offlineDemo": true,
+    "modelConfigured": false
+  },
+  "portCount": 1,
+  "serverPort": 56057,
+  "node": "v24.16.0",
+  "os": "win32",
+  "architecture": "x64",
+  "coldStartToFirstReportMs": 102,
+  "processRssBytes": 81158144,
+  "externalFetchesAllowed": false,
+  "modelCalls": 0,
+  "replans": 1,
+  "rows": 3,
+  "issues": 3,
+  "artifacts": 6
+}

@@ -1,0 +1,64 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "budget_exhausted",
+  "goal": "Align acoustic frequency and free stream air speed.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "airfoil.csv",
+    "sha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "frequency",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "air_speed",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [],
+  "validation": {},
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    }
+  ],
+  "plans": [],
+  "error": {
+    "code": "BUDGET_EXHAUSTED",
+    "message": "规划调用预算已耗尽"
+  },
+  "metrics": {
+    "model": "minimax-m3",
+    "modelCalls": 2,
+    "toolCalls": 1,
+    "replans": 2,
+    "inputTokens": 2436,
+    "outputTokens": 4096,
+    "usageComplete": true,
+    "reservedInputBytes": 9858,
+    "reservedOutputTokens": 4096,
+    "elapsedMs": 41732,
+    "cost": null,
+    "reportedModels": [
+      "minimax-m3"
+    ],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}

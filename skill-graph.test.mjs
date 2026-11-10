@@ -1,0 +1,88 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {mkdtemp,mkdir,rm,readFile} from 'node:fs/promises';
+import {runInNewContext} from 'node:vm';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {once} from 'node:events';
+import {Store} from './src/store.mjs';
+import {createSkillStudio} from './src/skill-studio.mjs';
+import {createSkillGraph} from './src/skill-graph.mjs';
+import {createApp} from './src/server.mjs';
+
+test('installed-skill graph has deterministic mentions, scoped persistent manual relations and versioned details',async t=>{
+  const root=await mkdtemp(join(tmpdir(),'sih-graph-'));
+  const store=new Store(join(root,'tasks.sqlite'));
+  const studio=createSkillStudio(store,{userSkillsPath:join(root,'skills')});
+  const graph=createSkillGraph({store,studio,projectFor:context=>context?.projectId??null});
+  t.after(async()=>{store.db.close();await rm(root,{recursive:true,force:true});});
+  const path=join(root,'project');await mkdir(path);const project=store.addProject(path,'test');
+  const scope={projectId:project.id};
+  const document=(name,instructions)=>({name,description:'文献引用核对和独立证据整理',instructions,tests:[]});
+  const first=studio.publish({taskId:null,baseVersion:0,draft:document('source-review','Read documented material.')});
+  const next=studio.publish({taskId:scope,targetScope:'project',baseVersion:0,draft:document('report-writer','先使用 source-review，再整理产物。')});
+  const samePrefix=studio.publish({taskId:null,baseVersion:0,draft:document('source-review-extra','Mention only source-review-extra.')});
+  const data=graph.snapshot(scope);
+  assert.deepEqual(graph.snapshot(scope),data);
+  assert.equal(data.nodes.length,3);
+  const mention=data.edges.find(edge=>edge.kind==='mention');
+  assert.deepEqual(new Set([mention.source,mention.target]),new Set([first.id,next.id]));
+  assert.equal(data.edges.filter(edge=>edge.kind==='mention').length,1);
+  assert(data.edges.some(edge=>edge.kind==='topic'));
+  graph.relation({context:scope,source:first.id,target:next.id});
+  graph.relation({context:scope,source:next.id,target:first.id});
+  assert.equal(graph.snapshot(scope).edges.filter(edge=>edge.kind==='manual').length,1);
+  assert.equal(graph.snapshot(null).nodes.length,2);
+  assert.equal(graph.snapshot(null).edges.filter(edge=>edge.kind==='manual').length,0);
+  assert.throws(()=>graph.detail(next.id,null),/当前范围/);
+  assert.throws(()=>graph.relation({context:null,source:first.id,target:next.id}),/当前范围/);
+  const restored=createSkillGraph({store,studio,projectFor:context=>context?.projectId??null});
+  assert.equal(restored.snapshot(scope).edges.filter(edge=>edge.kind==='manual').length,1);
+  restored.relation({context:scope,source:first.id,target:next.id,remove:true});
+  assert.equal(restored.snapshot(scope).edges.filter(edge=>edge.kind==='manual').length,0);
+  studio.publish({taskId:scope,skillId:next.id,baseVersion:1,draft:document('report-writer','New source-review method.')});
+  assert.equal(graph.detail(next.id,scope).version,2);
+  assert.match(graph.detail(next.id,scope).content,/New source-review method/);
+  assert(graph.snapshot(scope).nodes.some(node=>node.id===samePrefix.id));
+});
+
+test('embedded repository assets and graph APIs use the SIH origin and refuse unavailable skills',async t=>{
+  const root=await mkdtemp(join(tmpdir(),'sih-graph-api-'));
+  const app=await createApp({state:root});app.server.listen(0,'127.0.0.1');await once(app.server,'listening');
+  t.after(async()=>{await app.close();await rm(root,{recursive:true,force:true});});
+  const base='http://127.0.0.1:'+app.server.address().port;
+  const api=async(path,body)=>{
+    const r=await fetch(base+path,body?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{});
+    return {status:r.status,data:await r.json()};
+  };
+  const skill=(await api('/api/skill-studio/publish',{baseVersion:0,draft:{name:'graph-api-skill',description:'local installed method',instructions:'Use actual files.',tests:[]}})).data.skill;
+  assert.equal((await api('/api/skill-graph/skills')).data.nodes[0].id,skill.id);
+  assert.match((await api('/api/skill-graph/skill?id='+skill.id)).data.content,/Use actual files/);
+  assert.equal((await api('/api/skill-graph/skill?id=../outside')).status,404);
+  const page=await fetch(base+'/skill-library/index.html');
+  assert.match(page.headers.get('content-security-policy'),/frame-ancestors 'self'/);
+  assert.match(await page.text(),/\/skill-library\/sih-bridge.js/);
+  for(const file of ['sih-bridge.js','app.js','sphere.js','graph-model.js','styles.css','vendor/d3.min.js'])assert.equal((await fetch(base+'/skill-library/'+file)).status,200);
+  const denied=await fetch(base+'/api/skill-graph/relations',{method:'POST',headers:{origin:'https://example.invalid','content-type':'application/json'},body:JSON.stringify({source:skill.id,target:'unknown'})});
+  assert.equal(denied.status,403);
+});
+
+test('bounded graph keeps project and executed skills, searches the full library and never leaves dangling edges',async()=>{
+  const context={};
+  runInNewContext(await readFile(new URL('./web/skill-library/graph-model.js',import.meta.url),'utf8'),context);
+  const model=context.SkillGraphModel;
+  const nodes=Array.from({length:1960},(_,i)=>({id:String(i),name:'skill-'+String(i).padStart(4,'0'),group:i===1959?'当前项目':'用户技能'}));
+  const edges=nodes.slice(1).map((n,i)=>({source:String(i),target:n.id,kind:'mention'}));
+  const options={hiddenGroups:new Set(),query:'',kinds:new Set(['mention']),mode:'global',showOrphans:true,maxNodes:200,pinnedIds:['1958']};
+  const result=model.filterGraph(nodes,edges,options);
+  assert.equal(result.nodes.length,200);assert.equal(result.matchedNodes.length,1960);assert.equal(result.truncated,true);
+  assert(result.nodes.some(n=>n.id==='1958'));assert(result.nodes.some(n=>n.id==='1959'));
+  const ids=new Set(result.nodes.map(n=>n.id));assert(result.edges.every(e=>ids.has(e.source)&&ids.has(e.target)));
+  assert.equal(model.filterGraph(nodes,edges,{...options,query:'name:skill-1900'}).nodes[0].id,'1900');
+  assert.equal(model.filterGraph(nodes,edges,{...options,maxNodes:0}).nodes.length,1960);
+  const hidden=model.filterGraph(nodes,edges,{...options,hiddenGroups:new Set(['当前项目']),pinnedIds:['1959']});
+  assert(!hidden.nodes.some(n=>n.id==='1959'));
+  const selected=model.filterGraph(nodes,edges,{...options,selectedId:'1800'});assert(selected.nodes.some(n=>n.id==='1800'));
+  const local=model.filterGraph(nodes,edges,{...options,mode:'local',selectedId:'1000',depth:1});
+  assert.equal(local.nodes.length,3);
+});

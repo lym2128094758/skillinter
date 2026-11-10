@@ -1,0 +1,40 @@
+[
+  {
+    "table": "iris",
+    "source": "https://archive.ics.uci.edu/dataset/53/iris",
+    "retrievedAt": "2026-11-09T07:41:52.226Z",
+    "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+    "originalSha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+    "dataRowsHash": "2fd65681351a11ee36a160e4291bc67268f4dc863c74fadf1a8151b631ef1788",
+    "headers": "original",
+    "sourceRows": 150,
+    "repeat": 1,
+    "status": "failed",
+    "taskCorrect": false,
+    "issueCount": null,
+    "errorCode": "EXECUTION_FAILED",
+    "fields": [
+      {
+        "target": "sepal_length",
+        "gold": "sepal length",
+        "predicted": null,
+        "outcome": "missing"
+      },
+      {
+        "target": "flower_petal_width",
+        "gold": "petal width",
+        "predicted": null,
+        "outcome": "missing"
+      }
+    ],
+    "modelCalls": 1,
+    "toolCalls": 1,
+    "inputTokens": null,
+    "outputTokens": null,
+    "cost": null,
+    "elapsedMs": 120017,
+    "reportedModels": [],
+    "fingerprints": [],
+    "peakGpuBytes": null
+  }
+]

@@ -1,0 +1,480 @@
+{
+  "mode": "live-main-chat-without-workflow-form",
+  "model": "minimax-m3",
+  "budget": 5,
+  "passed": true,
+  "status": "completed",
+  "answer": "预检完成：3 行，发现 3 个问题。字段语义映射为建议，请人工复核。",
+  "error": null,
+  "noWorkflowForm": true,
+  "search": {
+    "query": "CSV 数据预检 字段映射 单位换算 质量检查",
+    "matches": [
+      {
+        "id": "csv-precheck",
+        "label": "CSV 数据质量预检",
+        "domain": "数据与分析",
+        "nodeId": "data-cleaning",
+        "executable": true,
+        "tool": "precheck_table",
+        "version": "4",
+        "description": "按目标字段做语义映射、单位换算、缺失值、类型和数值范围检查，生成报告、引用和执行图。"
+      },
+      {
+        "id": "csv-overview",
+        "label": "CSV 数据概览",
+        "domain": "数据与分析",
+        "nodeId": "xlsx",
+        "executable": true,
+        "tool": "analyze_csv",
+        "version": "1",
+        "description": "统计表格列的空值、数值数、均值、最小值和最大值，生成可下载报告。"
+      }
+    ],
+    "truncated": false,
+    "catalogSha256": "f04da1a943aad10a7bdcb18e62417f285508fc466d7a44f3e1a29eb7e7acf1d0"
+  },
+  "report": {
+    "version": 2,
+    "scenario": "experimental-table-precheck",
+    "status": "completed",
+    "goal": "对 sample.csv 做字段映射、单位换算、缺失值、类型和数值范围检查，并统计原始列。目标字段：sample_id（必填，文本）、mass（必填，数值，单位 mg，最小值 0）。",
+    "source": {
+      "id": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+      "name": "sample.csv",
+      "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f"
+    },
+    "target": {
+      "fields": [
+        {
+          "name": "sample_id",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "minimum": 0,
+          "name": "mass",
+          "required": true,
+          "type": "number",
+          "unit": "mg"
+        }
+      ]
+    },
+    "mappingStatus": "proposed_requires_review",
+    "mappings": [
+      {
+        "target": "sample_id",
+        "source": "sample_id",
+        "sourceUnit": "",
+        "targetUnit": "",
+        "factor": 1,
+        "sourceIndex": 0,
+        "evidence": {
+          "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+          "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+          "record": 1,
+          "column": "sample_id",
+          "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1&column=sample_id"
+        },
+        "rationale": "源表头为 sample_id 和 mass_g，与目标字段一一对应：sample_id 直接映射为文本类型；mass 目标单位为 mg，源列为 mass_g（克），需将 g 换算为 mg（×1000）。样本中已观察到行质量问题（mass_g=-0.01 低于最小值 0、sample_id 空值、mass_g='abc' 非数值），将在后续逐行质量检查中处理，映射阶段无缺失信息。"
+      },
+      {
+        "target": "mass",
+        "source": "mass_g",
+        "sourceUnit": "g",
+        "targetUnit": "mg",
+        "factor": 1000,
+        "sourceIndex": 1,
+        "evidence": {
+          "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+          "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+          "record": 1,
+          "column": "mass_g",
+          "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1&column=mass_g"
+        },
+        "rationale": "源表头为 sample_id 和 mass_g，与目标字段一一对应：sample_id 直接映射为文本类型；mass 目标单位为 mg，源列为 mass_g（克），需将 g 换算为 mg（×1000）。样本中已观察到行质量问题（mass_g=-0.01 低于最小值 0、sample_id 空值、mass_g='abc' 非数值），将在后续逐行质量检查中处理，映射阶段无缺失信息。"
+      }
+    ],
+    "validation": {
+      "rows": 3,
+      "issueCount": 3,
+      "issues": [
+        {
+          "code": "OUT_OF_RANGE",
+          "field": "mass",
+          "value": "-0.01",
+          "evidence": {
+            "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 3,
+            "column": "mass_g",
+            "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=3&column=mass_g"
+          }
+        },
+        {
+          "code": "MISSING_VALUE",
+          "field": "sample_id",
+          "value": "",
+          "evidence": {
+            "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 4,
+            "column": "sample_id",
+            "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=4&column=sample_id"
+          }
+        },
+        {
+          "code": "INVALID_TYPE",
+          "field": "mass",
+          "value": "abc",
+          "evidence": {
+            "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 4,
+            "column": "mass_g",
+            "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=4&column=mass_g"
+          }
+        }
+      ],
+      "truncated": false
+    },
+    "profile": {
+      "columns": [
+        {
+          "name": "sample_id",
+          "empty": 1,
+          "numeric": 0,
+          "other": 2,
+          "evidence": {
+            "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 1,
+            "column": "sample_id",
+            "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1&column=sample_id"
+          }
+        },
+        {
+          "name": "mass_g",
+          "empty": 0,
+          "numeric": 2,
+          "other": 1,
+          "evidence": {
+            "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 1,
+            "column": "mass_g",
+            "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1&column=mass_g"
+          }
+        }
+      ]
+    },
+    "questions": [],
+    "citations": [
+      {
+        "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+        "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+        "record": 1,
+        "column": "",
+        "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1"
+      },
+      {
+        "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+        "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+        "record": 1,
+        "column": "sample_id",
+        "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1&column=sample_id"
+      },
+      {
+        "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+        "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+        "record": 1,
+        "column": "mass_g",
+        "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=1&column=mass_g"
+      },
+      {
+        "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+        "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+        "record": 3,
+        "column": "mass_g",
+        "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=3&column=mass_g"
+      },
+      {
+        "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+        "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+        "record": 4,
+        "column": "sample_id",
+        "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=4&column=sample_id"
+      },
+      {
+        "file": "8637877a-a15c-49e6-a6d6-c9af1a81e4b3",
+        "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+        "record": 4,
+        "column": "mass_g",
+        "url": "/api/tasks/7c9ed5be-2f6e-4793-8c5e-767289693723/files/8637877a-a15c-49e6-a6d6-c9af1a81e4b3/evidence?record=4&column=mass_g"
+      }
+    ],
+    "plans": [
+      {
+        "status": "ready",
+        "questions": [],
+        "rationale": "源表头为 sample_id 和 mass_g，与目标字段一一对应：sample_id 直接映射为文本类型；mass 目标单位为 mg，源列为 mass_g（克），需将 g 换算为 mg（×1000）。样本中已观察到行质量问题（mass_g=-0.01 低于最小值 0、sample_id 空值、mass_g='abc' 非数值），将在后续逐行质量检查中处理，映射阶段无缺失信息。",
+        "steps": [
+          {
+            "id": "align",
+            "tool": "align_fields",
+            "depends_on": [],
+            "arguments": {
+              "mappings": [
+                {
+                  "target": "sample_id",
+                  "source": "sample_id",
+                  "sourceUnit": "",
+                  "evidence": 1,
+                  "rationale": "源表头为 sample_id 和 mass_g，与目标字段一一对应：sample_id 直接映射为文本类型；mass 目标单位为 mg，源列为 mass_g（克），需将 g 换算为 mg（×1000）。样本中已观察到行质量问题（mass_g=-0.01 低于最小值 0、sample_id 空值、mass_g='abc' 非数值），将在后续逐行质量检查中处理，映射阶段无缺失信息。"
+                },
+                {
+                  "target": "mass",
+                  "source": "mass_g",
+                  "sourceUnit": "g",
+                  "evidence": 1,
+                  "rationale": "源表头为 sample_id 和 mass_g，与目标字段一一对应：sample_id 直接映射为文本类型；mass 目标单位为 mg，源列为 mass_g（克），需将 g 换算为 mg（×1000）。样本中已观察到行质量问题（mass_g=-0.01 低于最小值 0、sample_id 空值、mass_g='abc' 非数值），将在后续逐行质量检查中处理，映射阶段无缺失信息。"
+                }
+              ]
+            },
+            "acceptance": "目标字段和单位证据通过校验"
+          },
+          {
+            "id": "validate",
+            "tool": "validate_rows",
+            "depends_on": [
+              "align"
+            ],
+            "arguments": {},
+            "acceptance": "检查全部原始记录"
+          },
+          {
+            "id": "profile",
+            "tool": "profile_table",
+            "depends_on": [],
+            "arguments": {},
+            "acceptance": "目标明确要求统计原始列，profile_table 用于输出 sample_id 与 mass_g 的原始列统计。"
+          }
+        ]
+      }
+    ],
+    "error": {},
+    "metrics": {
+      "model": "minimax-m3",
+      "modelCalls": 2,
+      "toolCalls": 4,
+      "replans": 0,
+      "inputTokens": 1493,
+      "outputTokens": 687,
+      "usageComplete": true,
+      "reservedInputBytes": 5198,
+      "reservedOutputTokens": 687,
+      "elapsedMs": 11230,
+      "cost": null,
+      "reportedModels": [
+        "minimax-m3"
+      ],
+      "fingerprints": [],
+      "runtime": "v24.16.0"
+    }
+  },
+  "skillTrace": {
+    "version": 3,
+    "registry": {
+      "version": 1,
+      "sha256": "9d3b3fd694e272b45f2e47fa9c97e9ca6f987d0548f7aab797e4b055cbe92bf9"
+    },
+    "runtime": {
+      "version": 4,
+      "sha256": "1229861ae101e3dca01ff26d6c830a6d4d0790209cd5325be5bcc7028ce27b08"
+    },
+    "selection": {
+      "method": "deterministic-eligibility",
+      "outcome": "candidates_available",
+      "candidates": [
+        {
+          "id": "unit-align",
+          "version": "1.0.0",
+          "tool": "align_fields",
+          "label": "带单位的字段映射",
+          "nodeId": "gh-scientific-uncertainty-and-units-ccb540"
+        },
+        {
+          "id": "row-validate",
+          "version": "1.0.0",
+          "tool": "validate_rows",
+          "label": "逐行质量检查",
+          "nodeId": "gh-claude-data-quality-auditor-9d8e63"
+        },
+        {
+          "id": "column-profile",
+          "version": "1.0.0",
+          "tool": "profile_table",
+          "label": "原始列统计",
+          "nodeId": "eda-profiling"
+        }
+      ],
+      "missing": []
+    },
+    "plans": [
+      {
+        "attempt": 1,
+        "steps": [
+          {
+            "step": "$input",
+            "id": "csv-inspect",
+            "version": "1.0.0",
+            "tool": "inspect_table",
+            "label": "表头与样本检查",
+            "nodeId": "xlsx",
+            "dependsOn": [],
+            "consumes": [],
+            "produces": "inspected_csv"
+          },
+          {
+            "step": "align",
+            "id": "unit-align",
+            "version": "1.0.0",
+            "tool": "align_fields",
+            "label": "带单位的字段映射",
+            "nodeId": "gh-scientific-uncertainty-and-units-ccb540",
+            "dependsOn": [
+              "$input"
+            ],
+            "consumes": [
+              "inspected_csv"
+            ],
+            "produces": "field_mapping",
+            "acceptance": "目标字段和单位证据通过校验"
+          },
+          {
+            "step": "validate",
+            "id": "row-validate",
+            "version": "1.0.0",
+            "tool": "validate_rows",
+            "label": "逐行质量检查",
+            "nodeId": "gh-claude-data-quality-auditor-9d8e63",
+            "dependsOn": [
+              "align"
+            ],
+            "consumes": [
+              "field_mapping"
+            ],
+            "produces": "row_findings",
+            "acceptance": "检查全部原始记录"
+          },
+          {
+            "step": "profile",
+            "id": "column-profile",
+            "version": "1.0.0",
+            "tool": "profile_table",
+            "label": "原始列统计",
+            "nodeId": "eda-profiling",
+            "dependsOn": [
+              "$input"
+            ],
+            "consumes": [
+              "inspected_csv"
+            ],
+            "produces": "column_statistics",
+            "acceptance": "目标明确要求统计原始列，profile_table 用于输出 sample_id 与 mass_g 的原始列统计。"
+          }
+        ]
+      }
+    ],
+    "graph": {
+      "attempt": 1,
+      "nodes": [
+        {
+          "step": "$input",
+          "id": "csv-inspect",
+          "version": "1.0.0",
+          "label": "表头与样本检查",
+          "nodeId": "xlsx",
+          "state": "succeeded"
+        },
+        {
+          "step": "align",
+          "id": "unit-align",
+          "version": "1.0.0",
+          "label": "带单位的字段映射",
+          "nodeId": "gh-scientific-uncertainty-and-units-ccb540",
+          "state": "succeeded"
+        },
+        {
+          "step": "validate",
+          "id": "row-validate",
+          "version": "1.0.0",
+          "label": "逐行质量检查",
+          "nodeId": "gh-claude-data-quality-auditor-9d8e63",
+          "state": "succeeded"
+        },
+        {
+          "step": "profile",
+          "id": "column-profile",
+          "version": "1.0.0",
+          "label": "原始列统计",
+          "nodeId": "eda-profiling",
+          "state": "succeeded"
+        }
+      ],
+      "edges": [
+        {
+          "from": "$input",
+          "to": "align"
+        },
+        {
+          "from": "align",
+          "to": "validate"
+        },
+        {
+          "from": "$input",
+          "to": "profile"
+        }
+      ]
+    }
+  },
+  "toolCalls": [
+    "search_skills",
+    "precheck_table",
+    "precheck_table"
+  ],
+  "outerModelCalls": 3,
+  "nestedModelCalls": 2,
+  "artifacts": [
+    {
+      "name": "report.json",
+      "sha256": "fa063a371a8f4629c4b9508a08820b19eac49a3060187720aa6047f816a769c0",
+      "size": 10110
+    },
+    {
+      "name": "plan.json",
+      "sha256": "2f4f6bc034022751ea70fdf9e1d46ed5146ebc8592b2618e328fa295d943b1ff",
+      "size": 3997
+    },
+    {
+      "name": "mapping.csv",
+      "sha256": "ac3e43dd83b54b913db9a52ebe3356ae9d69d545b12945593e88e19b7be8802a",
+      "size": 658
+    },
+    {
+      "name": "issues.csv",
+      "sha256": "8b82febb52402c953fc914372b2326de8f3bd7d5e7a39a29950cd48bf45adf56",
+      "size": 828
+    },
+    {
+      "name": "artifact-contract.json",
+      "sha256": "4dabd76c5471775814b8ac6772b70e73feb0620893fb0a80ba76d34c45c12bbe",
+      "size": 22130
+    },
+    {
+      "name": "replay.json",
+      "sha256": "9814f5a02f01f33b7ec07a4288090e55548bb4e30169fd3fa09bbf77317d1613",
+      "size": 23446
+    }
+  ]
+}

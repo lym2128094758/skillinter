@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "results": [
+    {
+      "variant": "unit",
+      "status": "completed",
+      "expected": [
+        "xlsx",
+        "eda-profiling",
+        "gh-scientific-uncertainty-and-units-ccb540",
+        "gh-claude-data-quality-auditor-9d8e63"
+      ],
+      "highlighted": [
+        "xlsx",
+        "eda-profiling",
+        "gh-scientific-uncertainty-and-units-ccb540",
+        "gh-claude-data-quality-auditor-9d8e63"
+      ]
+    },
+    {
+      "variant": "plain",
+      "status": "completed",
+      "expected": [
+        "xlsx",
+        "gh-claude-database-schema-designer-aff360",
+        "gh-claude-data-quality-auditor-9d8e63"
+      ],
+      "highlighted": [
+        "xlsx",
+        "gh-claude-database-schema-designer-aff360",
+        "gh-claude-data-quality-auditor-9d8e63"
+      ]
+    },
+    {
+      "variant": "missing-unit",
+      "status": "needs_input",
+      "expected": [],
+      "highlighted": []
+    }
+  ]
+}

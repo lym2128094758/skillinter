@@ -1,0 +1,1073 @@
+{
+  "startedAt": "2026-11-09T12:18:03.012Z",
+  "finishedAt": "2026-11-09T12:18:39.304Z",
+  "mode": "real-browser-and-real-model",
+  "passed": true,
+  "node": "v24.16.0",
+  "platform": "win32",
+  "model": "minimax-m3",
+  "sharedBudget": 5,
+  "fixtureProvider": false,
+  "requests": [
+    {
+      "startedAt": "2026-11-09T12:18:05.062Z",
+      "requestedModel": "minimax-m3",
+      "stream": true,
+      "maxTokens": 4096,
+      "tools": [
+        "list_workspace",
+        "read_file",
+        "search_skills",
+        "analyze_csv",
+        "precheck_table"
+      ],
+      "reportedModels": [
+        "minimax-m3"
+      ],
+      "finishReasons": [
+        "tool_calls"
+      ],
+      "httpStatus": 200,
+      "usage": {
+        "prompt_tokens": 2514,
+        "total_tokens": 3032,
+        "completion_tokens": 518
+      },
+      "finishedAt": "2026-11-09T12:18:09.548Z"
+    },
+    {
+      "startedAt": "2026-11-09T12:18:09.569Z",
+      "requestedModel": "minimax-m3",
+      "stream": false,
+      "maxTokens": 2048,
+      "tools": [],
+      "reportedModels": [
+        "minimax-m3"
+      ],
+      "finishReasons": [
+        "stop"
+      ],
+      "httpStatus": 200,
+      "usage": {
+        "prompt_tokens": 788,
+        "total_tokens": 2012,
+        "completion_tokens": 1224,
+        "prompt_tokens_details": null
+      },
+      "finishedAt": "2026-11-09T12:18:18.922Z"
+    },
+    {
+      "startedAt": "2026-11-09T12:18:18.923Z",
+      "requestedModel": "minimax-m3",
+      "stream": false,
+      "maxTokens": 2048,
+      "tools": [],
+      "reportedModels": [
+        "minimax-m3"
+      ],
+      "finishReasons": [
+        "stop"
+      ],
+      "httpStatus": 200,
+      "usage": {
+        "prompt_tokens": 678,
+        "total_tokens": 855,
+        "completion_tokens": 177,
+        "prompt_tokens_details": null
+      },
+      "finishedAt": "2026-11-09T12:18:24.114Z"
+    },
+    {
+      "startedAt": "2026-11-09T12:18:24.123Z",
+      "requestedModel": "minimax-m3",
+      "stream": true,
+      "maxTokens": 4096,
+      "tools": [
+        "list_workspace",
+        "read_file",
+        "search_skills",
+        "analyze_csv",
+        "precheck_table"
+      ],
+      "reportedModels": [
+        "minimax-m3"
+      ],
+      "finishReasons": [
+        "stop"
+      ],
+      "httpStatus": 200,
+      "usage": {
+        "prompt_tokens": 4678,
+        "total_tokens": 5125,
+        "completion_tokens": 447
+      },
+      "finishedAt": "2026-11-09T12:18:39.048Z"
+    }
+  ],
+  "source": {
+    "algorithm": "SHA-256",
+    "sha256": "9f15f6133cdccb231c2211052b795ea4539ebd46b3b4f63e721e88d1f1e2e60e",
+    "commit": null,
+    "commitAvailable": false,
+    "scope": "src/, web/, scripts/, bench/、根目录测试、运行配置和导出的工具契约。其他文档、证据和私有状态不参与计算。",
+    "files": [
+      {
+        "path": ".node-version",
+        "bytes": 8,
+        "sha256": "2722b61f414f07f08be7f1f1316012813818f26f1c40d6a24a748686cec7d2ff"
+      },
+      {
+        "path": "audit.test.mjs",
+        "bytes": 14181,
+        "sha256": "5fb224e3c0568161d1aaee1f6b1fdf8c3969c6292509a5a813f7c4a22fc4c14e"
+      },
+      {
+        "path": "bench/cases.mjs",
+        "bytes": 5499,
+        "sha256": "47badd419a6c93f2cf2b5ba6ddc2039bc2062d950dd11469dd42eece3112738b"
+      },
+      {
+        "path": "bench/header-variants.mjs",
+        "bytes": 4059,
+        "sha256": "3bb332cd287bed454b26971a7d58002c285c0c669efdf314b517781749b96433"
+      },
+      {
+        "path": "bench/public-data/README.md",
+        "bytes": 978,
+        "sha256": "327c469c7552f8a1506022318222ede1a15ef551753f2709bdb957793e5cfb4c"
+      },
+      {
+        "path": "bench/public-data/abalone.csv",
+        "bytes": 196140,
+        "sha256": "25f3dc964447fcb3d68cf1048c04ed69d1474771c4fb34318e10778800a4342f"
+      },
+      {
+        "path": "bench/public-data/airfoil.csv",
+        "bytes": 60098,
+        "sha256": "0beffa51c5b1493960d046c7d512a67d06a7884df6db599408087ee2fc2fc18a"
+      },
+      {
+        "path": "bench/public-data/concrete.csv",
+        "bytes": 41472,
+        "sha256": "8d4b15b6fc68cd932d745cbd663d5ceae66dd54422e99c1e4865f2936ab7e2af"
+      },
+      {
+        "path": "bench/public-data/glass.csv",
+        "bytes": 10820,
+        "sha256": "84e7e49a57bbd4cc46b2b9a5498a91ac8ea890e2adb988f3641e4a63ee079cb9"
+      },
+      {
+        "path": "bench/public-data/iris.csv",
+        "bytes": 4615,
+        "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65"
+      },
+      {
+        "path": "bench/public-data/manifest.json",
+        "bytes": 10844,
+        "sha256": "6095fdf93a3f896f527b47f1758445f0651c984b2c60deced1e6579bd6633a09"
+      },
+      {
+        "path": "bench/public-data/raisin.csv",
+        "bytes": 69117,
+        "sha256": "175ecbc52d351e0e0d9aa00605de09425b3a4826c5db294fabcbc24bcba955ab"
+      },
+      {
+        "path": "bench/public-data/rice.csv",
+        "bytes": 306679,
+        "sha256": "a0d9b19693f0bde9a59a6a6e886df0456008fab1c3a406178a76e7c4440e95b3"
+      },
+      {
+        "path": "bench/public-data/wine-chemistry.csv",
+        "bytes": 11480,
+        "sha256": "70ba539f750faef04eb4859f68cf67f13676d42fafce8e4f85982705953c219a"
+      },
+      {
+        "path": "bench/public-data/wine-red.csv",
+        "bytes": 132145,
+        "sha256": "8ee9d921973dd2a1dd0a64f4a50025224702a2c45490eba4605f50746cb10371"
+      },
+      {
+        "path": "bench/public-data/wine-white.csv",
+        "bytes": 420998,
+        "sha256": "9723f79e0ce1b37b84032975cd1ad9303dec1b632ca0be829f6f250929c21627"
+      },
+      {
+        "path": "bench/public-spec.mjs",
+        "bytes": 2062,
+        "sha256": "91b733779d61ff002c8d8841a1b32bb95ec0445d61ff61d23c23478b6d741b88"
+      },
+      {
+        "path": "chat-skills.test.mjs",
+        "bytes": 14658,
+        "sha256": "c7dca5676d17e8f78431f4645b92364fb9f7ae9c0415b389815cbf1f89e79d66"
+      },
+      {
+        "path": "config.yaml",
+        "bytes": 971,
+        "sha256": "78ad9f2f7bf6e2f35fd0f8df5b49bf92e0afafae070ec29f147da028dad3e7fc"
+      },
+      {
+        "path": "contracts.test.mjs",
+        "bytes": 6063,
+        "sha256": "1653183de1668e3d035785bd8a2884d146152519835aba5c0a4a32cdf57c208f"
+      },
+      {
+        "path": "docs/tool-registry.json",
+        "bytes": 109360,
+        "sha256": "80de04a626e6c2262718221c360be11fed4d25016b94db5b084eb3d20c717fcd"
+      },
+      {
+        "path": "file-access.test.mjs",
+        "bytes": 7610,
+        "sha256": "3274cdf4e7bbf316c9493641fc16a5a4bf0185720e8cfe64929fb61b17162553"
+      },
+      {
+        "path": "package-lock.json",
+        "bytes": 238,
+        "sha256": "a8f0f6a7e3d6343850811a1f6a82282b7334ba85b67d6a284530f1cd8cdab092"
+      },
+      {
+        "path": "package.json",
+        "bytes": 1193,
+        "sha256": "81a1ccfa474580bbc63c9c0d380b8c2e7ff5da684e09b14abb743fa80c3966c6"
+      },
+      {
+        "path": "runtime.test.mjs",
+        "bytes": 7515,
+        "sha256": "af90aebbfeaaee7088d80ea2fc6d210ee76274adee75769d263b3bd1c98726b6"
+      },
+      {
+        "path": "scripts/check-browser-live.mjs",
+        "bytes": 11338,
+        "sha256": "3a6b41169df160655b4fcf6397bb7fe285d490f2530ab44d47ff0ac181cc7a15"
+      },
+      {
+        "path": "scripts/check-graph.mjs",
+        "bytes": 5834,
+        "sha256": "e8644649e3c623ea678b661c9d4e0ce43cc3616533e422ed6374ee3ff7e2d371"
+      },
+      {
+        "path": "scripts/check-harness-models.mjs",
+        "bytes": 5431,
+        "sha256": "a2cbb8a5319fa3f5fbf62453dc8da0776344958de0db3629c8bb34f8291af90b"
+      },
+      {
+        "path": "scripts/check-offline-demo.mjs",
+        "bytes": 2788,
+        "sha256": "2dc3563df0981ed0923750388356ae1ab91e73c850bde002d480e9cd806c357a"
+      },
+      {
+        "path": "scripts/check-reuse.mjs",
+        "bytes": 4585,
+        "sha256": "e7e6fb469d98041e575621b7fe9fc341807c6a7437ab511e227b030ea802c465"
+      },
+      {
+        "path": "scripts/check-scorecard.mjs",
+        "bytes": 2843,
+        "sha256": "ec314adc90df5d8005deda06ff0a015eb85953f5ebc0b28c14e47139bcc412f9"
+      },
+      {
+        "path": "scripts/compare-public.mjs",
+        "bytes": 10516,
+        "sha256": "d4cc0c95f0c820322fc970c31ec1e2e804dfb156cf516ffc214b350a7db5aa1d"
+      },
+      {
+        "path": "scripts/compare-routing.mjs",
+        "bytes": 5553,
+        "sha256": "b3cc47a601690279ca761af64a5c7298e4fbd9a8d774c401b4ba319a6913ae33"
+      },
+      {
+        "path": "scripts/cost-table.mjs",
+        "bytes": 2091,
+        "sha256": "0adb3f1402ba37a382d35736cf7a4735dc1ceb310c2c81ca3b83cd000b627e5d"
+      },
+      {
+        "path": "scripts/demo.mjs",
+        "bytes": 2563,
+        "sha256": "67c916936c52439212587cf7fa1d47012eb7f3696e32d4bfa034f77e93341f88"
+      },
+      {
+        "path": "scripts/evaluate.mjs",
+        "bytes": 3497,
+        "sha256": "81c415d78c956928113481a0d6fb6e4410b233e41bbd66cb8eb5df9c1acb2105"
+      },
+      {
+        "path": "scripts/export-contracts.mjs",
+        "bytes": 1014,
+        "sha256": "473c7a26afd584cf560621d41231d9faaebe618b330442c8ec21a1f96b371a85"
+      },
+      {
+        "path": "scripts/freeze-public-data.mjs",
+        "bytes": 2150,
+        "sha256": "1b6de06aa537cdb504f216033412a2402debacdf8456fd5dd58eec6864ff1450"
+      },
+      {
+        "path": "scripts/local-model.mjs",
+        "bytes": 1126,
+        "sha256": "c40c59ef6b283fdae98d6447ffc5b60908afb9f761e817e54d9a01f5f7474fe4"
+      },
+      {
+        "path": "scripts/record-tests.mjs",
+        "bytes": 2040,
+        "sha256": "525cef8a596b26bbc3e0f3c0817c5681934f6e182c6b67a1ba074cba73d9684b"
+      },
+      {
+        "path": "scripts/setup.mjs",
+        "bytes": 459,
+        "sha256": "b50a0cbba900b8ab012fb3768f4e3b77ed226261a8caeb3b09e4641cb838c8ad"
+      },
+      {
+        "path": "scripts/source-fingerprint.mjs",
+        "bytes": 1766,
+        "sha256": "0e3b5293eab418fb95484f70907bcedf03210130e349f20a1f93875632c93ef2"
+      },
+      {
+        "path": "session.test.mjs",
+        "bytes": 8708,
+        "sha256": "a6fc26fa08c29eb7b9fcaf74ebdc2fc28f83d25ef0ec16ae3b07be746b70e039"
+      },
+      {
+        "path": "smoke.test.mjs",
+        "bytes": 11948,
+        "sha256": "8f9242dc5113e033029fdf9173d46889a439cb316cf2e1d0ac743d271c29c7d2"
+      },
+      {
+        "path": "src/artifact-contract.mjs",
+        "bytes": 3607,
+        "sha256": "f3a038051ea7f3c975a669b6602f721d32d04f5c683ebedd413b709fe952365d"
+      },
+      {
+        "path": "src/audit-planner.mjs",
+        "bytes": 3587,
+        "sha256": "fe9ead4fabd46b12b1523e875214ca9f079174b65e5c0a91baa246fa4f81eceb"
+      },
+      {
+        "path": "src/audit-rules.mjs",
+        "bytes": 1593,
+        "sha256": "129b01e748b4c3d5268f7e45b361704e48e03c574708a0f5b14d814dde6aea70"
+      },
+      {
+        "path": "src/audit-skills.mjs",
+        "bytes": 4733,
+        "sha256": "51f30861e90d77310a70cbdd4479a14df11547f56a11dc3186dc03bae09c9f02"
+      },
+      {
+        "path": "src/audit-tools.mjs",
+        "bytes": 12395,
+        "sha256": "abd068070dfe4353d5b5fde462de7eb8c4be27def24f7e0265592f5dd076f0e5"
+      },
+      {
+        "path": "src/chat-skills.mjs",
+        "bytes": 9888,
+        "sha256": "6fdc8ef5b80b33e01ca1a796a502ea93ddc8a5ab823a02a6c239b37c0e03d66c"
+      },
+      {
+        "path": "src/config.mjs",
+        "bytes": 1348,
+        "sha256": "94448067bd34f2c9d9c1f0dd2d7427b5383df2be0005e92da3c92239c0761869"
+      },
+      {
+        "path": "src/file-scope.mjs",
+        "bytes": 4022,
+        "sha256": "f4d4ba1090cead56f10cf0de8be342395f58895d6f1e24a39147faabfbb30cfd"
+      },
+      {
+        "path": "src/replay.mjs",
+        "bytes": 480,
+        "sha256": "22e3211370a665ce61942e5549b1541c8df8c40c0a0c390b160b012e76024f26"
+      },
+      {
+        "path": "src/runner.mjs",
+        "bytes": 17950,
+        "sha256": "abafc07bfb6bc6cdd0782e8385096775d12ec6a9de9b025a24ec30a605ad5b97"
+      },
+      {
+        "path": "src/schema.mjs",
+        "bytes": 2121,
+        "sha256": "604f0e9db7b8a80e4478dc8e72fd2d46c839d4c043b8f889ae69d3943628b1ae"
+      },
+      {
+        "path": "src/server.mjs",
+        "bytes": 23317,
+        "sha256": "afc423d1b16e1b85b5bb4a33cf4fc261933ab91072405cfd4d3b95c9b91421b3"
+      },
+      {
+        "path": "src/settings.mjs",
+        "bytes": 11022,
+        "sha256": "4144e7eb8338e8e44e211962bbc21225e10f82b706aa7b7da26677e7f640cbf8"
+      },
+      {
+        "path": "src/skills.mjs",
+        "bytes": 3945,
+        "sha256": "4976b3b3b3dfa35b927f5a2199e4f0fae3ee4c4ac67d8e8b4c4c8220bae47fc6"
+      },
+      {
+        "path": "src/store.mjs",
+        "bytes": 18439,
+        "sha256": "727c41fff5994054a260705e541dcf67403ec7dacf88846c4c8cd116baa77f37"
+      },
+      {
+        "path": "src/tool-contract.mjs",
+        "bytes": 1088,
+        "sha256": "f4c4fd9937db7b81ce3676bb350049a3d130ac5b2e340edf1c74defdb2d899ea"
+      },
+      {
+        "path": "src/tools.mjs",
+        "bytes": 23323,
+        "sha256": "89e9931e69bd60e69a17dc33d7fae9ce90933212876dc134de25169c4425dcaa"
+      },
+      {
+        "path": "src/workflow.mjs",
+        "bytes": 23317,
+        "sha256": "6b09e3ae7c525d9d9a2f27994c8df5aa349aa10256f70084dc77dde6c1364a17"
+      },
+      {
+        "path": "start.bat",
+        "bytes": 322,
+        "sha256": "943c170aa38b2d033f69207e1f5073619b9ba217fe634500bbed7ef3167c91d8"
+      },
+      {
+        "path": "start.mjs",
+        "bytes": 1119,
+        "sha256": "cd764993808d1d4eb9f4eb7bf57ff9173a6abbe14645f015365d29e15c1c160b"
+      },
+      {
+        "path": "tools.integration.test.mjs",
+        "bytes": 2865,
+        "sha256": "9deda6c2416115735fdffba28030cd15c54dbbbfc310d8340e06cc6262698f3c"
+      },
+      {
+        "path": "web/app.js",
+        "bytes": 59936,
+        "sha256": "83e25afdddcd5844254ac3df8db4457dc9d9a99ee96042ea87723bbfd11f876f"
+      },
+      {
+        "path": "web/catalog/graph.json",
+        "bytes": 820540,
+        "sha256": "f04da1a943aad10a7bdcb18e62417f285508fc466d7a44f3e1a29eb7e7acf1d0"
+      },
+      {
+        "path": "web/catalog/sphere.js",
+        "bytes": 11592,
+        "sha256": "7dca4b35a4fe1c839c1764ab699550028d6eb1dc3634f64f29af4429ec218a6f"
+      },
+      {
+        "path": "web/index.html",
+        "bytes": 15371,
+        "sha256": "a1cd46bd8d21c4289dd47717e5a11e078f2d5508cd3c9421befc6de5a3e6e396"
+      },
+      {
+        "path": "web/style.css",
+        "bytes": 18514,
+        "sha256": "277f77a4b0c11de4479a6562ecd1797c4488f27f4e5635853f19b773ab42aee2"
+      }
+    ]
+  },
+  "sourceCsv": {
+    "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+    "text": "sample_id,mass_g\nA,0.02\nB,-0.01\n,abc",
+    "origin": "合成接口联调样例"
+  },
+  "prompt": "先查找可执行的 CSV 数据预检技能，然后执行。目标字段 sample_id 是必填文本；mass 是必填数值，单位 mg，最小值 0。请按这些目标做字段映射、单位换算、缺失值、类型和范围检查，并统计原始列。使用当前附件，不修改源文件。",
+  "ui": {
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.81",
+      "revision": "@060bedfb508f73250e93aeb9ca8149b3958995d8",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.27"
+    },
+    "entry": "main composer and attachment input in Chrome",
+    "workflowFormOpened": false,
+    "transcript": "先查找可执行的 CSV 数据预检技能，然后执行。目标字段 sample_id 是必填文本；mass 是必填数值，单位 mg，最小值 0。请按这些目标做字段映射、单位换算、缺失值、类型和范围检查，并统计原始列。使用当前附件，不修改源文件。已完成 · minimax-m3 · 默认思考 · 34 秒预检完成：3 行，发现 3 个问题。字段语义映射为建议，请人工复核。report.jsonplan.jsonmapping.csvissues.csvartifact-contract.jsonreplay.json查看技能执行图确定性候选 带单位的字段映射、逐行质量检查、原始列统计 · 采用 表头与样本检查、带单位的字段映射、逐行质量检查、原始列统计 · 完成 4 步模型 2 次 · 工具 4 次 · 重规划 0 次 · 14554 ms · 2867 tokens查看检查结果与来源sample_id → sample_id；mass_g → mass (g → mg, ×1000)第 3 条记录 · mass · OUT_OF_RANGE · -0.01第 4 条记录 · sample_id · MISSING_VALUE · 第 4 条记录 · mass · INVALID_TYPE · abc来源记录 1 来源记录 1 / sample_id 来源记录 1 / mass_g 来源记录 3 / mass_g 来源记录 4 / sample_id 执行记录开始执行 · minimax-m3 · 默认思考第 1 步 · minimax-m3调用工具 · search_skills技能检索 · CSV 数据预检 字段映射 单位换算 缺失值 质量检查 · 返回 2 项工具结果 · {\"ok\":true,\"data\":{\"query\":\"CSV 数据预检 字段映射 单位换算 缺失值 质量检查\",\"matches\":[{\"id\":\"csv-precheck\",\"label\":\"CSV 数据质量预检\",\"domain\":\"数据与分析\",\"nodeId\":\"data-cleaning\",\"executable\":true,\"tool\":\"precheck_table\",\"version\":\"4\",\"description\":\"按目标字段做语义映射、单位换算、缺失值、类型和数值范围检查，生成报告、引用和执行图。\"},{\"id\":\"csv-overview\",\"label\":\"CSV 数据概览\",\"domain\":\"数据与分析\",\"nodeId\":\"xlsx\",\"executable\":true,\"tool\":\"analyze_csv\",\"version\":\"1\",\"description\":\"统计表格列的空值、数值数、均值、最小值和最大值，生成可下载报告。\"}],\"truncated\":false,\"catalogSha256\":\"f04da1a943aad10a7bdcb18e62417f285508fc466d7a44f3e1a29eb7e7acf1d0\"},\"error\":{\"code\":\"OK\",\"message\":\"\"}}调用工具 · precheck_table工具 inspect_table · 成功 · 0 ms候选技能 · 带单位的字段映射、逐行质量检查、原始列统计生成计划 · 第 1 次 · minimax-m3生成计划 · 第 2 次 · minimax-m3计划 · CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。\nalign: align_fields ← 输入；验收：目标字段和单位证据通过校验\nvalidate: validate_rows ← align；验收：检查全部原始记录\nprofile: profile_table ← 输入；验收：用户目标中明确包含‘统计原始列’，属于需要对原始列做描述性统计的场景。工具 align_fields · 成功 · 0 ms工具 validate_rows · 成功 · 0 ms工具 profile_table · 成功 · 0 ms工具结果 · {\"ok\":true,\"data\":{\"kind\":\"table_precheck\",\"status\":\"completed\",\"summary\":\"预检完成：3 行，发现 3 个问题。字段语义映射为建议，请人工复核。\",\"mappings\":[{\"target\":\"sample_id\",\"source\":\"sample_id\",\"sourceUnit\":\"\",\"targetUnit\":\"\",\"factor\":1,\"sourceIndex\":0,\"evidence\":{\"file\":\"b244d85b-4811-48c4-ade3-a4eb98904592\",\"sha256\":\"54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f\",\"record\":1,\"column\":\"sample_id\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=sample_id\"},\"rationale\":\"CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。\"},{\"target\":\"mass\",\"source\":\"mass_g\",\"sourceUnit\":\"g\",\"targetUnit\":\"mg\",\"factor\":1000,\"sourceIndex\":1,\"evidence\":{\"file\":\"b244d85b-4811-48c4-ade3-a4eb98904592\",\"sha256\":\"54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f\",\"record\":1,\"column\":\"mass_g\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=mass_g\"},\"rationale\":\"CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。\"}],\"questions\":[],\"issues\":[{\"code\":\"OUT_OF_RANGE\",\"field\":\"mass\",\"value\":\"-0.01\",\"evidence\":{\"file\":\"b244d85b-4811-48c4-ade3-a4eb98904592\",\"sha256\":\"54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f\",\"record\":3,\"column\":\"mass_g\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=3&column=mass_g\"}},{\"code\":\"MISSING_VALUE\",\"field\":\"sample_id\",\"value\":\"\",\"evidence\":{\"file\":\"b244d85b-4811-48c4-ade3-a4eb98904592\",\"sha256\":\"54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f\",\"record\":4,\"column\":\"sample_id\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=sample_id\"}},{\"code\":\"INVALID_TYPE\",\"field\":\"mass\",\"value\":\"abc\",\"evidence\":{\"file\":\"b244d85b-4811-48c4-ade3-a4eb98904592\",\"sha256\":\"54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f\",\"record\":4,\"column\":\"mass_g\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=mass_g\"}}],\"error\":{\"code\":\"OK\",\"message\":\"\"},\"artifacts\":[{\"name\":\"report.json\",\"sha256\":\"c0abbb39155a30ec7f34f0f2373a4826973c3189dca683a549e1a602d9fcd6d2\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/731d2f47-a1c6-4aae-8d74-f09dd4e84fb5\"},{\"name\":\"plan.json\",\"sha256\":\"4521531d48fe3f7763487f3954823ed62baa4b657df42e5bdbe02eb75830abc4\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/885a5125-da4e-406f-92d8-cf6644abdf6b\"},{\"name\":\"mapping.csv\",\"sha256\":\"f8ff9148197a5c1e694707e54baa2b5f79e6a5dc08decc19e309feefc65acf2a\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/c6927578-7ba7-4060-9d2d-1672533fbbf3\"},{\"name\":\"issues.csv\",\"sha256\":\"762add00c9f2bd5f985c43c3ba91820b03b17c34faa9b736a25342215a664b76\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/7b0957e2-040f-4255-a238-a5c1fdced61b\"},{\"name\":\"artifact-contract.json\",\"sha256\":\"4dabd76c5471775814b8ac6772b70e73feb0620893fb0a80ba76d34c45c12bbe\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/00798554-01b9-491a-a37a-927b95988a69\"},{\"name\":\"replay.json\",\"sha256\":\"16e5d87aac8a1ac355c61aa2d73c8565a0b6c9993505db6aef95403615e33a9d\",\"url\":\"/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/4698c7e8-f05a-4480-b40f-7e6e54de9344\"}]},\"error\":{\"code\":\"OK\",\"message\":\"\"}}第 2 步 · minimax-m3已完成复制回复引用回复重新提交",
+    "sourceUnchanged": true,
+    "artifactLinks": [
+      {
+        "label": "report.json",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/731d2f47-a1c6-4aae-8d74-f09dd4e84fb5"
+      },
+      {
+        "label": "plan.json",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/885a5125-da4e-406f-92d8-cf6644abdf6b"
+      },
+      {
+        "label": "mapping.csv",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/c6927578-7ba7-4060-9d2d-1672533fbbf3"
+      },
+      {
+        "label": "issues.csv",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/7b0957e2-040f-4255-a238-a5c1fdced61b"
+      },
+      {
+        "label": "artifact-contract.json",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/00798554-01b9-491a-a37a-927b95988a69"
+      },
+      {
+        "label": "replay.json",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/4698c7e8-f05a-4480-b40f-7e6e54de9344"
+      },
+      {
+        "label": "第 3 条记录 · mass · OUT_OF_RANGE · -0.01",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=3&column=mass_g"
+      },
+      {
+        "label": "第 4 条记录 · sample_id · MISSING_VALUE · ",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=sample_id"
+      },
+      {
+        "label": "第 4 条记录 · mass · INVALID_TYPE · abc",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=mass_g"
+      },
+      {
+        "label": "来源记录 1",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1"
+      },
+      {
+        "label": "来源记录 1 / sample_id",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=sample_id"
+      },
+      {
+        "label": "来源记录 1 / mass_g",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=mass_g"
+      },
+      {
+        "label": "来源记录 3 / mass_g",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=3&column=mass_g"
+      },
+      {
+        "label": "来源记录 4 / sample_id",
+        "href": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=sample_id"
+      }
+    ],
+    "highlighted": [
+      "xlsx",
+      "gh-scientific-uncertainty-and-units-ccb540",
+      "gh-claude-data-quality-auditor-9d8e63",
+      "eda-profiling"
+    ]
+  },
+  "run": {
+    "id": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+    "config": {
+      "mode": "api",
+      "model": "minimax-m3",
+      "maxSteps": 5,
+      "effort": "default",
+      "fileScope": {
+        "mode": "attachments",
+        "projectId": null,
+        "projectPath": null
+      },
+      "started": 1794226685058
+    },
+    "status": "completed",
+    "answer": "预检完成：3 行，发现 3 个问题。字段语义映射为建议，请人工复核。",
+    "error": null,
+    "audit": {
+      "report": {
+        "version": 2,
+        "scenario": "experimental-table-precheck",
+        "status": "completed",
+        "goal": "对 sample.csv 做 CSV 数据预检：按目标字段 sample_id（必填文本）和 mass（必填数值，单位 mg，最小值 0）进行字段映射、单位换算、缺失值、类型和范围检查，并统计原始列。不修改源文件。",
+        "source": {
+          "id": "b244d85b-4811-48c4-ade3-a4eb98904592",
+          "name": "sample.csv",
+          "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f"
+        },
+        "target": {
+          "fields": [
+            {
+              "name": "sample_id",
+              "required": true,
+              "type": "string"
+            },
+            {
+              "minimum": 0,
+              "name": "mass",
+              "required": true,
+              "type": "number",
+              "unit": "mg"
+            }
+          ]
+        },
+        "mappingStatus": "proposed_requires_review",
+        "mappings": [
+          {
+            "target": "sample_id",
+            "source": "sample_id",
+            "sourceUnit": "",
+            "targetUnit": "",
+            "factor": 1,
+            "sourceIndex": 0,
+            "evidence": {
+              "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+              "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+              "record": 1,
+              "column": "sample_id",
+              "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=sample_id"
+            },
+            "rationale": "CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。"
+          },
+          {
+            "target": "mass",
+            "source": "mass_g",
+            "sourceUnit": "g",
+            "targetUnit": "mg",
+            "factor": 1000,
+            "sourceIndex": 1,
+            "evidence": {
+              "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+              "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+              "record": 1,
+              "column": "mass_g",
+              "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=mass_g"
+            },
+            "rationale": "CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。"
+          }
+        ],
+        "validation": {
+          "rows": 3,
+          "issueCount": 3,
+          "issues": [
+            {
+              "code": "OUT_OF_RANGE",
+              "field": "mass",
+              "value": "-0.01",
+              "evidence": {
+                "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+                "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+                "record": 3,
+                "column": "mass_g",
+                "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=3&column=mass_g"
+              }
+            },
+            {
+              "code": "MISSING_VALUE",
+              "field": "sample_id",
+              "value": "",
+              "evidence": {
+                "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+                "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+                "record": 4,
+                "column": "sample_id",
+                "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=sample_id"
+              }
+            },
+            {
+              "code": "INVALID_TYPE",
+              "field": "mass",
+              "value": "abc",
+              "evidence": {
+                "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+                "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+                "record": 4,
+                "column": "mass_g",
+                "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=mass_g"
+              }
+            }
+          ],
+          "truncated": false
+        },
+        "profile": {
+          "columns": [
+            {
+              "name": "sample_id",
+              "empty": 1,
+              "numeric": 0,
+              "other": 2,
+              "evidence": {
+                "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+                "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+                "record": 1,
+                "column": "sample_id",
+                "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=sample_id"
+              }
+            },
+            {
+              "name": "mass_g",
+              "empty": 0,
+              "numeric": 2,
+              "other": 1,
+              "evidence": {
+                "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+                "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+                "record": 1,
+                "column": "mass_g",
+                "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=mass_g"
+              }
+            }
+          ]
+        },
+        "questions": [],
+        "citations": [
+          {
+            "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 1,
+            "column": "",
+            "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1"
+          },
+          {
+            "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 1,
+            "column": "sample_id",
+            "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=sample_id"
+          },
+          {
+            "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 1,
+            "column": "mass_g",
+            "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=1&column=mass_g"
+          },
+          {
+            "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 3,
+            "column": "mass_g",
+            "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=3&column=mass_g"
+          },
+          {
+            "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 4,
+            "column": "sample_id",
+            "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=sample_id"
+          },
+          {
+            "file": "b244d85b-4811-48c4-ade3-a4eb98904592",
+            "sha256": "54b8af8249b6ebe102c7e850b9f90883ce7f3af39f02245544e0160ad618f95f",
+            "record": 4,
+            "column": "mass_g",
+            "url": "/api/tasks/5679413e-d9b5-46c1-85f2-e8f26a416c25/files/b244d85b-4811-48c4-ade3-a4eb98904592/evidence?record=4&column=mass_g"
+          }
+        ],
+        "plans": [
+          {
+            "status": "ready",
+            "questions": [],
+            "rationale": "CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。",
+            "steps": [
+              {
+                "id": "align",
+                "tool": "align_fields",
+                "depends_on": [],
+                "arguments": {
+                  "mappings": [
+                    {
+                      "target": "sample_id",
+                      "source": "sample_id",
+                      "sourceUnit": "",
+                      "evidence": 1,
+                      "rationale": "CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。"
+                    },
+                    {
+                      "target": "mass",
+                      "source": "mass_g",
+                      "sourceUnit": "g",
+                      "evidence": 1,
+                      "rationale": "CSV 两个表头可一一对应目标字段：sample_id 与目标同名为字符串，直接映射；mass_g 单位为克，需 ×1000 转换为 mg 以匹配目标单位。样本中存在的空 id、负值和非数值属于行级质量问题，不阻塞字段映射决策。"
+                    }
+                  ]
+                },
+                "acceptance": "目标字段和单位证据通过校验"
+              },
+              {
+                "id": "validate",
+                "tool": "validate_rows",
+                "depends_on": [
+                  "align"
+                ],
+                "arguments": {},
+                "acceptance": "检查全部原始记录"
+              },
+              {
+                "id": "profile",
+                "tool": "profile_table",
+                "depends_on": [],
+                "arguments": {},
+                "acceptance": "用户目标中明确包含‘统计原始列’，属于需要对原始列做描述性统计的场景。"
+              }
+            ]
+          }
+        ],
+        "error": {},
+        "metrics": {
+          "model": "minimax-m3",
+          "modelCalls": 2,
+          "toolCalls": 4,
+          "replans": 0,
+          "inputTokens": 1466,
+          "outputTokens": 1401,
+          "usageComplete": true,
+          "reservedInputBytes": 5152,
+          "reservedOutputTokens": 1401,
+          "elapsedMs": 14554,
+          "cost": null,
+          "reportedModels": [
+            "minimax-m3"
+          ],
+          "fingerprints": [],
+          "runtime": "v24.16.0"
+        }
+      },
+      "artifacts": [
+        {
+          "id": "731d2f47-a1c6-4aae-8d74-f09dd4e84fb5",
+          "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+          "name": "report.json",
+          "kind": "json",
+          "sha256": "c0abbb39155a30ec7f34f0f2373a4826973c3189dca683a549e1a602d9fcd6d2",
+          "size": 9576
+        },
+        {
+          "id": "885a5125-da4e-406f-92d8-cf6644abdf6b",
+          "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+          "name": "plan.json",
+          "kind": "json",
+          "sha256": "4521531d48fe3f7763487f3954823ed62baa4b657df42e5bdbe02eb75830abc4",
+          "size": 3997
+        },
+        {
+          "id": "c6927578-7ba7-4060-9d2d-1672533fbbf3",
+          "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+          "name": "mapping.csv",
+          "kind": "csv",
+          "sha256": "f8ff9148197a5c1e694707e54baa2b5f79e6a5dc08decc19e309feefc65acf2a",
+          "size": 658
+        },
+        {
+          "id": "7b0957e2-040f-4255-a238-a5c1fdced61b",
+          "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+          "name": "issues.csv",
+          "kind": "csv",
+          "sha256": "762add00c9f2bd5f985c43c3ba91820b03b17c34faa9b736a25342215a664b76",
+          "size": 828
+        },
+        {
+          "id": "00798554-01b9-491a-a37a-927b95988a69",
+          "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+          "name": "artifact-contract.json",
+          "kind": "json",
+          "sha256": "4dabd76c5471775814b8ac6772b70e73feb0620893fb0a80ba76d34c45c12bbe",
+          "size": 22130
+        },
+        {
+          "id": "4698c7e8-f05a-4480-b40f-7e6e54de9344",
+          "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+          "name": "replay.json",
+          "kind": "json",
+          "sha256": "16e5d87aac8a1ac355c61aa2d73c8565a0b6c9993505db6aef95403615e33a9d",
+          "size": 22983
+        }
+      ],
+      "skillTrace": {
+        "version": 3,
+        "registry": {
+          "version": 1,
+          "sha256": "9d3b3fd694e272b45f2e47fa9c97e9ca6f987d0548f7aab797e4b055cbe92bf9"
+        },
+        "runtime": {
+          "version": 4,
+          "sha256": "1229861ae101e3dca01ff26d6c830a6d4d0790209cd5325be5bcc7028ce27b08"
+        },
+        "selection": {
+          "method": "deterministic-eligibility",
+          "outcome": "candidates_available",
+          "candidates": [
+            {
+              "id": "unit-align",
+              "version": "1.0.0",
+              "tool": "align_fields",
+              "label": "带单位的字段映射",
+              "nodeId": "gh-scientific-uncertainty-and-units-ccb540"
+            },
+            {
+              "id": "row-validate",
+              "version": "1.0.0",
+              "tool": "validate_rows",
+              "label": "逐行质量检查",
+              "nodeId": "gh-claude-data-quality-auditor-9d8e63"
+            },
+            {
+              "id": "column-profile",
+              "version": "1.0.0",
+              "tool": "profile_table",
+              "label": "原始列统计",
+              "nodeId": "eda-profiling"
+            }
+          ],
+          "missing": []
+        },
+        "plans": [
+          {
+            "attempt": 1,
+            "steps": [
+              {
+                "step": "$input",
+                "id": "csv-inspect",
+                "version": "1.0.0",
+                "tool": "inspect_table",
+                "label": "表头与样本检查",
+                "nodeId": "xlsx",
+                "dependsOn": [],
+                "consumes": [],
+                "produces": "inspected_csv"
+              },
+              {
+                "step": "align",
+                "id": "unit-align",
+                "version": "1.0.0",
+                "tool": "align_fields",
+                "label": "带单位的字段映射",
+                "nodeId": "gh-scientific-uncertainty-and-units-ccb540",
+                "dependsOn": [
+                  "$input"
+                ],
+                "consumes": [
+                  "inspected_csv"
+                ],
+                "produces": "field_mapping",
+                "acceptance": "目标字段和单位证据通过校验"
+              },
+              {
+                "step": "validate",
+                "id": "row-validate",
+                "version": "1.0.0",
+                "tool": "validate_rows",
+                "label": "逐行质量检查",
+                "nodeId": "gh-claude-data-quality-auditor-9d8e63",
+                "dependsOn": [
+                  "align"
+                ],
+                "consumes": [
+                  "field_mapping"
+                ],
+                "produces": "row_findings",
+                "acceptance": "检查全部原始记录"
+              },
+              {
+                "step": "profile",
+                "id": "column-profile",
+                "version": "1.0.0",
+                "tool": "profile_table",
+                "label": "原始列统计",
+                "nodeId": "eda-profiling",
+                "dependsOn": [
+                  "$input"
+                ],
+                "consumes": [
+                  "inspected_csv"
+                ],
+                "produces": "column_statistics",
+                "acceptance": "用户目标中明确包含‘统计原始列’，属于需要对原始列做描述性统计的场景。"
+              }
+            ]
+          }
+        ],
+        "graph": {
+          "attempt": 1,
+          "nodes": [
+            {
+              "step": "$input",
+              "id": "csv-inspect",
+              "version": "1.0.0",
+              "label": "表头与样本检查",
+              "nodeId": "xlsx",
+              "state": "succeeded"
+            },
+            {
+              "step": "align",
+              "id": "unit-align",
+              "version": "1.0.0",
+              "label": "带单位的字段映射",
+              "nodeId": "gh-scientific-uncertainty-and-units-ccb540",
+              "state": "succeeded"
+            },
+            {
+              "step": "validate",
+              "id": "row-validate",
+              "version": "1.0.0",
+              "label": "逐行质量检查",
+              "nodeId": "gh-claude-data-quality-auditor-9d8e63",
+              "state": "succeeded"
+            },
+            {
+              "step": "profile",
+              "id": "column-profile",
+              "version": "1.0.0",
+              "label": "原始列统计",
+              "nodeId": "eda-profiling",
+              "state": "succeeded"
+            }
+          ],
+          "edges": [
+            {
+              "from": "$input",
+              "to": "align"
+            },
+            {
+              "from": "align",
+              "to": "validate"
+            },
+            {
+              "from": "$input",
+              "to": "profile"
+            }
+          ]
+        }
+      }
+    },
+    "artifacts": [
+      {
+        "id": "731d2f47-a1c6-4aae-8d74-f09dd4e84fb5",
+        "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+        "name": "report.json",
+        "kind": "json",
+        "sha256": "c0abbb39155a30ec7f34f0f2373a4826973c3189dca683a549e1a602d9fcd6d2",
+        "size": 9576
+      },
+      {
+        "id": "885a5125-da4e-406f-92d8-cf6644abdf6b",
+        "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+        "name": "plan.json",
+        "kind": "json",
+        "sha256": "4521531d48fe3f7763487f3954823ed62baa4b657df42e5bdbe02eb75830abc4",
+        "size": 3997
+      },
+      {
+        "id": "c6927578-7ba7-4060-9d2d-1672533fbbf3",
+        "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+        "name": "mapping.csv",
+        "kind": "csv",
+        "sha256": "f8ff9148197a5c1e694707e54baa2b5f79e6a5dc08decc19e309feefc65acf2a",
+        "size": 658
+      },
+      {
+        "id": "7b0957e2-040f-4255-a238-a5c1fdced61b",
+        "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+        "name": "issues.csv",
+        "kind": "csv",
+        "sha256": "762add00c9f2bd5f985c43c3ba91820b03b17c34faa9b736a25342215a664b76",
+        "size": 828
+      },
+      {
+        "id": "00798554-01b9-491a-a37a-927b95988a69",
+        "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+        "name": "artifact-contract.json",
+        "kind": "json",
+        "sha256": "4dabd76c5471775814b8ac6772b70e73feb0620893fb0a80ba76d34c45c12bbe",
+        "size": 22130
+      },
+      {
+        "id": "4698c7e8-f05a-4480-b40f-7e6e54de9344",
+        "run": "5edd6d46-beb2-46f0-bebd-980ec7f8155c",
+        "name": "replay.json",
+        "kind": "json",
+        "sha256": "16e5d87aac8a1ac355c61aa2d73c8565a0b6c9993505db6aef95403615e33a9d",
+        "size": 22983
+      }
+    ]
+  }
+}

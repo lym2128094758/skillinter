@@ -1,0 +1,69 @@
+{
+  "mode": "live-model-in-loop",
+  "runtime": {
+    "version": 4,
+    "sha256": "d65b7b67dac759dcecc8faf88c74c21125ff4b68289dbc49c9acc11835677bce"
+  },
+  "headers": "original",
+  "vocabularyHash": "ee20c969345afb2a1b30ecfef1c069661a5ca0aea9f9210cc309432bd487fc07",
+  "requestedModel": "intern-s2",
+  "compact": true,
+  "tables": 1,
+  "runs": 1,
+  "repeats": 1,
+  "confusion": {
+    "correct": 0,
+    "wrong": 0,
+    "missing": 2
+  },
+  "taskSuccess": 0,
+  "fieldAccuracy": 0,
+  "p50Ms": 120018,
+  "p95Ms": 120018,
+  "meanInputTokens": null,
+  "meanOutputTokens": null,
+  "usageRows": 0,
+  "meanCost": null,
+  "consistentTables": null,
+  "peakGpuBytes": null,
+  "results": [
+    {
+      "table": "iris",
+      "source": "https://archive.ics.uci.edu/dataset/53/iris",
+      "retrievedAt": "2026-11-09T07:41:52.226Z",
+      "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+      "originalSha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+      "dataRowsHash": "2fd65681351a11ee36a160e4291bc67268f4dc863c74fadf1a8151b631ef1788",
+      "headers": "original",
+      "sourceRows": 150,
+      "repeat": 1,
+      "status": "failed",
+      "taskCorrect": false,
+      "issueCount": null,
+      "errorCode": "EXECUTION_FAILED",
+      "fields": [
+        {
+          "target": "sepal_length",
+          "gold": "sepal length",
+          "predicted": null,
+          "outcome": "missing"
+        },
+        {
+          "target": "flower_petal_width",
+          "gold": "petal width",
+          "predicted": null,
+          "outcome": "missing"
+        }
+      ],
+      "modelCalls": 1,
+      "toolCalls": 1,
+      "inputTokens": null,
+      "outputTokens": null,
+      "cost": null,
+      "elapsedMs": 120018,
+      "reportedModels": [],
+      "fingerprints": [],
+      "peakGpuBytes": null
+    }
+  ]
+}

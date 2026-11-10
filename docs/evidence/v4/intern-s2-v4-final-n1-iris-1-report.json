@@ -1,0 +1,62 @@
+{
+  "version": 2,
+  "scenario": "experimental-table-precheck",
+  "status": "failed",
+  "goal": "Align the sepal length and petal width measurements.",
+  "source": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "iris.csv",
+    "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65"
+  },
+  "target": {
+    "fields": [
+      {
+        "name": "sepal_length",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      },
+      {
+        "name": "flower_petal_width",
+        "type": "number",
+        "required": true,
+        "minimum": 0
+      }
+    ]
+  },
+  "mappingStatus": "proposed_requires_review",
+  "mappings": [],
+  "validation": {},
+  "profile": {},
+  "questions": [],
+  "citations": [
+    {
+      "file": "00000000-0000-0000-0000-000000000001",
+      "sha256": "daaeb5e3e889d07fbdd44544f5a39fe2372a07172e25899d577be0ad74df9e65",
+      "record": 1,
+      "column": "",
+      "url": "/api/tasks/00000000-0000-0000-0000-000000000002/files/00000000-0000-0000-0000-000000000001/evidence?record=1"
+    }
+  ],
+  "plans": [],
+  "error": {
+    "code": "EXECUTION_FAILED",
+    "message": "模型连续 120 秒没有返回新数据，请重试或切换模型"
+  },
+  "metrics": {
+    "model": "intern-s2",
+    "modelCalls": 1,
+    "toolCalls": 1,
+    "replans": 0,
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "usageComplete": false,
+    "reservedInputBytes": 2693,
+    "reservedOutputTokens": 2048,
+    "elapsedMs": 120017,
+    "cost": null,
+    "reportedModels": [],
+    "fingerprints": [],
+    "runtime": "v24.16.0"
+  }
+}
