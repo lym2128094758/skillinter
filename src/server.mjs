@@ -324,8 +324,20 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             const source=experiences.get(id,context),task=store.task(source.taskId);
             const {model}=settings.snapshot({model:task.model_id,effort:task.effort});
             const controller=studioController=new AbortController(),cancel=()=>controller.abort();res.once('close',cancel);
-            try{return json(res,201,await experiences.propose({id,context,skillId:body.skillId,feedback:body.feedback,model,signal:controller.signal}));}
-            finally{res.off('close',cancel);studioController=undefined;}
+            let evolutionRun;
+            const entry = {controller, job: null, interrupt: null};
+            const job = experiences.propose({id,context,skillId:body.skillId,feedback:body.feedback,
+              operator:body.operator,model,signal:controller.signal,skillnet,registry:skillRegistry,onRun(runId) {
+                evolutionRun = runId;
+                active.set(runId, entry);
+              }});
+            entry.job = job.catch(() => {});
+            try { return json(res,201,await job); }
+            finally {
+              if (evolutionRun) active.delete(evolutionRun);
+              res.off('close',cancel);
+              studioController=undefined;
+            }
           }
         }
         throw new RequestError(405,'经验操作无效。');

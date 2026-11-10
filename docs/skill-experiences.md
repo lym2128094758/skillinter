@@ -15,7 +15,7 @@
 
 ## 生成候选
 
-用户点击「从线索生成候选」才使用来源会话选定的模型。复用技能草稿生成器：180 秒总超时，默认 4096 输出 tokens；截断时最多一次 8192 重试。至少两个独立、自包含用例，覆盖正常与边界。此阶段只生成方法，不运行测试。
+用户点击「从线索生成候选」才使用来源会话选定的模型。技能工坊生成沿用原草稿生成器，180 秒总超时，默认 4096 输出 tokens，截断时最多一次 8192 重试。也可选择 SkillNet 蒸馏或变异，算子、预算和发布条件见 [SkillNet 接入](skillnet-engine.md)。生成阶段准备方法和两个自包含的测试建议，实际对照需另行运行。
 
 只能选择来源中有版本证据的参与技能；来源使用旧版本时拒绝直接更新。没有目标技能时可提炼为新候选。有多个目标时须明确选择。宿主强制保留原技能名、适用条件和产物验收条件，无法靠经验草案放宽验收。含疑似凭据、截断、来源生成期间变化、无改动、用例无效均不保存。
 
@@ -32,7 +32,7 @@
 | GET | `/api/skill-studio/experiences` | `{experiences:[]}`，有界扫描并返回最新观察；不调用模型。 |
 | GET | `/api/skill-studio/experiences/:id` | 观察、指纹、引用、历史提案。 |
 | POST | `/api/skill-studio/experiences/:id/state` | `{state:"open"\|"dismissed",taskId?,projectId?}`，返回更新后的观察。 |
-| POST | `/api/skill-studio/experiences/:id/propose` | `{skillId?,feedback?,taskId?,projectId?}`，反馈最多 4000 字；201 返回提案、候选编号、字段差异、模型 attempts 与 cached。 |
+| POST | `/api/skill-studio/experiences/:id/propose` | `{skillId?,feedback?,taskId?,projectId?,operator?}`，反馈最多 4000 字。省略 operator 使用工坊生成，可指定 distill 或 mutate。201 返回提案、候选编号、字段差异和 cached。SkillNet 结果通过 evolution 返回算子、来源和独立运行编号，用量见该运行预算。 |
 
 提案元数据由宿主保存，通用候选提交接口不能伪造经验来源。候选 GET 在相同来源范围附带 `experienceProposals`。时间、模型时延及用量为 volatile；观察内容以 SHA-256 对应不可变快照。错误沿用应用 `{error:message}`：404 不存在或跨项目、409 来源/版本变化或工坊忙、422 输入/目标/用例不合格、502 模型格式/凭据/截断、504 模型等待超时。
 

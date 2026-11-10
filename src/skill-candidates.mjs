@@ -54,6 +54,7 @@ export function createSkillCandidates(store, {studio, cleanDraft, projectFor, ev
         baselinePassed: record.baselinePassed, candidatePassed: record.candidatePassed, total: record.total,
         improvedCases: record.improvedCases, regressionCount: candidate.regressionCases.length}, resources: plan.resources};
     }
+    if (candidate.requiresExecution) return {reason: 'SkillNet 候选需要通过独立的实际任务对照后才能发布。'};
     if (candidate.regressionCases.length) return {reason: '此技能已有历史回归用例，请先完成实际任务对照。'};
     if (textTrial?.status !== 'completed' || textTrial.verdict !== 'improved') {
       return {reason: '最新验证没有可发布的改进证据，保留原版本。'};
@@ -92,7 +93,8 @@ export function createSkillCandidates(store, {studio, cleanDraft, projectFor, ev
     }
     return skill;
   }
-  function save({context, taskId = null, sourceRunId = null, skillId, baseVersion, draft, targetScope, parentCandidateId}) {
+  function save({context, taskId = null, sourceRunId = null, skillId, baseVersion, draft, targetScope, parentCandidateId},
+    {onSaved, requiresExecution = false} = {}) {
     const candidate = cleanDraft(draft);
     const baseline = skillId ? studio.get(skillId, context) : null;
     if (!Number.isSafeInteger(baseVersion) || baseVersion !== (baseline?.version ?? 0)) throw new RequestError(409, '技能版本已更新，请重新读取后保存候选。');
@@ -101,6 +103,7 @@ export function createSkillCandidates(store, {studio, cleanDraft, projectFor, ev
     if (targetScope === 'project' && !projectId) throw new RequestError(422, '请先选择目标项目。');
     const parent = parentCandidateId ? get(parentCandidateId, context) : null;
     const source = sourceRunId ? evidence(taskId, sourceRunId) : parent?.sourceEvidence ?? null;
+    requiresExecution ||= Boolean(parent?.requiresExecution);
     const sourceTaskId = sourceRunId ? taskId : parent?.sourceTaskId ?? null;
     sourceRunId ??= parent?.sourceRunId ?? null;
     if (baseline && candidate.name !== baseline.name) throw new RequestError(422, '改进候选须保留原技能名称；新方法请另建技能。');
@@ -114,15 +117,18 @@ export function createSkillCandidates(store, {studio, cleanDraft, projectFor, ev
     const snapshot = {draft: candidate, baseline: baseline ? document(baseline) : null,
       baselineSha256: baseline ? digest(document(baseline)) : null,
       suite: suite.map(test => ({...test, sourceOverlap: overlaps(test)})), sourceEvidence: source,
-      parentCandidateId: parent?.id ?? null,
+      parentCandidateId: parent?.id ?? null, ...(requiresExecution ? {requiresExecution: true} : {}),
       scope: 'text-only', limitation: '只比较冻结文本用例；不执行工具，不证明跨任务收益，也不调整正式排序。'};
     const hash = digest({projectId, skillId: skillId ?? null, baseVersion, snapshot});
-    const existing = store.query('SELECT id FROM skill_candidates WHERE sha256=?', 'get', hash);
-    if (existing) return get(existing.id, context);
-    const id = randomUUID();
-    store.query('INSERT INTO skill_candidates (id,project_id,skill_id,base_version,snapshot,sha256,source_task_id,source_run_id,created_at) VALUES (?,?,?,?,?,?,?,?,?)',
-      'run', id, projectId, skillId ?? null, baseVersion, JSON.stringify(snapshot), hash, sourceTaskId, sourceRunId, new Date().toISOString());
-    return get(id, context);
+    return store.transaction(() => {
+      const existing = store.query('SELECT id FROM skill_candidates WHERE sha256=?', 'get', hash);
+      const id = existing?.id ?? randomUUID();
+      if (!existing) store.query('INSERT INTO skill_candidates (id,project_id,skill_id,base_version,snapshot,sha256,source_task_id,source_run_id,created_at) VALUES (?,?,?,?,?,?,?,?,?)',
+        'run', id, projectId, skillId ?? null, baseVersion, JSON.stringify(snapshot), hash, sourceTaskId, sourceRunId, new Date().toISOString());
+      const saved = get(id, context);
+      onSaved?.(saved);
+      return saved;
+    });
   }
   async function evaluate({id, context, model, signal}) {
     const candidate = get(id, context);

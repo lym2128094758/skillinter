@@ -6,6 +6,7 @@ const text = (maxLength = 1000) => ({type: 'string', minLength: 1, maxLength});
 const list = (items, maxItems = 20) => ({type: 'array', items, maxItems});
 const sha = {type: 'string', pattern: '^[a-f0-9]{64}$'};
 const ref = object({id: text(180), version: text(80)});
+const nullable = schema => ({anyOf: [schema, {enum: [null]}]});
 const limit = {type: 'integer', minimum: 1, maximum: 20};
 const relation = object({source: ref, target: ref, type: {enum: ['depend_on', 'compose_with', 'similar_to']}});
 const errors = {
@@ -13,6 +14,7 @@ const errors = {
   INVALID_CONTRACT: '技能引擎输入或返回不符合契约。', SNAPSHOT_CHANGED: '技能引擎返回的快照与本轮不一致。',
   UNKNOWN_REFERENCE: '技能引擎引用了本轮不可用的技能。', BUDGET_EXHAUSTED: '根任务额度不足，技能引擎未能完成。',
   SOURCE_NOT_ALLOWED: '技能来源未获授权或不能固定版本。', PROVIDER_ERROR: '技能引擎调用失败。',
+  PROPOSAL_REJECTED: 'SkillNet 未返回通过算子检查的候选，请缩小改进范围或补充依据。',
 };
 const schemas = {
   search: {
@@ -29,9 +31,9 @@ const schemas = {
       license: text(180), contentSha256: sha, title: text()}))}),
   },
   propose: {
-    parameters: object({snapshotSha256: sha, parent: ref, parentSha256: sha, evidenceSeqs: list({type: 'integer', minimum: 1}, 40),
+    parameters: object({snapshotSha256: sha, parent: nullable(ref), parentSha256: nullable(sha), evidenceSeqs: list({type: 'integer', minimum: 1}, 40),
       correction: text(8000), operator: {enum: ['distill', 'mutate', 'compose', 'generate']}}),
-    data: object({snapshotSha256: sha, parent: ref, parentSha256: sha, draft: text(60000), diff: text(60000)}),
+    data: object({snapshotSha256: sha, parent: nullable(ref), parentSha256: nullable(sha), draft: text(60000), diff: text(60000)}),
   },
 };
 Object.assign(schemas.discover.data.properties.sources.items.properties, {
@@ -40,15 +42,16 @@ Object.assign(schemas.discover.data.properties.sources.items.properties, {
 });
 
 export const skillIntelligenceContract = {
-  version: 2, timeoutMs: 30000, errors,
-  operations: Object.entries(schemas).map(([name, {parameters, data}]) => ({name, parameters, timeoutMs: name === 'discover' ? 60000 : 30000,
+  version: 3, timeoutMs: 30000, errors,
+  operations: Object.entries(schemas).map(([name, {parameters, data}]) => ({name, parameters,
+    timeoutMs: name === 'propose' ? 180000 : name === 'discover' ? 60000 : 30000,
     idempotent: name !== 'propose', authorization: '宿主冻结允许的引用和来源，不授予写入权限。',
     returns: resultSchema(object({provider: text(80), version: text(80), fallback: {anyOf: [{enum: [null]}, {enum: Object.keys(errors)}]}, result: data}))})),
   authorization: '宿主绑定冻结快照和授权来源。引擎输出仅为建议。外部发现只接收获准公开的标签，候选草案不得写入正式库。',
 };
 
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const key = ({id, version}) => JSON.stringify([id, version]);
+const key = ref => ref ? JSON.stringify([ref.id, ref.version]) : null;
 const sourceAllowed = source => {
   try { const url = new URL(source); return url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash; }
   catch { return false; }
@@ -62,8 +65,10 @@ export async function invokeSkillIntelligence({name, input, provider, fallback, 
   const invocationId = randomUUID();
   if (!Object.hasOwn(schemas, name) || validate(schema.parameters, input).length) return failure(errors, 'INVALID_CONTRACT');
   if (name === 'discover' && !input.allowedSources.every(sourceAllowed)) return failure(errors, 'SOURCE_NOT_ALLOWED');
+  if (name === 'propose' && ((input.parent === null) !== (input.parentSha256 === null) ||
+      input.parent === null && input.operator !== 'distill')) return failure(errors, 'INVALID_CONTRACT');
   if (name === 'plan' && (!input.candidates.every(known) || !linked(input.relations)) ||
-      name === 'propose' && !known(input.parent)) return failure(errors, 'UNKNOWN_REFERENCE');
+      name === 'propose' && input.parent && !known(input.parent)) return failure(errors, 'UNKNOWN_REFERENCE');
 
   async function attempt(engine) {
     const started = performance.now();

@@ -1030,7 +1030,8 @@ function appendEvent(list, {seq, type, payload}) {
     budget_denied: () => payload.message,
     budget_finished: () => `本轮用量 · 模型 ${payload.modelCalls} 次（供应商重试 ${payload.retries} 次）· 工具 ${payload.toolCalls} 次${payload.unknownModelUsage ? ` · ${payload.unknownModelUsage} 次用量未知` : ''}`,
     skill_engine_fallback: () => `技能检索回退 · ${payload.reason}`,
-    skill_engine_details: () => payload.encoder ? `SkillNet · ${payload.encoder.kind}${payload.encoder.degraded ? ' · 词法回退' : ''}` : `SkillNet 公开来源 · ${payload.state ?? '已检查'}`,
+    skill_engine_details: () => payload.encoder ? `SkillNet · ${payload.encoder.kind}${payload.encoder.degraded ? ' · 词法回退' : ''}` :
+      `SkillNet ${payload.operation === 'propose' ? '候选' : '公开来源'} · ${payload.state ?? '已检查'}`,
     skill_retrieval: () => `检索引擎 · ${payload.provider} · ${payload.candidates.length} 项候选`,
     audit_model: () => `正在规划 · ${payload.stage === 'steps' ? '可选步骤' : payload.stage === 'mapping' ? '字段映射' : `第 ${payload.call} 次`}`,
     audit_plan: () => `计划已生成 · ${payload.steps.length} 个步骤`,

@@ -18,10 +18,16 @@ export function drawExperiences(container,items,{work,api,url,body,onCandidate,o
     select.append(new Option(targets.length?'请选择实际参与的技能':'提炼为新技能',''));
     for(const skill of targets)select.append(new Option(skill.name+' · v'+skill.version,skill.id));
     if(targets.length===1)select.value=targets[0].id;
+    const method=node('select');
+    method.setAttribute('aria-label','候选生成方式');
+    method.append(new Option('技能工坊生成',''),new Option('SkillNet 蒸馏为新技能','distill'));
+    if(targets.length)method.append(new Option('SkillNet 变异现有技能','mutate'));
+    method.onchange=()=>{select.hidden=method.value==='distill';};
     const feedback=node('textarea');feedback.rows=2;feedback.maxLength=4000;feedback.placeholder='补充改进目标（可选）';feedback.setAttribute('aria-label','补充改进目标');
     const actions=node('div','','actions');
     const generate=button('从线索生成候选',()=>void work('正在根据来源生成隔离候选…',async isCurrent=>{
-      const proposal=await api(url+'/'+item.id+'/propose',{...body(),...(select.value?{skillId:select.value}:{}),feedback:feedback.value});
+      const proposal=await api(url+'/'+item.id+'/propose',{...body(),
+        ...(method.value?{operator:method.value}:{}),...(select.value&&method.value!=='distill'?{skillId:select.value}:{}),feedback:feedback.value});
       const candidate=await api(url.replace('/experiences','/candidates')+'/'+proposal.candidateId+'?'+new URLSearchParams(Object.entries(body()).filter(([,v])=>v!=null).map(([k,v])=>[k==='taskId'?'task':k==='projectId'?'project':k,v])));
       if(isCurrent())onCandidate(candidate,proposal);
     }));generate.className='primary-action';generate.disabled=item.state==='dismissed';
@@ -29,7 +35,7 @@ export function drawExperiences(container,items,{work,api,url,body,onCandidate,o
       const updated=await api(url+'/'+item.id+'/state',{...body(),state:item.state==='dismissed'?'open':'dismissed'});
       if(isCurrent()){items[items.indexOf(item)]=updated;drawExperiences(container,items,{work,api,url,body,onCandidate,onSource,onRegression});}
     }));actions.append(generate,toggle);
-    card.append(select,feedback,actions,node('p','保留原技能名、适用条件和验收条件；生成后进入候选验证，不会自动启用。','status'));
+    card.append(method,select,feedback,actions,node('p','SkillNet 需在设置中启用。变异保留原技能名、适用条件和验收条件。候选需独立验证和审核。','status'));
     if (item.state === 'open' && item.signals.some(signal => signal.code !== 'USER_CORRECTION')) {
       const picker = node('div', '', 'actions');
       const candidateBase = url.replace('/experiences', '/candidates');
@@ -70,6 +76,10 @@ export function drawExperiences(container,items,{work,api,url,body,onCandidate,o
 
 export function drawExperienceChanges(container,proposal){
   const details=node('details');details.open=true;details.append(node('summary','这份候选为什么产生'),node('p',proposal.limitation,'status'));
+  if(proposal.evolution){
+    const source=proposal.evolution;
+    details.append(node('p','SkillNet '+(source.operator==='distill'?'蒸馏':'变异')+' · '+source.version+' · 运行 '+source.runId,'status'));
+  }
   for(const change of proposal.changes){
     const section=node('details');section.append(node('summary',change.field+' · 查看修改前后'),
       node('p','原版本','status'),node('pre',typeof change.before==='string'?change.before:JSON.stringify(change.before,null,2)),

@@ -11,6 +11,17 @@ if (!sourcePath) throw new Error('用法：node scripts/check-skillnet.mjs <Skil
 const root = await mkdtemp(join(tmpdir(), 'sih-skillnet-live-'));
 const requests = [];
 let currentTask;
+let rejectProposal = false;
+let onStalledProposal;
+const proposalDraft = {
+  name: 'verified-evidence-check', description: '项目资料证据核对与异常处理', domain: '项目核验',
+  tags: ['证据', '核验'], capability: '生成可复核的输入核验结果',
+  inputs: ['待核验资料'], outputs: ['含引用的核验结果'], use_when: ['需要核验资料时'],
+  steps: ['读取指定项目资料', '区分缺失材料和内容不符', '按证据逐项记录核验结果'],
+  pitfalls: ['缺失材料需要标为待核对'], verification: ['逐项核对结果中的引用'],
+  tests: [{prompt: '核验样例甲的温度记录', expected_output: '有效引用', expectations: ['包含：有效引用']},
+    {prompt: '核验样例乙的缺失说明', expected_output: '待核对', expectations: ['包含：待核对']}],
+};
 const provider = createServer(async (req, res) => {
   let raw = '';
   for await (const chunk of req) raw += chunk;
@@ -20,7 +31,13 @@ const provider = createServer(async (req, res) => {
   const receiptMatch = /服务端工具回执索引：(.*)/.exec(input.messages[0].content);
   const receipts = receiptMatch ? JSON.parse(receiptMatch[1]) : [];
   const call = (name, args) => ({tool_calls: [{id: name, type: 'function', function: {name, arguments: JSON.stringify(args)}}]});
-  const message = last.role !== 'tool' ? call('read_file', {path: 'input.txt'}) :
+  const evolution = input.messages[0].content.startsWith('只生成候选草稿。');
+  if (evolution && onStalledProposal) {
+    onStalledProposal();
+    return;
+  }
+  const message = evolution ? {content: JSON.stringify(rejectProposal ? {...proposalDraft, steps: []} : proposalDraft)} :
+    last.role !== 'tool' ? call('read_file', {path: 'input.txt'}) :
     JSON.parse(last.content).data?.file && receipts.length ? call('finish_skill', {skill_id: receipts.at(-1).skillId, status: 'applied',
       summary: '已读取真实项目输入', evidence: [receipts.at(-1).seq]}) : {content: '已读取输入并保留证据。'};
   res.setHeader('content-type', 'application/json');
@@ -54,6 +71,7 @@ try {
   const task = currentTask = await api('/api/tasks', {project_id: project.id});
   const {skill} = await api('/api/skill-studio/publish', {taskId: task.id, baseVersion: 0, draft: {
     name: '项目输入证据核对', description: '核对项目文件，读取输入文件并给出真实证据', instructions: '读取 input.txt 并保留回执。', tests: [],
+    applicability: {version: 1, goals: [], exclusions: [], input_formats: [], project_files: ['input.txt'], tools: ['read_file']},
   }});
   async function run(request, explicit) {
     const started = await api('/api/tasks/' + task.id + '/runs', {request, prompt: '使用项目输入证据核对，核对项目输入文件并给出证据',
@@ -72,7 +90,7 @@ try {
   report.routed = {runId: routed.started.id, engine: routed.events.find(event => event.type === 'skill_engine_details').payload,
     budget: (await api('/api/runs/' + routed.started.id + '/budget')).data, actualFileRead: true};
   const callsBeforeStop = requests.length;
-  const cancelled = await api('/api/tasks/' + task.id + '/runs', {request: 'cancel-engine', prompt: '核对项目文件'});
+  const cancelled = await api('/api/tasks/' + task.id + '/runs', {request: 'cancel-engine', prompt: '不对，核对项目文件时要区分缺失和内容不符'});
   const response = await fetch(base + '/api/runs/' + cancelled.id + '/events');
   const reader = response.body.getReader();
   let received = '';
@@ -86,6 +104,54 @@ try {
   assert.equal(requests.length, callsBeforeStop);
   await reader.cancel();
   report.cancellation = {status: stopped.status, additionalModelRequests: requests.length - callsBeforeStop};
+  const studio = '/api/skill-studio';
+  const scope = '?task=' + task.id;
+  const {experiences: [experience]} = await api(studio + '/experiences' + scope + '&run=' + routed.started.id);
+  assert.ok(experience.signals.some(signal => signal.code === 'USER_CORRECTION'));
+  assert.ok(experience.skills.some(item => item.id === skill.id));
+  const proposePath = studio + '/experiences/' + experience.id + '/propose';
+  const evolutionChecks = [];
+  async function rejected(path, body, status, pattern) {
+    const response = await fetch(base + path, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+    assert.equal(response.status, status);
+    assert.match((await response.json()).error, pattern);
+  }
+  for (const operator of ['distill', 'mutate']) {
+    const request = {taskId: task.id, operator, ...(operator === 'mutate' ? {skillId: skill.id} : {})};
+    const calls = requests.length;
+    const proposal = await api(proposePath, request);
+    const candidatePath = studio + '/candidates/' + proposal.candidateId;
+    const candidate = await api(candidatePath + scope);
+    assert.equal(candidate.requiresExecution, true);
+    assert.equal(candidate.baseVersion, operator === 'distill' ? 0 : 1);
+    assert.equal(candidate.skillId, operator === 'distill' ? null : skill.id);
+    assert.ok(candidate.experienceProposals.some(item => item.id === proposal.id));
+    if (operator === 'mutate') assert.deepEqual(candidate.draft.applicability, skill.applicability);
+    await rejected(candidatePath + '/promote', {taskId: task.id, confirmed: true}, 409, /实际任务对照/);
+    const reused = await api(proposePath, request);
+    assert.equal(reused.candidateId, proposal.candidateId);
+    assert.equal(reused.cached, true);
+    assert.equal(requests.length - calls, 1);
+    const {data: budget} = await api('/api/runs/' + proposal.evolution.runId + '/budget');
+    assert.equal(budget.engineCalls, 1);
+    assert.equal(budget.modelCalls, 1);
+    evolutionChecks.push({operator, provenance: proposal.evolution, cached: reused.cached, blockedUnverifiedPublication: true, budget});
+  }
+  rejectProposal = true;
+  await rejected(proposePath, {taskId: task.id, operator: 'distill', feedback: '测试不完整候选'}, 502, /未返回通过算子检查/);
+  const beforeStop = new Set((await api('/api/tasks')).map(task => task.id));
+  const reachedModel = new Promise(resolve => { onStalledProposal = resolve; });
+  const pending = rejected(proposePath, {taskId: task.id, operator: 'distill', feedback: '测试停止'}, 409, /候选生成已停止/);
+  await Promise.race([reachedModel, pending.then(() => assert.fail('候选应先调用模型'))]);
+  const jobTask = (await api('/api/tasks')).find(task => !beforeStop.has(task.id));
+  const {runs: [jobRun]} = await api('/api/tasks/' + jobTask.id);
+  assert.equal((await api('/api/runs/' + jobRun.id + '/stop', {})).status, 'stopped');
+  await pending;
+  onStalledProposal = null;
+  assert.equal((await api(studio + '/candidates' + scope)).candidates.length, 2);
+  assert.equal((await api(studio + scope)).skills.find(item => item.id === skill.id).version, 1);
+  assert.equal((await api('/api/tasks/' + task.id)).runs.length, 2);
+  report.evolution = {cases: evolutionChecks, rejectedInvalidDraft: true, cancelledDuringModel: true, formalVersion: 1};
   if (process.env.SIH_GITHUB_TOKEN) {
     const preview = await api('/api/skill-intelligence/discover', {taskId: task.id, request: 'public-source', confirmed: true,
       tags: ['software testing'], sources: ['https://github.com/github/awesome-copilot/blob/main/skills/acquire-codebase-knowledge/SKILL.md']});
@@ -106,9 +172,9 @@ try {
   report.fixtureModelRequests = requests.length;
   const output = resolve('.skillinter/evaluation');
   await mkdir(output, {recursive: true});
-  await writeFile(join(output, 'phase-c-live.json'), JSON.stringify(report, null, 2));
+  await writeFile(join(output, 'phase-d-live.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({passed: true, engine: report.connection.encoder.kind,
-    discovery: report.discovery, report: join(output, 'phase-c-live.json')}));
+    discovery: report.discovery, evolution: evolutionChecks.map(item => item.operator), report: join(output, 'phase-d-live.json')}));
 } catch (error) {
   if (currentTask) {
     const task = await api('/api/tasks/' + currentTask.id);
@@ -121,6 +187,6 @@ try {
   throw error;
 } finally {
   await app.close();
-  await new Promise(resolve => provider.close(resolve));
+  await new Promise(resolve => { provider.close(resolve); provider.closeAllConnections(); });
   await rm(root, {recursive: true, force: true});
 }

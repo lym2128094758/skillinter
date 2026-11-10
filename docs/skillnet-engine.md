@@ -1,4 +1,4 @@
-# SkillNet 检索与公开来源
+# SkillNet 检索、公开来源与候选生成
 
 SIH 通过受管 Python 子进程调用用户配置的 SkillNet checkout 中的原始 `Retriever`、`SkillLibrary`、`Skill` 和 `skill_discovery`。Python 每次处理一个有界请求，退出后由宿主回收。传输为本机 JSON 行协议。依赖关系、权限、正式技能库和发布由 SIH 管理。
 
@@ -16,7 +16,7 @@ SIH 通过受管 Python 子进程调用用户配置的 SkillNet checkout 中的�
 
 ## 隔离、回退和用量
 
-宿主不向引擎传送模型密钥、原始项目文件和技能全文。原 SkillNet 的应用配置在适配进程中被宿主配置替代，跳过其 .env 和正式技能库加载。LLM 重排关闭，因此当前检索不增加模型请求。稠密编码器缺失时保留真实的 `lexical-hashing` 标志和失败原因。缓存放在 SIH 状态目录内。
+宿主不向引擎传送模型密钥或原始项目文件。检索只使用技能卡，显式发起变异时才读取被冻结的原技能正文。原 SkillNet 的应用配置在适配进程中被宿主配置替代，跳过其 .env 和正式技能库加载。LLM 重排关闭，因此当前检索不增加模型请求。稠密编码器缺失时保留真实的 `lexical-hashing` 标志和失败原因。缓存放在 SIH 状态目录内。
 
 公开来源的网络请求由 SIH 限制到用户授权仓库的 `https://api.github.com` 元数据、提交、许可和 SKILL.md 接口。拒绝重定向，每份响应最多 256 KiB，单次发现最多 8 个请求。SkillNet 原有逻辑继续核对 Git blob SHA、固定提交、MIT 等允许的许可及正文内容。可通过宿主环境变量 `SIH_GITHUB_TOKEN` 提高 GitHub API 限额。凭据只进入固定 GitHub API 请求头，不传给 Python、不保存到引擎设置、不显示到回执中。
 
@@ -35,8 +35,16 @@ SIH 通过受管 Python 子进程调用用户配置的 SkillNet checkout 中的�
 
 接口仍执行同源和本机访问检查。检索与发现不将外部建议转成新权限。原 SkillNet 的 compose_with 不作为先后顺序，实际硬依赖仍以阶段 A 的冻结关系为准。
 
+## 经验蒸馏与变异
+
+在「技能中心 → 经验」查看来源，再选择「SkillNet 蒸馏为新技能」或「SkillNet 变异现有技能」。蒸馏以脱敏后的目标和线索为输入。变异限同一作用范围内实际参与的技能，核对原运行快照的 UUID、版本和正文指纹，保留原技能名、适用条件与产物验收。当前会话选定的模型处理这些摘录和原技能正文。
+
+Python 调用原版 `SkillEvolver.distill` 或 `SkillEvolver.mutate`。原算子的准入检查在候选模式运行，SIH 接收候选并负责持久化。变异允许草案与原方法高度相似。生成的关系和质量评级不进入正式关系或路由。每次提案有独立运行记录，限 180 秒、1 次逻辑模型请求、最多 3 次 HTTP 尝试，每次输出上限 3500 tokens。停止会取消引擎和模型请求。
+
+候选记录来源、算子、引擎源码指纹和版本、冻结快照、原技能指纹和字段差异。生成的两个文本样例是试跑建议。发布前还需在「实际任务对照」中使用独立材料冻结验收、证明改进并人工确认。候选修订沿用这一发布条件。
+
 ## 验收
 
 `npm test` 包括共享预算、引用越界、取消、快照以及引擎选中 UUID 后按依赖真实读取文件的检查。公开来源测试验证预览隔离、项目范围、确认导入及来源记录。
 
-`node scripts/check-skillnet.mjs <SkillNet目录> <Python程序>` 使用原模块与本地 HTTP 模型夹具，记录实际检索、回退、真实文件回执和编码器。提供宿主 `SIH_GITHUB_TOKEN` 时，还会实际读取公开 GitHub 来源，固定提交及许可，确认导入后验证下一轮技能采用。报告保存到 `.skillinter/evaluation/phase-c-live.json`。此脚本证明连接、约束与执行接线，模型夹具的输出不用于任务质量评分。
+`node scripts/check-skillnet.mjs <SkillNet目录> <Python程序>` 使用原模块与本地 HTTP 模型夹具，检查检索、回退、文件回执、蒸馏和变异，并验证无证据的候选无法发布。提供宿主 `SIH_GITHUB_TOKEN` 时，还会实际读取公开 GitHub 来源，固定提交及许可，确认导入后验证下一轮技能采用。报告保存到 `.skillinter/evaluation/phase-d-live.json`。模型夹具用于验证链路，技能收益由独立任务对照评估。

@@ -1122,7 +1122,7 @@
     }
   },
   "skillIntelligence": {
-    "version": 2,
+    "version": 3,
     "timeoutMs": 30000,
     "errors": {
       "ENGINE_UNAVAILABLE": "技能引擎不可用。",
@@ -1133,7 +1133,8 @@
       "UNKNOWN_REFERENCE": "技能引擎引用了本轮不可用的技能。",
       "BUDGET_EXHAUSTED": "根任务额度不足，技能引擎未能完成。",
       "SOURCE_NOT_ALLOWED": "技能来源未获授权或不能固定版本。",
-      "PROVIDER_ERROR": "技能引擎调用失败。"
+      "PROVIDER_ERROR": "技能引擎调用失败。",
+      "PROPOSAL_REJECTED": "SkillNet 未返回通过算子检查的候选，请缩小改进范围或补充依据。"
     },
     "operations": [
       {
@@ -1214,7 +1215,8 @@
                             "UNKNOWN_REFERENCE",
                             "BUDGET_EXHAUSTED",
                             "SOURCE_NOT_ALLOWED",
-                            "PROVIDER_ERROR"
+                            "PROVIDER_ERROR",
+                            "PROPOSAL_REJECTED"
                           ]
                         }
                       ]
@@ -1526,7 +1528,8 @@
                             "UNKNOWN_REFERENCE",
                             "BUDGET_EXHAUSTED",
                             "SOURCE_NOT_ALLOWED",
-                            "PROVIDER_ERROR"
+                            "PROVIDER_ERROR",
+                            "PROPOSAL_REJECTED"
                           ]
                         }
                       ]
@@ -1785,7 +1788,8 @@
                             "UNKNOWN_REFERENCE",
                             "BUDGET_EXHAUSTED",
                             "SOURCE_NOT_ALLOWED",
-                            "PROVIDER_ERROR"
+                            "PROVIDER_ERROR",
+                            "PROPOSAL_REJECTED"
                           ]
                         }
                       ]
@@ -1950,28 +1954,46 @@
               "pattern": "^[a-f0-9]{64}$"
             },
             "parent": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 180
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 180
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "version"
+                  ],
+                  "additionalProperties": false
                 },
-                "version": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 80
+                {
+                  "enum": [
+                    null
+                  ]
                 }
-              },
-              "required": [
-                "id",
-                "version"
-              ],
-              "additionalProperties": false
+              ]
             },
             "parentSha256": {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "enum": [
+                    null
+                  ]
+                }
+              ]
             },
             "evidenceSeqs": {
               "type": "array",
@@ -2005,7 +2027,7 @@
           ],
           "additionalProperties": false
         },
-        "timeoutMs": 30000,
+        "timeoutMs": 180000,
         "idempotent": false,
         "authorization": "宿主冻结允许的引用和来源，不授予写入权限。",
         "returns": {
@@ -2048,7 +2070,8 @@
                             "UNKNOWN_REFERENCE",
                             "BUDGET_EXHAUSTED",
                             "SOURCE_NOT_ALLOWED",
-                            "PROVIDER_ERROR"
+                            "PROVIDER_ERROR",
+                            "PROPOSAL_REJECTED"
                           ]
                         }
                       ]
@@ -2061,28 +2084,46 @@
                           "pattern": "^[a-f0-9]{64}$"
                         },
                         "parent": {
-                          "type": "object",
-                          "properties": {
-                            "id": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 180
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 180
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "version"
+                              ],
+                              "additionalProperties": false
                             },
-                            "version": {
-                              "type": "string",
-                              "minLength": 1,
-                              "maxLength": 80
+                            {
+                              "enum": [
+                                null
+                              ]
                             }
-                          },
-                          "required": [
-                            "id",
-                            "version"
-                          ],
-                          "additionalProperties": false
+                          ]
                         },
                         "parentSha256": {
-                          "type": "string",
-                          "pattern": "^[a-f0-9]{64}$"
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            {
+                              "enum": [
+                                null
+                              ]
+                            }
+                          ]
                         },
                         "draft": {
                           "type": "string",

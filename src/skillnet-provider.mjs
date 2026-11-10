@@ -22,12 +22,12 @@ export function createSkillnetConnection({store, state, env = {}}) {
         !['auto', 'dense', 'lexical'].includes(body.encoder)) throw new RequestError(422, '请填写有效的 SkillNet 源码目录、Python 和编码器配置。');
     return Object.fromEntries([...fields].map(key => [key, body[key]]));
   }
-  function provider(value = view(), onDetails = () => {}) {
+  function provider(value = view(), onDetails = () => {}, evolution) {
     if (!value.enabled) return null;
     async function call(operation, input, {signal, allowedRefs = [], relations = []} = {}) {
       let reply;
       try {
-        reply = await runBridge({value, state, operation, input, signal, githubToken: env.SIH_GITHUB_TOKEN,
+        reply = await runBridge({value, state, operation, input, signal, githubToken: env.SIH_GITHUB_TOKEN, evolution,
           cards: allowedRefs.map(card => ({id: card.id, version: card.version, name: card.label ?? card.name ?? card.id,
             description: card.description ?? '', domain: card.domain ?? ''})), relations});
       } catch (error) {
@@ -35,6 +35,9 @@ export function createSkillnetConnection({store, state, env = {}}) {
         throw error;
       }
       onDetails({operation, ...reply.details});
+      if (operation === 'propose' && reply.details?.state === 'rejected') {
+        throw Object.assign(new Error('SkillNet 候选未通过检查。'), {code: 'PROPOSAL_REJECTED'});
+      }
       if (operation === 'discover' && ['unavailable', 'disabled'].includes(reply.details?.state)) {
         throw Object.assign(new Error('公开来源暂不可用，失败原因已记录。'), {code: 'ENGINE_UNAVAILABLE'});
       }
@@ -42,6 +45,7 @@ export function createSkillnetConnection({store, state, env = {}}) {
     }
     return {id: 'skillnet-local', search: (input, options) => call('search', input, options),
       discover: (input, options) => call('discover', input, options),
+      ...(evolution ? {propose: (input, options) => call('propose', input, options)} : {}),
       probe: signal => call('probe', {}, {signal})};
   }
   return {view, provider,
@@ -62,7 +66,7 @@ export function createSkillnetConnection({store, state, env = {}}) {
     }};
 }
 
-async function runBridge({value, state, operation, input, cards, relations, signal, githubToken}) {
+async function runBridge({value, state, operation, input, cards, relations, signal, githubToken, evolution}) {
   signal.throwIfAborted();
   const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
     /^(path|systemroot|windir|temp|tmp|userprofile|appdata|localappdata)$/i.test(key)));
@@ -71,8 +75,9 @@ async function runBridge({value, state, operation, input, cards, relations, sign
     const child = spawn(value.python, ['-I', bridge, value.sourcePath, join(state, 'skillnet-cache')], {
       env: environment, windowsHide: true, signal, stdio: ['pipe', 'pipe', 'ignore'],
     });
-    let pending = '', size = 0, failed = false, result, githubCalls = 0;
+    let pending = '', size = 0, failed = false, result, githubCalls = 0, modelRequested = false;
     const fail = (reason = 'process-failed') => {
+      if (failed) return;
       failed = true;
       child.kill();
       reject(Object.assign(new Error('SkillNet 进程未完成，请检查 Python、依赖和源码目录。'), {
@@ -90,12 +95,29 @@ async function runBridge({value, state, operation, input, cards, relations, sign
       for (const line of lines) {
         let frame;
         try { frame = JSON.parse(line); } catch { fail(); return; }
+        if (!frame || typeof frame !== 'object') { fail(); return; }
         if (typeof frame.error === 'string' && /^[A-Za-z]+Error$/.test(frame.error)) { fail(frame.error); return; }
         if (frame.kind === 'result' && !result) result = frame.reply;
         else if (frame.kind === 'github' && operation === 'discover' && ++githubCalls <= 8) {
           void fetchGithub(frame, input.allowedSources, signal, githubToken).then(response => {
             if (!failed && !child.stdin.destroyed) child.stdin.write(JSON.stringify(response) + '\n');
           }).catch(() => { if (!failed && !child.stdin.destroyed) child.stdin.write('{"status":null}\n'); });
+        } else if (frame.kind === 'proposal-model' && operation === 'propose' && !modelRequested && !result &&
+          typeof frame.prompt === 'string' && frame.prompt.length <= 40000) {
+          modelRequested = true;
+          void Promise.resolve().then(() => {
+            signal.throwIfAborted();
+            return evolution.invoke(frame.prompt, signal);
+          }).then(content => {
+            if (!failed && !signal.aborted && !child.stdin.destroyed) child.stdin.write(JSON.stringify({content}) + '\n');
+          }).catch(error => {
+            if (failed) return;
+            if (['BUDGET_EXHAUSTED', 'PROPOSAL_REJECTED'].includes(error.code)) {
+              failed = true;
+              child.kill();
+              reject(error);
+            } else fail('proposal-model-failed');
+          });
         } else { fail(); return; }
       }
     });
@@ -105,7 +127,8 @@ async function runBridge({value, state, operation, input, cards, relations, sign
       if (!result) { fail(); return; }
       resolve(result);
     });
-    const payload = JSON.stringify({operation, input, cards, relations, encoder: value.encoder});
+    const payload = JSON.stringify({operation, input, cards, relations, encoder: value.encoder,
+      ...(operation === 'propose' ? {evidence: evolution.evidence, baseline: evolution.baseline} : {})});
     if (Buffer.byteLength(payload) > 4_000_000) { fail(); return; }
     child.stdin.write(payload + '\n');
   });
