@@ -132,7 +132,7 @@ function locateRead(workspace, scope, path) {
 }
 
 async function list(workspace, args, signal, scope) {
-  const {root, target} = await locateRead(workspace, scope, args.path ?? '.');
+  const {root, target, state} = await locateRead(workspace, scope, args.path ?? '.');
   const external = scope && scope.mode !== 'attachments' && !args.path?.startsWith('attachment:');
   const resultRoot = external && scope.mode === 'full' ? null : root;
   if (!(await fs.lstat(target)).isDirectory()) fail('NOT_DIRECTORY');
@@ -153,7 +153,7 @@ async function list(workspace, args, signal, scope) {
       if (!args.include_hidden && name.startsWith('.')) continue;
       if (visited++ >= limits.visited) { truncated = true; break; }
       const path = resolve(current.path, name);
-      if (external && protectedPath(scope, path)) continue;
+      if (external && protectedPath({...scope, state}, path)) continue;
       const stat = await fs.lstat(path);
       if (stat.isDirectory() && current.depth + 1 < depthLimit) queue.push({path, depth: current.depth + 1});
       const nameInQuery = slash(relative(target, path));

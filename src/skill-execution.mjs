@@ -1,7 +1,7 @@
 import {randomUUID, createHash} from 'node:crypto';
 import {constants, readFileSync} from 'node:fs';
-import {mkdtemp, mkdir, writeFile, readdir, open, lstat, realpath, rm} from 'node:fs/promises';
-import {join, dirname, resolve, relative, parse} from 'node:path';
+import {mkdtemp, mkdir, writeFile, readdir, open, rm} from 'node:fs/promises';
+import {join, dirname, resolve, relative} from 'node:path';
 import {tmpdir} from 'node:os';
 import {RequestError, Store} from './store.mjs';
 import {validate, object, string} from './schema.mjs';
@@ -9,6 +9,7 @@ import {deliverySchema, validDelivery, freezeDelivery, verifyDelivery} from './s
 import {preflightSnapshot} from './tools.mjs';
 import {skillMarkdown} from './skill-files.mjs';
 import {parseSkillFile} from './skill-import.mjs';
+import {checkedLocalPath, inside} from './file-scope.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const digest = value => hash(JSON.stringify(value));
@@ -37,31 +38,38 @@ const canonical = skill => ({name:skill.name,description:skill.description,instr
 // Freeze only the registered skill package. Never copy a user's project tree.
 export async function packageSnapshot(skill) {
   if(!skill?.storagePath)return [];
-  const root=dirname(skill.storagePath),files=[];let total=0,visited=0;
-  async function checked(path) {
-    let current=parse(path).root;
-    for(const part of relative(current,path).split(/[\\/]/).filter(Boolean)) {
-      current=join(current,part);const stat=await lstat(current);
-      if(stat.isSymbolicLink()||stat.isFile()&&stat.nlink>1)throw new RequestError(422,'技能包含链接，不能冻结为执行对照。');
+  async function checked(path, root) {
+    try {
+      const {physical, stat} = await checkedLocalPath(path);
+      if (root && !inside(root, physical) || stat.isFile() && stat.nlink > 1) {
+        throw new RequestError(422, '技能包含链接，不能冻结为执行对照。');
+      }
+      return {physical, stat};
+    } catch (error) {
+      if (error.contractCode === 'SYMLINK_NOT_ALLOWED') throw new RequestError(422, '技能包含链接，不能冻结为执行对照。');
+      throw error;
     }
-    if(resolve(await realpath(path)).toLowerCase()!==resolve(path).toLowerCase())throw new RequestError(422,'技能包路径变化，请重新读取。');
   }
+  const {physical: root} = await checked(dirname(skill.storagePath));
+  const files = [];
+  let total = 0, visited = 0;
   async function walk(directory,depth=0) {
     if(depth>6||++visited>150)throw new RequestError(422,'技能包超出冻结范围，请使用较小的自包含方法。');
-    await checked(directory);
+    await checked(directory, root);
     for(const entry of (await readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))) {
       if(entry.name.startsWith('.')||['node_modules','__pycache__'].includes(entry.name))continue;
-      const path=join(directory,entry.name);await checked(path);
+      const path=join(directory,entry.name);
+      const {physical} = await checked(path, root);
       if(entry.isDirectory()){await walk(path,depth+1);continue;}
       if(!entry.isFile())throw new RequestError(422,'技能包含非普通文件，不能用于执行对照。');
       const relativePath=relative(root,path).replaceAll('\\','/');
       if(!pathOK(relativePath))throw new RequestError(422,'技能资源路径无效。');
-      const handle=await open(path,constants.O_RDONLY|(constants.O_NOFOLLOW??0));
+      const handle=await open(physical,constants.O_RDONLY|(constants.O_NOFOLLOW??0));
       try {
         const before=await handle.stat();if(!before.isFile()||before.size>256000||before.nlink>1)throw new RequestError(422,'单个技能资源超过 256 KB、不是普通文件或为链接。');
         const buffer=Buffer.alloc(before.size+1);let length=0;
         while(length<buffer.length){const result=await handle.read(buffer,length,buffer.length-length,length);if(!result.bytesRead)break;length+=result.bytesRead;}
-        const after=await handle.stat();await checked(path);const current=await lstat(path);
+        const after=await handle.stat();const {stat: current}=await checked(path, root);
         if(length!==before.size||before.size!==after.size||before.mtimeMs!==after.mtimeMs||before.ino!==after.ino||current.ino!==after.ino||current.mtimeMs!==after.mtimeMs)throw new RequestError(409,'技能资源在冻结期间变化，请重试。');
         const bytes=buffer.subarray(0,length);total+=length;
         if(total>1024*1024||files.length>=64)throw new RequestError(422,'技能资源总量超过 1 MiB 或 64 项，请缩小技能包。');

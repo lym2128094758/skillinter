@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { createApp } from './src/server.mjs';
 import { executeTool } from './src/tools.mjs';
+import { projectDirectory } from './src/file-scope.mjs';
 
 const call = (name, args) => ({type: 'function', id: name, function: {name, arguments: JSON.stringify(args)}});
 
@@ -35,6 +36,18 @@ test('file tools enforce project boundaries and change only the requested UTF-8 
   assert.equal((await execute('read_file', {path: 'link/outside.txt'})).error.code, 'SYMLINK_NOT_ALLOWED');
   assert.equal((await execute('create_file', {path: 'link/new.txt', content: 'bad'})).error.code, 'SYMLINK_NOT_ALLOWED');
   assert.equal((await execute('read_file', {path: join(state, 'private.txt')}, 'full')).error.code, 'PROTECTED_PATH');
+  const physicalProject = await realpath(project);
+  const physicalState = await realpath(state);
+  assert.equal(await projectDirectory(project, state), physicalProject);
+  await assert.rejects(projectDirectory(join(project, 'link'), state), {contractCode: 'SYMLINK_NOT_ALLOWED'});
+  await assert.rejects(projectDirectory(physicalState, state), {contractCode: 'PROTECTED_PATH'});
+  assert.equal((await execute('read_file', {path: join(physicalState, 'private.txt')}, 'full')).error.code, 'PROTECTED_PATH');
+  const listing = await execute('list_workspace', {path: dir, include_hidden: true}, 'full');
+  assert.equal(listing.ok, true);
+  assert.ok(!listing.data.entries.some(entry => entry.path.endsWith('/private')));
+  const physicalScope = {...scope, projectPath: physicalProject};
+  assert.equal((await executeTool(call('read_file', {path: join(project, 'note.txt')}), state, undefined, physicalScope)).ok, true);
+  assert.equal((await execute('read_file', {path: join(physicalProject, 'note.txt')})).ok, true);
   assert.equal((await execute('create_file', {path: 'note.txt', content: 'bad'}, 'project_read')).error.code, 'WRITE_NOT_ALLOWED');
   assert.equal((await execute('create_file', {path: 'note.txt', content: 'bad'})).error.code, 'FILE_EXISTS');
   const {data: {file}} = await execute('read_file', {path: join(project, 'note.txt')});

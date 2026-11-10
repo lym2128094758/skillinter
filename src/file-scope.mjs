@@ -1,9 +1,10 @@
 import { lstat, realpath } from 'node:fs/promises';
-import { dirname, isAbsolute, parse, relative, resolve, sep } from 'node:path';
+import { realpathSync } from 'node:fs';
+import { basename, dirname, isAbsolute, parse, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const windows = process.platform === 'win32';
-const appDirectory = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const appDirectory = realpathSync(fileURLToPath(new URL('..', import.meta.url)));
 const appState = resolve(appDirectory, '.skillinter');
 const appEnv = resolve(appDirectory, '.env');
 const runtimeDirs = ['src', 'web'].map(name => resolve(appDirectory, name));
@@ -11,6 +12,7 @@ const runtimeFiles = ['start.mjs', 'start.bat', 'package.json', 'config.yaml', '
 export const writableScope = mode => mode === 'project_write' || mode === 'full';
 export const isProjectScope = mode => mode === 'project_read' || mode === 'project_write';
 export const samePath = (a, b) => relative(a, b) === '';
+export const sameEntry = (a, b) => a.ino !== 0 && a.dev === b.dev && a.ino === b.ino;
 
 export function inside(root, target) {
   const rel = relative(root, target);
@@ -46,15 +48,38 @@ async function noLinks(target) {
   return stat;
 }
 
+export async function checkedLocalPath(target) {
+  const stat = await noLinks(target);
+  const physical = await realpath(target);
+  if (!samePath(physical, target)) {
+    // Windows may expand a DOS short name even when no component is a link.
+    if (!windows || !sameEntry(stat, await noLinks(physical)) || !sameEntry(stat, await noLinks(target))) {
+      reject('SYMLINK_NOT_ALLOWED');
+    }
+  }
+  return {physical, stat};
+}
+
+async function statePath(state) {
+  if (!state) return null;
+  try { return await realpath(state); }
+  catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return resolve(state);
+    throw error;
+  }
+}
+
+async function checkedProject(target, state) {
+  const {physical, stat} = await checkedLocalPath(target);
+  if (!stat.isDirectory()) reject('NOT_DIRECTORY');
+  if (protectedPath({state}, physical)) reject('PROTECTED_PATH');
+  return physical;
+}
+
 export async function projectDirectory(path, state) {
   safePath(path);
   if (!isAbsolute(path)) reject('PATH_OUTSIDE_WORKSPACE');
-  const target = resolve(path);
-  if (!(await noLinks(target)).isDirectory()) reject('NOT_DIRECTORY');
-  const physical = await realpath(target);
-  if (!samePath(physical, target)) reject('SYMLINK_NOT_ALLOWED');
-  if (inside(state, physical) || inside(appState, physical)) reject('PROTECTED_PATH');
-  return physical;
+  return checkedProject(resolve(path), await statePath(state));
 }
 
 export function protectedPath(scope, target) {
@@ -67,22 +92,28 @@ export async function scopedPath(scope, path, {create = false, write = false} = 
   if (isProjectScope(scope.mode) && !root) reject('WORKSPACE_NOT_FOUND');
   if (!root && !isAbsolute(path)) reject('ABSOLUTE_PATH_REQUIRED');
   const target = isAbsolute(path) ? resolve(path) : resolve(root, path);
-  if (isProjectScope(scope.mode) && !inside(root, target)) reject('PATH_OUTSIDE_WORKSPACE');
+  const project = isProjectScope(scope.mode);
+  const outside = project && !inside(root, target);
+  if (outside && !(windows && isAbsolute(path))) reject('PATH_OUTSIDE_WORKSPACE');
   if (protectedPath(scope, target)) reject('PROTECTED_PATH');
   if (write && !writableScope(scope.mode)) reject('WRITE_NOT_ALLOWED');
-  if (write && (runtimeDirs.some(dir => inside(dir, target)) || runtimeFiles.some(file => samePath(file, target)))) {
+
+  const state = await statePath(scope.state);
+  const physicalRoot = project ? await checkedProject(root, state) : null;
+  let entry;
+  try { entry = await checkedLocalPath(create ? dirname(target) : target); }
+  catch (error) {
+    if (outside && !inside(physicalRoot, target)) reject('PATH_OUTSIDE_WORKSPACE');
+    throw error;
+  }
+  const {physical, stat} = entry;
+  if (create && !stat.isDirectory()) reject('NOT_DIRECTORY');
+  const destination = create ? resolve(physical, basename(target)) : physical;
+  if (project && !inside(physicalRoot, destination)) reject('PATH_OUTSIDE_WORKSPACE');
+  if (protectedPath({state}, destination)) reject('PROTECTED_PATH');
+  if (write && (runtimeDirs.some(dir => inside(dir, destination)) || runtimeFiles.some(file => samePath(file, destination)))) {
     reject('RUNTIME_PATH');
   }
-
-  if (isProjectScope(scope.mode)) {
-    const current = await projectDirectory(root, scope.state ?? appState);
-    if (!samePath(current, root)) reject('PATH_OUTSIDE_WORKSPACE');
-  }
-  const checked = create ? dirname(target) : target;
-  const stat = await noLinks(checked);
-  if (create && !stat.isDirectory()) reject('NOT_DIRECTORY');
-  const physical = await realpath(checked);
-  if (!samePath(checked, physical)) reject('SYMLINK_NOT_ALLOWED');
   if (!create && stat.isFile() && stat.nlink > 1) reject('SYMLINK_NOT_ALLOWED');
-  return {root, target, stat};
+  return {root: physicalRoot ?? root, target: destination, stat, state};
 }

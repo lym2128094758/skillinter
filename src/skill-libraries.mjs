@@ -41,8 +41,7 @@ export function createSkillLibraries({studio, store, state, home = homedir()}) {
         const full = resolve(root, path);
         try {
           if ((await lstat(full)).isDirectory()) {
-            await projectDirectory(full, state);
-            result.push({agent, scope, path: full});
+            result.push({agent, scope, path: await projectDirectory(full, state)});
           }
         } catch { /* Missing or linked source roots are not discovery candidates. */ }
       }

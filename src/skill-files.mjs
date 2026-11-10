@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { dirname, join, parse, relative, resolve, sep } from 'node:path';
 import { homedir } from 'node:os';
 import { RequestError } from './store.mjs';
+import { sameEntry, samePath } from './file-scope.mjs';
 
 export const skillDigest = text => createHash('sha256').update(text).digest('hex');
 export const SKILL_MAX_BYTES = 256_000;
@@ -11,15 +12,24 @@ export const skillMarkdown = draft => '---\nname: ' + JSON.stringify(draft.name)
   (draft.applicability ? '\nsih_applicability: ' + JSON.stringify(draft.applicability) : '') +
   (draft.delivery ? '\nsih_delivery: ' + JSON.stringify(draft.delivery) : '') + '\n---\n\n' + draft.instructions + '\n';
 
-function checkPath(path) {
-  const target = resolve(path);
+function noLinks(target) {
   let current = parse(target).root;
+  let stat = lstatSync(current);
+  if (stat.isSymbolicLink()) throw new Error('链接路径不能作为技能存储位置。');
   for (const part of relative(current, target).split(sep).filter(Boolean)) {
     current = join(current, part);
-    const stat = lstatSync(current);
+    stat = lstatSync(current);
     if (stat.isSymbolicLink() || stat.isFile() && stat.nlink > 1) throw new Error('链接路径不能作为技能存储位置。');
   }
-  if (realpathSync(target).toLowerCase() !== target.toLowerCase()) throw new Error('技能路径发生变化。');
+  return stat;
+}
+
+function checkPath(path) {
+  const target = resolve(path);
+  const stat = noLinks(target);
+  const physical = realpathSync(target);
+  if (!samePath(target, physical) && (process.platform !== 'win32' ||
+      !sameEntry(stat, noLinks(physical)) || !sameEntry(stat, noLinks(target)))) throw new Error('技能路径发生变化。');
 }
 
 export function createSkillFiles({userSkillsPath = join(homedir(), '.sih', 'skills')} = {}) {

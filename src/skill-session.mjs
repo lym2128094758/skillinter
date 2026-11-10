@@ -1,6 +1,6 @@
 import { constants } from 'node:fs';
-import { lstat, open, readdir, realpath } from 'node:fs/promises';
-import { dirname, isAbsolute, join, relative, resolve, parse, sep } from 'node:path';
+import { open, readdir } from 'node:fs/promises';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 import { object, string, validate } from './schema.mjs';
 import { resultSchema, success, failure, checkResult } from './tool-contract.mjs';
@@ -8,6 +8,7 @@ import { parseSkillFile } from './skill-import.mjs';
 import { graphNodeId, relationsForSkills } from './skill-routing.mjs';
 import { applicabilityResultSchema, assessApplicability } from './skill-applicability.mjs';
 import { deliverySchema, deliveryResultSchema, freezeDelivery, verifyDelivery } from './skill-delivery.mjs';
+import { checkedLocalPath, inside } from './file-scope.mjs';
 
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const strings = {type: 'array', maxItems: 30, items: string};
@@ -86,14 +87,15 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
     if (isAbsolute(rel) || rel === '..' || rel.startsWith('..' + sep)) throw namedError('RESOURCE_OUTSIDE_PACKAGE');
     // This separate capability reads only a registered skill package, including
     // managed state/skills roots, and never changes task file permissions.
-    let current = parse(target).root, stat;
-    for (const part of relative(current, target).split(sep).filter(Boolean)) {
-      current = join(current, part); stat = await lstat(current);
-      if (stat.isSymbolicLink()) throw namedError('RESOURCE_UNSAFE');
+    try {
+      const root = await checkedLocalPath(packageScope.projectPath);
+      const {physical, stat} = await checkedLocalPath(target);
+      if (!inside(root.physical, physical) || stat.isFile() && stat.nlink > 1) throw namedError('RESOURCE_UNSAFE');
+      return {target: physical, stat};
+    } catch (error) {
+      if (error.contractCode === 'SYMLINK_NOT_ALLOWED') throw namedError('RESOURCE_UNSAFE');
+      throw error;
     }
-    const physical = await realpath(target);
-    if ((process.platform === 'win32' ? physical.toLowerCase() !== target.toLowerCase() : physical !== target) || stat.isFile() && stat.nlink > 1) throw namedError('RESOURCE_UNSAFE');
-    return {target, stat};
   }
   async function read(packageScope, path) {
     operationSignal.throwIfAborted();
