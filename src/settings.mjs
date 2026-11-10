@@ -14,7 +14,7 @@ async function dpapi(value, decrypt) {
   const script = `$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Security; $scope=[Security.Cryptography.DataProtectionScope]::CurrentUser; $bytes=[Convert]::FromBase64String([Console]::In.ReadToEnd()); [Console]::Write([Convert]::ToBase64String(${operation}))`;
   const shell = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   // Include cold PowerShell startup and assembly loading in the deadline.
-  const deadline = AbortSignal.timeout(20_000);
+  const deadline = AbortSignal.timeout(60_000);
   const result = await new Promise((resolve, reject) => {
     const child = spawn(shell, ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
       windowsHide: true, signal: deadline, stdio: ['pipe', 'pipe', 'ignore'],
