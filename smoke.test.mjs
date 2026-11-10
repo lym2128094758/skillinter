@@ -112,7 +112,9 @@ test('settings test a draft, encrypt the key, preserve origin boundaries and app
   assert.equal(received[0].path, '/v1/chat/completions');
   assert.equal(received[0].authorization, key ? `Bearer ${key}` : undefined);
   assert.equal((await (await request('/api/settings')).json()).mode, 'unconfigured');
-  const saved = await (await request('/api/settings', 'PUT', draft)).json();
+  const saveResponse = await request('/api/settings', 'PUT', draft);
+  const saved = await saveResponse.json();
+  assert.equal(saveResponse.status, 200, saved.error);
   assert.equal(saved.hasKey, Boolean(key));
   assert.equal(Object.hasOwn(saved, 'key'), false);
   assert.equal(Object.hasOwn(saved, 'secret'), false);

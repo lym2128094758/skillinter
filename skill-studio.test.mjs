@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, realpath, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { createApp } from './src/server.mjs';
 import { Store } from './src/store.mjs';
@@ -198,7 +198,7 @@ test('chat evidence becomes a project skill with isolated comparison, version hi
   const savedWithoutChat = await call(studio + '/publish', 201,
     {projectId: project.id, targetScope: 'project', baseVersion: 0, draft: independentImport.draft});
   assert.equal(savedWithoutChat.skill.projectId, project.id);
-  assert.ok(savedWithoutChat.skill.storagePath.startsWith(projectPath));
+  assert.equal(dirname(dirname(savedWithoutChat.skill.storagePath)), join(await realpath(projectPath), '.sih', 'skills'));
   assert.ok((await call(studio + '?project=' + project.id, 200)).skills.some(skill => skill.id === savedWithoutChat.skill.id));
   assert.equal((await call(studio + '/locations?project=' + project.id, 200)).project, join(projectPath, '.sih', 'skills'));
   assert.equal((await call('/api/tasks', 200)).length, taskCount);

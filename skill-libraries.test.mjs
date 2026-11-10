@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, readFile, rm, writeFile, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { test } from 'node:test';
@@ -103,7 +103,7 @@ test('stale, invalid, linked and excessive packages stay unimported; project tar
   const scan = await call(endpoint + '/scan-libraries', {projectId, targetScope: 'project', paths: [dirname(local)]});
   const imported = await call(endpoint + '/import-missing', {projectId, token: scan.token, ids: scan.candidates.map(item => item.id)});
   assert.equal(imported.imported, 1);
-  assert.ok(imported.results[0].path.startsWith(join(projectPath, '.sih', 'skills')));
+  assert.equal(dirname(dirname(imported.results[0].path)), join(await realpath(projectPath), '.sih', 'skills'));
   assert.equal((await call(endpoint)).skills.length, 0);
   assert.equal((await call(endpoint + '?project=' + projectId)).skills.length, 1);
   const globalScan = await call(endpoint + '/scan-libraries', {projectId, targetScope: 'global', paths: [dirname(local)]});

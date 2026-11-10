@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -127,7 +127,7 @@ test('answer', () => { appendFileSync('ran.log', 'run\\n'); assert.equal(answer,
   const run = await f.submit('repair', {skillId: skill.id, skillVersion: skill.version});
   const first = (await run.next('project_test_request')).payload;
   assert.match(first.command, /^node --test/);
-  assert.equal(first.cwd, f.project);
+  assert.equal(first.cwd, await realpath(f.project));
   await assert.rejects(readFile(marker), {code: 'ENOENT'});
   await run.decision('wrong-id', 'approve', 409);
   await run.decision(first.id, 'approve');

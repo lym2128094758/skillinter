@@ -13,9 +13,11 @@ async function dpapi(value, decrypt) {
     : '[Security.Cryptography.ProtectedData]::Protect($bytes, $null, $scope)';
   const script = `$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.Security; $scope=[Security.Cryptography.DataProtectionScope]::CurrentUser; $bytes=[Convert]::FromBase64String([Console]::In.ReadToEnd()); [Console]::Write([Convert]::ToBase64String(${operation}))`;
   const shell = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  // Include cold PowerShell startup and assembly loading in the deadline.
+  const deadline = AbortSignal.timeout(20_000);
   const result = await new Promise((resolve, reject) => {
     const child = spawn(shell, ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
-      windowsHide: true, signal: AbortSignal.timeout(5000), stdio: ['pipe', 'pipe', 'ignore'],
+      windowsHide: true, signal: deadline, stdio: ['pipe', 'pipe', 'ignore'],
     });
     let output = '';
     child.stdout.setEncoding('utf8').on('data', chunk => { output += chunk; });
@@ -23,7 +25,9 @@ async function dpapi(value, decrypt) {
     child.stdin.once('error', reject);
     child.once('close', code => code === 0 && output ? resolve(output) : reject(new Error('DPAPI failed')));
     child.stdin.end(decrypt ? value : Buffer.from(value, 'utf8').toString('base64'));
-  }).catch(() => { throw new RequestError(500, 'Windows 无法处理已保存的密钥，请重新填写'); });
+  }).catch(() => {
+    throw new RequestError(500, deadline.aborted ? 'Windows 处理密钥超时，请重试' : 'Windows 无法处理已保存的密钥，请重新填写');
+  });
   return decrypt ? Buffer.from(result, 'base64').toString('utf8') : result;
 }
 
