@@ -374,7 +374,7 @@ export class Store {
   }
 
   record(run, type, payload) {
-    this.query('INSERT INTO events (run, type, payload) VALUES (?, ?, ?)', 'run', run, type, JSON.stringify(payload));
+    return Number(this.query('INSERT INTO events (run, type, payload) VALUES (?, ?, ?)', 'run', run, type, JSON.stringify(payload)).lastInsertRowid);
   }
 
   events(run, after) {

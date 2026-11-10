@@ -27,6 +27,8 @@ import { createSkillLibraries } from './skill-libraries.mjs';
 import {createSkillRegistry,registryContract,registryErrors} from './skill-registry.mjs';
 import {validate} from './schema.mjs';
 import {success,failure} from './tool-contract.mjs';
+import {createRunBudget, readRunBudget} from './run-budget.mjs';
+import {skillIntelligenceContract} from './skill-intelligence.mjs';
 
 const assets = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'],
   '/skill-studio.js': ['skill-studio.js', 'text/javascript'],
@@ -176,6 +178,12 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
         return;
       }
       if(pathname==='/api/skill-registry/contract'&&req.method==='GET')return json(res,200,registryContract);
+      if (pathname === '/api/skill-intelligence/contract' && req.method === 'GET') return json(res, 200, skillIntelligenceContract);
+      const historicalBudget = /^\/api\/runs\/([a-f\d-]{36})\/budget$/.exec(pathname);
+      if (historicalBudget && req.method === 'GET') {
+        store.run(historicalBudget[1]);
+        return json(res, 200, success(readRunBudget(store, historicalBudget[1])));
+      }
       const historicalRegistry=/^\/api\/runs\/([a-f\d-]{36})\/skill-registry$/.exec(pathname);
       if(historicalRegistry&&req.method==='GET'){
         try{return json(res,200,success(skillRegistry.forRun(historicalRegistry[1])));}
@@ -556,10 +564,11 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
             if (run.started) {
               store.record(run.id, 'request_context', {attachments: attachments.map(({id}) => ({id}))});
               const controller = new AbortController();
+              const budget = createRunBudget({store, rootRunId: run.id, signal: controller.signal, limits: {maxModelCalls: 0, maxSeconds: 30}});
               const entry = {controller, preflight: true, job: null};
               active.set(run.id, entry);
               entry.job = executePreflight({store, task, run: run.id, goal: prompt, request, scope: {...scope, state},
-                workspace: join(workspace, task), attachments, signal: controller.signal})
+                workspace: join(workspace, task), attachments, signal: budget.signal, budget})
                 .catch(error => console.error('预检记录写入失败', error.message))
                 .finally(() => active.delete(run.id));
             }

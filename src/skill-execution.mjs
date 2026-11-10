@@ -28,7 +28,8 @@ export const executionPlanSchema = object({
 export const executionTools = ['list_workspace','read_file','create_file','replace_in_file','load_skill','inspect_skill',
   'read_skill_resource','start_skill','finish_skill','verify_skill_output','update_plan'];
 export const executionSha256 = digest(['skill-execution.mjs','runner.mjs','skill-session.mjs','skill-delivery.mjs','tools.mjs','file-scope.mjs','schema.mjs',
-  'chat-skills.mjs','task-plan.mjs','preflight.mjs','skill-files.mjs','skill-routing.mjs','../config.yaml']
+  'chat-skills.mjs','task-plan.mjs','preflight.mjs','skill-files.mjs','skill-routing.mjs','skill-registry.mjs',
+  'run-budget.mjs','context-manager.mjs','../config.yaml']
   .map(path=>readFileSync(new URL(path,import.meta.url),'utf8')));
 const canonical = skill => ({name:skill.name,description:skill.description,instructions:skill.instructions,tests:skill.tests,
   ...(skill.applicability?{applicability:skill.applicability}:{}),...(skill.delivery?{delivery:skill.delivery}:{})});
@@ -180,18 +181,20 @@ export function createSkillExecutions(store,{getCandidate,ensureCurrent,resolveC
         await writeFile(storagePath, skillMarkdown(selected), 'utf8');
         skill = {...selected, id: randomUUID(), version: side === 'baseline' ? plan.baseVersion : plan.baseVersion + 1, storagePath};
       }
-      const wrapped={label:model.label,async invoke(options){
-        if(result.modelRequests.length>=plan.spec.budget.maxCalls)throw Error('本轮共享模型调用预算已耗尽');
-        const request={requestedModel:model.label,maxTokens:plan.spec.budget.maxOutputTokens,usage:null,reportedModel:null};result.modelRequests.push(request);
-        const reply=await model.invoke({...options,maxTokens:plan.spec.budget.maxOutputTokens});
-        request.usage=reply.usage??null;request.reportedModel=reply.reportedModel??null;request.finishReason=reply.finishReason??null;return reply;
-      }};
       const {executeRun}=await import('./runner.mjs');
-      await executeRun({id:run.id,task:task.id,prompt:test.prompt,store:local,workspace,scope,model:wrapped,signal:bound,
-        maxSteps:plan.spec.budget.maxCalls,skillAccess:true,customSkill:skill,localSkills:skill?[skill]:[],toolAllowlist:executionTools,
+      await executeRun({id:run.id,task:task.id,prompt:test.prompt,store:local,workspace,scope,model,signal:bound,
+        maxSteps:plan.spec.budget.maxCalls,maxOutputPerCall:plan.spec.budget.maxOutputTokens,
+        skillAccess:true,customSkill:skill,localSkills:skill?[skill]:[],toolAllowlist:executionTools,
         context:{evaluation:{isolated:true,scope:'Only supplied test files; no original project access.'}}});
       const detail=local.task(task.id).runs[0];result.runStatus=detail.status;result.answer=detail.answer;result.error=detail.error;
       result.events=local.events(run.id,0).filter(event=>event.type!=='progress');
+      const settlements = new Map(result.events.filter(event => event.type === 'budget_settled').map(({payload}) => [payload.id, payload]));
+      result.modelRequests = result.events.filter(event => event.type === 'budget_reserved' && event.payload.kind === 'model').map(({payload}) => {
+        const settled = settlements.get(payload.id);
+        return {requestedModel: payload.model, maxTokens: payload.outputReserved, reportedModel: settled?.reportedModel ?? null,
+          finishReason: settled?.finishReason ?? null, usage: settled?.inputTokens == null || settled?.outputTokens == null ? null :
+            {prompt_tokens: settled.inputTokens, completion_tokens: settled.outputTokens}};
+      });
       // A fresh signal allows bounded read-only final checks after an execution timeout.
       result.verification=await verifyDelivery({frozen,scope,signal:AbortSignal.timeout(15000)});
       const startedSkill = skill && detail.skillTrace?.graph.nodes.some(item => item.id === skill.id && item.started);

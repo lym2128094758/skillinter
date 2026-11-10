@@ -132,8 +132,9 @@ function ignored(path) {
   return path.split('/').some(part => part.startsWith('.') || /^(node_modules|__pycache__|dist|build|venv)$/i.test(part));
 }
 
-export async function executePreflight({store, task, run, goal, request, scope, workspace, attachments, signal, inChat = false}) {
+export async function executePreflight({store, task, run, goal, request, scope, workspace, attachments, signal, inChat = false, budget}) {
   const emit = (type, payload) => store.record(run, type, payload);
+  const operation = (name, call) => budget ? budget.tool('material-preflight', name, call, signal) : call();
   const projectScope = {...scope, mode: 'project_read'};
   const nodes = ['inventory', 'integrity', ...(request.goal === 'integrity' ? [] : ['structure']),
     ...(request.goal === 'reproducibility' ? ['reproducibility'] : [])].map(id => ({
@@ -166,9 +167,9 @@ export async function executePreflight({store, task, run, goal, request, scope, 
     } else if (request.paths.length) {
       selected = request.paths.map(path => ({path}));
     } else {
-      const listing = await executeTool({function: {name: 'list_workspace', arguments: JSON.stringify({
+      const listing = await operation('list_workspace', () => executeTool({function: {name: 'list_workspace', arguments: JSON.stringify({
         recursive: true, max_depth: 2, limit: 200,
-      })}}, workspace, signal, projectScope);
+      })}}, workspace, signal, projectScope));
       signal.throwIfAborted();
       if (inChat && !listing.ok) return needsInput(decide([], listing.error.message));
       if (!listing.ok) throw new Error(listing.error.message);
@@ -181,7 +182,8 @@ export async function executePreflight({store, task, run, goal, request, scope, 
     const seen = new Map();
     for (const item of selected) {
       signal.throwIfAborted();
-      const {bytes, error} = item.id ? store.file(task, item.id) : await preflightSnapshot(projectScope, item.path, signal);
+      const {bytes, error} = await operation('read_material', () =>
+        item.id ? store.file(task, item.id) : preflightSnapshot(projectScope, item.path, signal));
       signal.throwIfAborted();
       if (error) { files.push({...item, structure: '未检查', issues: [error]}); continue; }
       const file = inspectMaterial(item, Buffer.from(bytes));
@@ -240,9 +242,12 @@ export async function executePreflight({store, task, run, goal, request, scope, 
         findings: findings.slice(0, 20).map(({path, code, message, line, related}) => ({path, code, message, line: line ?? null, related: related ?? ''})),
         evidence, moreFindings: findings.length > 20};
     }
+    budget?.finish();
     store.finishPreflight(task, run, report, trace, answer);
   } catch (error) {
     if (inChat) throw error;
-    store.finish(run, signal.aborted ? 'stopped' : 'failed', {error: signal.aborted ? null : error.message});
+    budget?.finish();
+    if (budget?.deadline.aborted) store.finish(run, 'budget_exhausted', {error: '根任务时间预算已耗尽'});
+    else store.finish(run, signal.aborted ? 'stopped' : 'failed', {error: signal.aborted ? null : error.message});
   }
 }

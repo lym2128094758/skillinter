@@ -5,6 +5,7 @@ import { assemblePlan, decisionContract, parseDecision } from './audit-planner.m
 import { object, string, validate } from './schema.mjs';
 import { auditExports } from './artifact-contract.mjs';
 import { auditRuntime, projectSkillGraph, selectAuditSkills, skillPlan, skillRegistry } from './audit-skills.mjs';
+import {BudgetError, createRunBudget} from './run-budget.mjs';
 
 export const digest = value => createHash('sha256').update(typeof value === 'string' ? value : JSON.stringify(value)).digest('hex');
 const strings = {type: 'array', maxItems: 12, items: string};
@@ -75,7 +76,6 @@ export function auditLimits(model, base = config.audit, expanded = false) {
   return expanded ? {...limits, maxTokensPerPlan: limits.maxTokensPerPlan * 2, maxOutputTokens: limits.maxOutputTokens * 2} : limits;
 }
 
-class BudgetError extends Error { constructor(message) { super(message); this.code = 'BUDGET_EXHAUSTED'; } }
 function extractJSON(content) {
   if (typeof content !== 'string') throw new Error('模型没有返回计划JSON');
   return JSON.parse(content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, ''));
@@ -83,7 +83,7 @@ function extractJSON(content) {
 
 // Pure workflow core: adapters handle API calls, persistence and replay separately.
 export async function auditWorkflow({file, task, goal, request, model, limits = config.audit,
-  signal = new AbortController().signal, emit = () => {}, takeGuidance = () => [], entry, compact = true}) {
+  signal = new AbortController().signal, emit = () => {}, takeGuidance = () => [], entry, compact = true, budget}) {
   const invalid = validateRequest(request);
   if (invalid.length) throw new Error(invalid.join('; '));
   const started = performance.now();
@@ -104,6 +104,7 @@ export async function auditWorkflow({file, task, goal, request, model, limits = 
     if (event.result.ok) observed.set(event.tool, event.result);
   }});
   function check(kind) {
+    if (budget?.deadline.aborted) throw new BudgetError('根任务时间预算已耗尽');
     signal.throwIfAborted();
     if (timer.aborted || performance.now() - started >= limits.maxSeconds * 1000) throw new BudgetError('任务时间预算已耗尽');
     if (kind === 'tool' && metrics.toolCalls >= limits.maxToolCalls) throw new BudgetError('工具调用预算已耗尽');
@@ -111,7 +112,8 @@ export async function auditWorkflow({file, task, goal, request, model, limits = 
   }
   async function callTool(step) {
     check('tool'); metrics.toolCalls++;
-    return tools.execute(step.tool, step.arguments);
+    return budget ? budget.tool('audit', step.tool, () => tools.execute(step.tool, step.arguments), combined)
+      : tools.execute(step.tool, step.arguments);
   }
   async function invokePlanner(messages, stage) {
     check('model');
@@ -128,12 +130,17 @@ export async function auditWorkflow({file, task, goal, request, model, limits = 
     if (entry) entry.interrupt = interrupt;
     let response;
     try {
-      response = await model.invoke({messages, signal: AbortSignal.any([combined, interrupt.signal]), maxTokens,
+      const options = {messages, signal: AbortSignal.any([combined, interrupt.signal]), maxTokens,
         stream: /^intern-s2(?:-|$)/i.test(model.label), includeUsage: /^intern-s2(?:-|$)/i.test(model.label),
-        onWait: wait => emit('request_wait', wait)});
+        onWait: wait => emit('request_wait', wait)};
+      response = !budget ? await model.invoke(options) : local
+        ? await budget.tool('audit', 'local_plan', () => model.invoke(options), options.signal)
+        : await budget.invoke(model, {...options, phase: 'audit:' + stage});
     } catch (failure) {
       metrics.usageComplete = false;
-      if (interrupt.signal.aborted && !combined.aborted) failure.code = 'USER_GUIDANCE';
+      if (interrupt.signal.aborted && !combined.aborted && failure.code !== 'BUDGET_EXHAUSTED') {
+        throw Object.assign(new Error('用户补充了要求，重新规划', {cause: failure}), {code: 'USER_GUIDANCE'});
+      }
       throw failure;
     } finally { if (entry) entry.interrupt = null; }
     const {content, finishReason, usage = null, reportedModel = null, fingerprint = null} = response;
@@ -278,11 +285,17 @@ export async function auditWorkflow({file, task, goal, request, model, limits = 
     }
     }
   } catch (failure) {
-    status = signal.aborted ? 'stopped' : failure.code === 'BUDGET_EXHAUSTED' || timer.aborted ? 'budget_exhausted' : 'failed';
-    error = {code: signal.aborted ? 'ABORTED' : timer.aborted ? 'BUDGET_EXHAUSTED' : failure.code ?? 'EXECUTION_FAILED',
-      message: signal.aborted ? '用户已停止执行' : timer.aborted ? '任务时间预算已耗尽' : failure.message.slice(0, 300)};
+    const rootExpired = budget?.deadline.aborted;
+    status = rootExpired || timer.aborted ? 'budget_exhausted' : signal.aborted ? 'stopped' :
+      failure.code === 'BUDGET_EXHAUSTED' ? 'budget_exhausted' : 'failed';
+    error = {code: rootExpired || timer.aborted ? 'BUDGET_EXHAUSTED' : signal.aborted ? 'ABORTED' : failure.code ?? 'EXECUTION_FAILED',
+      message: rootExpired ? '根任务时间预算已耗尽' : timer.aborted ? '任务时间预算已耗尽' :
+        signal.aborted ? '用户已停止执行' : failure.message.slice(0, 300)};
   }
   metrics.elapsedMs = Math.round(performance.now() - started);
+  // The report describes planner responses; the root ledger accounts for every HTTP attempt.
+  const attempted = budget?.modelUsage('audit:');
+  if (attempted?.unknownModelUsage) metrics.usageComplete = false;
   if (local) metrics.cost = 0;
   else if (metrics.usageComplete && typeof limits.inputPricePerMillion === 'number' && typeof limits.outputPricePerMillion === 'number') {
     metrics.cost = (metrics.inputTokens * limits.inputPricePerMillion + metrics.outputTokens * limits.outputPricePerMillion) / 1e6;
@@ -306,7 +319,8 @@ export async function auditWorkflow({file, task, goal, request, model, limits = 
     graph: projectSkillGraph(skillEvents)};
   const replay = {version: 4, mode: 'recorded-api-responses', modelKind: local ? model.kind : 'model', compact, task, goal, request, source: {id: file.id, name: file.name, sha256: file.sha256,
     text: Buffer.from(file.bytes).toString('utf8')}, limits, model: model.label, transcript, observations, status,
-    offlineExecutable: !guidance.length && !['failed', 'stopped'].includes(status) && !(timer.aborted),
+    offlineExecutable: !guidance.length && !['failed', 'stopped'].includes(status) && !timer.aborted && !attempted?.retries &&
+      (!budget || status !== 'budget_exhausted'),
     skillEvents, skillRegistry: skillTrace.registry, runtime: auditRuntime, skillTraceHash: digest(skillTrace), reportHash: reportFingerprint(report)};
   return {report, summary, replay, skillTrace, artifactCheck: exports.artifactCheck, artifacts: [
     {name: 'report.json', bytes: JSON.stringify(report, null, 2), kind: 'json'},
@@ -322,9 +336,20 @@ export function reportFingerprint(report) {
 }
 
 export async function executeAudit({store, id, task, ...options}) {
+  const {limits = config.audit, signal = new AbortController().signal, model} = options;
+  const local = ['rules', 'fixture'].includes(model.kind);
+  const budget = createRunBudget({store, rootRunId: id, signal, limits: {
+    maxSeconds: limits.maxSeconds, maxModelCalls: local ? 0 : limits.maxModelCalls,
+    maxToolCalls: limits.maxToolCalls + (local ? limits.maxModelCalls : 0),
+    maxInputTokens: limits.maxInputTokens, maxOutputTokens: limits.maxOutputTokens,
+  }});
   try {
-    const result = await auditWorkflow({...options, task, emit: (type, payload) => store.record(id, type, payload),
+    const result = await auditWorkflow({...options, task, budget, signal: budget.signal, emit: (type, payload) => store.record(id, type, payload),
       takeGuidance: () => store.takeGuidance(id)});
+    budget.finish();
     store.finishAudit(task, id, result);
-  } catch (error) { store.finish(id, 'failed', {error: `预检执行失败：${error.message.slice(0, 250)}`}); }
+  } catch (error) {
+    budget.finish();
+    store.finish(id, 'failed', {error: `预检执行失败：${error.message.slice(0, 250)}`});
+  }
 }

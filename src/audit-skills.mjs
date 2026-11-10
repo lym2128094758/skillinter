@@ -25,7 +25,8 @@ const checksum = value => createHash('sha256').update(value).digest('hex');
 export const skillRegistry = {version: 1, sha256: checksum(JSON.stringify(auditSkills)), skills: auditSkills};
 export const auditRuntime = {
   version: 4,
-  sha256: checksum(JSON.stringify(['workflow', 'audit-planner', 'audit-skills', 'audit-tools', 'audit-rules', 'artifact-contract', 'skills', 'schema', 'tool-contract']
+  sha256: checksum(JSON.stringify(['workflow', 'audit-planner', 'audit-skills', 'audit-tools', 'audit-rules', 'artifact-contract', 'skills', 'schema', 'tool-contract',
+    'run-budget', 'context-manager']
     .map(name => [name, checksum(readFileSync(new URL('./' + name + '.mjs', import.meta.url)))]))),
 };
 const ref = item => ({id: item.id, version: item.version, tool: item.tool, label: item.label, nodeId: item.nodeId});

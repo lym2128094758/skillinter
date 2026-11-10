@@ -248,7 +248,7 @@
       <div class="settings-intro"><h3 id="run-heading">运行</h3><p>限制单轮任务的模型调用和工具循环。</p></div>
       <form id="run-form">
         <div class="settings-card">
-          <div class="settings-setting-row"><div><label for="max-steps">每轮最多模型调用次数</label><p id="steps-help" class="settings-hint">可设为 1 到 12 次。保存后从下一轮起生效。</p></div>
+          <div class="settings-setting-row"><div><label for="max-steps">每轮最多模型请求次数</label><p id="steps-help" class="settings-hint">可设为 1 到 12 次。聊天、技能内部规划和供应商重试共用此额度。保存后从下一轮起生效。</p></div>
           <input id="max-steps" type="number" min="1" max="12" step="1" required aria-describedby="steps-help"></div>
         </div>
         <p id="run-feedback" class="settings-message" role="status" hidden></p>

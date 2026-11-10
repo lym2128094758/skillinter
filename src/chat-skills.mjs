@@ -10,13 +10,14 @@ import { skillSessionRegistry, sessionErrors } from './skill-session.mjs';
 import { projectTestTool } from './project-tests.mjs';
 import { executePreflight, materialSkills, preflightInput } from './preflight.mjs';
 import { deliverySchema } from './skill-delivery.mjs';
+import {invokeSkillIntelligence} from './skill-intelligence.mjs';
 
 const errors = {...sessionErrors, INVALID_ARGUMENT: '技能工具参数无效。', ATTACHMENT_NOT_FOUND: '附件不属于当前会话或不存在。',
   CSV_REQUIRED: '请选择或上传当前会话的 CSV 附件。', INVALID_CSV: 'CSV 格式无效。',
   PRECHECK_ALREADY_RUN: '本轮已经执行另一项预检，请在下一轮提交新目标。',
   MATERIAL_PREFLIGHT_ALREADY_RUN: '本轮已有材料检查报告，请在下一轮提交另一目标。',
   SKILL_NOT_FOUND: '技能不存在或不属于当前项目。',
-  ABORTED: '操作已取消。', TIMEOUT: '技能执行超时。', INTERNAL: '技能执行失败。'};
+  ABORTED: '操作已取消。', TIMEOUT: '技能执行超时。', BUDGET_EXHAUSTED: '本轮共享预算已耗尽。', INTERNAL: '技能执行失败。'};
 const artifactSchema = object({name: string, sha256: string, url: string});
 const matchSchema = object({id: string, label: string, domain: string, description: {...string, maxLength: 2000},
   nodeId: string, executable: {type: 'boolean'}, tool: string, version: string});
@@ -95,12 +96,14 @@ function skillCatalog() {
   return catalog;
 }
 
-export function searchSkills({query, limit = 5, executable_only = false}, localSkills = []) {
+export function searchSkills({query, limit = 5, executable_only = false}, localSkills = [], snapshot) {
   const source = skillCatalog();
   const byCatalogId = new Map(source.entries.map(item => [item.id, item]));
-  const installedNames = new Set(localSkills.map(skill => skill.name));
-  const local = localSkills.map(skill => ({id: skill.id, label: skill.name, domain: '已发布技能', description: skill.description,
-    nodeId: byCatalogId.get(skill.name)?.nodeId ?? '', executable: true, tool: 'load_skill', version: String(skill.version)}));
+  const visibleSkills = snapshot ? localSkills.filter(skill => snapshot.skills.some(ref => ref.skillId === skill.id && ref.selectable)) : localSkills;
+  const externalBySkill = new Map(snapshot?.externalRefs.map(ref => [ref.skillId, ref.externalId]));
+  const installedNames = new Set(snapshot ? snapshot.externalRefs.map(ref => ref.externalId) : visibleSkills.map(skill => skill.name));
+  const local = visibleSkills.map(skill => ({id: skill.id, label: skill.name, domain: '已发布技能', description: skill.description,
+    nodeId: byCatalogId.get(snapshot ? externalBySkill.get(skill.id) : skill.name)?.nodeId ?? '', executable: true, tool: 'load_skill', version: String(skill.version)}));
   const catalogSha256 = local.length ? digest({base: source.sha256, local}) : source.sha256;
   const terms = [...new Set([...new Intl.Segmenter('zh', {granularity: 'word'}).segment(query.toLowerCase())]
     .filter(part => part.isWordLike).map(part => part.segment))];
@@ -112,7 +115,7 @@ export function searchSkills({query, limit = 5, executable_only = false}, localS
   return {query, matches: matches.slice(0, limit).map(row => row.item), truncated: matches.length > limit, catalogSha256};
 }
 
-export function createChatSkills({store, task, run, model, signal, entry, localSkills = [], customSkill, session, scope, workspace, context}) {
+export function createChatSkills({store, task, run, model, signal, entry, localSkills = [], customSkill, session, scope, workspace, context, budget, registrySnapshot}) {
   const cache = new Map();
   let precheckKey;
   let materialPreflightKey;
@@ -141,7 +144,22 @@ export function createChatSkills({store, task, run, model, signal, entry, localS
       if (cache.has(key)) return cache.get(key);
       let data;
       if (name === 'search_skills') {
-        data = searchSkills(args, localSkills);
+        if (budget) {
+          const snapshotSha256 = registrySnapshot?.sha256 ?? skillCatalog().sha256;
+          let matches;
+          const installed = registrySnapshot?.skills.filter(skill => skill.selectable).map(skill => ({id: skill.skillId, version: String(skill.version)})) ??
+            localSkills.map(skill => ({id: skill.id, version: String(skill.version)}));
+          const result = await invokeSkillIntelligence({name: 'search', budget, signal, allowedRefs: [...skillCatalog().entries, ...installed],
+            emit: (type, payload) => store.record(run, type, payload),
+            input: {goal: args.query, snapshotSha256, limit: args.limit ?? 5, mode: 'local'},
+            provider: {id: 'sih-local', search() {
+              matches = searchSkills(args, localSkills, registrySnapshot);
+              return {version: '1', data: {snapshotSha256, candidates: matches.matches.map(({id, version}) =>
+                ({skill: {id, version}, reason: '本地目录分词匹配', path: []}))}};
+            }}});
+          if (!result.ok) return failure(errors, Object.hasOwn(errors, result.error.code) ? result.error.code : 'INTERNAL');
+          data = matches;
+        } else data = searchSkills(args, localSkills, registrySnapshot);
         store.record(run, 'skill_search', data);
       } else if (name === 'load_skill') {
         if (session) return checkResult(definition, success(await session.load(args.skill_id)));
@@ -166,7 +184,7 @@ export function createChatSkills({store, task, run, model, signal, entry, localS
         const deadline = AbortSignal.timeout(definition.timeoutMs);
         try {
           data = await executePreflight({store, task, run, goal: context?.goal ?? '', request, scope, workspace,
-            attachments, signal: AbortSignal.any([signal, deadline]), inChat: true});
+            attachments, signal: AbortSignal.any([signal, deadline]), inChat: true, budget});
         } catch (error) {
           if (deadline.aborted && !signal.aborted) return failure(errors, 'TIMEOUT');
           throw error;
@@ -187,7 +205,7 @@ export function createChatSkills({store, task, run, model, signal, entry, localS
           if (precheckKey && precheckKey !== key) return failure(errors, 'PRECHECK_ALREADY_RUN');
           precheckKey = key;
           const result = await auditWorkflow({file, task, goal: args.goal, request: args.request, model,
-            signal, entry, limits: auditLimits(model.label), emit: (type, payload) => store.record(run, type, payload),
+            signal, entry, budget, limits: auditLimits(model.label), emit: (type, payload) => store.record(run, type, payload),
             takeGuidance: () => store.takeGuidance(run)});
           const files = store.saveAudit(task, run, result);
           const report = result.report;

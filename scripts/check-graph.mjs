@@ -141,8 +141,13 @@ try {
     const data=await(await get('/api/skill-registry?task='+task)).json();
     return data.data.relations.some(edge=>edge.source===relationA&&edge.target===relationB&&edge.type==='depend_on');
   });
-  await waitFor('关系可从页面移除',()=>run("[...document.querySelector('#skill-graph-frame').contentDocument.querySelectorAll('#registryEditor button')].some(b=>b.textContent==='移除此执行关系')"));
-  await edit("[...d.querySelectorAll('#registryEditor button')].find(b=>b.textContent==='移除此执行关系').click()");
+  await waitFor('从页面移除关系', () => run(`(() => {
+    const editor = document.querySelector('#skill-graph-frame').contentDocument.querySelector('#registryEditor');
+    const button = [...(editor?.querySelectorAll('button') ?? [])].find(item => item.textContent === '移除此执行关系');
+    if (editor?.querySelector('code')?.textContent !== ${JSON.stringify(relationA)} || !button || button.disabled) return false;
+    button.click();
+    return true;
+  })()`));
   await waitFor('页面移除真实依赖',async()=>{
     const data=await(await get('/api/skill-registry?task='+task)).json();
     return !data.data.relations.some(edge=>edge.source===relationA&&edge.target===relationB&&edge.type==='depend_on');

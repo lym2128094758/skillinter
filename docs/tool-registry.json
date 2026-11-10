@@ -12,6 +12,8 @@
     "src/audit-tools.mjs",
     "src/audit-planner.mjs",
     "src/workflow.mjs",
+    "src/skill-registry.mjs",
+    "src/skill-intelligence.mjs",
     "config.yaml"
   ],
   "skillRegistry": {
@@ -1119,6 +1121,1033 @@
       "legacy": "旧 manual/mention/topic 均为浏览关系，外部目录关系需要显式身份绑定"
     }
   },
+  "skillIntelligence": {
+    "version": 1,
+    "timeoutMs": 5000,
+    "errors": {
+      "ENGINE_UNAVAILABLE": "技能引擎不可用。",
+      "ENGINE_TIMEOUT": "技能引擎响应超时。",
+      "ABORTED": "技能引擎调用已取消。",
+      "INVALID_CONTRACT": "技能引擎输入或返回不符合契约。",
+      "SNAPSHOT_CHANGED": "技能引擎返回的快照与本轮不一致。",
+      "UNKNOWN_REFERENCE": "技能引擎引用了本轮不可用的技能。",
+      "BUDGET_EXHAUSTED": "根任务额度不足，技能引擎未能完成。",
+      "SOURCE_NOT_ALLOWED": "技能来源未获授权或不能固定版本。",
+      "PROVIDER_ERROR": "技能引擎调用失败。"
+    },
+    "operations": [
+      {
+        "name": "search",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "goal": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "snapshotSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            },
+            "mode": {
+              "enum": [
+                "local",
+                "semantic",
+                "hybrid"
+              ]
+            }
+          },
+          "required": [
+            "goal",
+            "snapshotSha256",
+            "limit",
+            "mode"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "fallback": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            null
+                          ]
+                        },
+                        {
+                          "enum": [
+                            "ENGINE_UNAVAILABLE",
+                            "ENGINE_TIMEOUT",
+                            "ABORTED",
+                            "INVALID_CONTRACT",
+                            "SNAPSHOT_CHANGED",
+                            "UNKNOWN_REFERENCE",
+                            "BUDGET_EXHAUSTED",
+                            "SOURCE_NOT_ALLOWED",
+                            "PROVIDER_ERROR"
+                          ]
+                        }
+                      ]
+                    },
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "snapshotSha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "candidates": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "skill": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 180
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "reason": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              },
+                              "path": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 180
+                                    },
+                                    "version": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 80
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "version"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "maxItems": 8
+                              }
+                            },
+                            "required": [
+                              "skill",
+                              "reason",
+                              "path"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 20
+                        }
+                      },
+                      "required": [
+                        "snapshotSha256",
+                        "candidates"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "version",
+                    "fallback",
+                    "result"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "plan",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "snapshotSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "candidates": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 180
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "id",
+                  "version"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 20
+            },
+            "relations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 180
+                      },
+                      "version": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "target": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 180
+                      },
+                      "version": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "type": {
+                    "enum": [
+                      "depend_on",
+                      "compose_with",
+                      "similar_to"
+                    ]
+                  }
+                },
+                "required": [
+                  "source",
+                  "target",
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 80
+            },
+            "inputSummary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            }
+          },
+          "required": [
+            "snapshotSha256",
+            "candidates",
+            "relations",
+            "inputSummary"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "fallback": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            null
+                          ]
+                        },
+                        {
+                          "enum": [
+                            "ENGINE_UNAVAILABLE",
+                            "ENGINE_TIMEOUT",
+                            "ABORTED",
+                            "INVALID_CONTRACT",
+                            "SNAPSHOT_CHANGED",
+                            "UNKNOWN_REFERENCE",
+                            "BUDGET_EXHAUSTED",
+                            "SOURCE_NOT_ALLOWED",
+                            "PROVIDER_ERROR"
+                          ]
+                        }
+                      ]
+                    },
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "snapshotSha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "relations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 180
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "target": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 180
+                                  },
+                                  "version": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "version"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "type": {
+                                "enum": [
+                                  "depend_on",
+                                  "compose_with",
+                                  "similar_to"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "target",
+                              "type"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 80
+                        },
+                        "missing": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "maxItems": 20
+                        },
+                        "conflicts": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1000
+                          },
+                          "maxItems": 20
+                        }
+                      },
+                      "required": [
+                        "snapshotSha256",
+                        "relations",
+                        "missing",
+                        "conflicts"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "version",
+                    "fallback",
+                    "result"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "discover",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "publicTags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "maxItems": 20,
+              "minItems": 1
+            },
+            "allowedSources": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "maxItems": 20,
+              "minItems": 1
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20
+            }
+          },
+          "required": [
+            "publicTags",
+            "allowedSources",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "fallback": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            null
+                          ]
+                        },
+                        {
+                          "enum": [
+                            "ENGINE_UNAVAILABLE",
+                            "ENGINE_TIMEOUT",
+                            "ABORTED",
+                            "INVALID_CONTRACT",
+                            "SNAPSHOT_CHANGED",
+                            "UNKNOWN_REFERENCE",
+                            "BUDGET_EXHAUSTED",
+                            "SOURCE_NOT_ALLOWED",
+                            "PROVIDER_ERROR"
+                          ]
+                        }
+                      ]
+                    },
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "sources": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "source": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 300
+                              },
+                              "commit": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{40}$"
+                              },
+                              "license": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 180
+                              },
+                              "contentSha256": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "title": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1000
+                              }
+                            },
+                            "required": [
+                              "source",
+                              "commit",
+                              "license",
+                              "contentSha256",
+                              "title"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "maxItems": 20
+                        }
+                      },
+                      "required": [
+                        "sources"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "version",
+                    "fallback",
+                    "result"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      {
+        "name": "propose",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "snapshotSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "parent": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 180
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                }
+              },
+              "required": [
+                "id",
+                "version"
+              ],
+              "additionalProperties": false
+            },
+            "parentSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "evidenceSeqs": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "maxItems": 40
+            },
+            "correction": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "operator": {
+              "enum": [
+                "distill",
+                "mutate",
+                "compose",
+                "generate"
+              ]
+            }
+          },
+          "required": [
+            "snapshotSha256",
+            "parent",
+            "parentSha256",
+            "evidenceSeqs",
+            "correction",
+            "operator"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "fallback": {
+                      "anyOf": [
+                        {
+                          "enum": [
+                            null
+                          ]
+                        },
+                        {
+                          "enum": [
+                            "ENGINE_UNAVAILABLE",
+                            "ENGINE_TIMEOUT",
+                            "ABORTED",
+                            "INVALID_CONTRACT",
+                            "SNAPSHOT_CHANGED",
+                            "UNKNOWN_REFERENCE",
+                            "BUDGET_EXHAUSTED",
+                            "SOURCE_NOT_ALLOWED",
+                            "PROVIDER_ERROR"
+                          ]
+                        }
+                      ]
+                    },
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "snapshotSha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "parent": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 180
+                            },
+                            "version": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 80
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "version"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "parentSha256": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "draft": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60000
+                        },
+                        "diff": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60000
+                        }
+                      },
+                      "required": [
+                        "snapshotSha256",
+                        "parent",
+                        "parentSha256",
+                        "draft",
+                        "diff"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "provider",
+                    "version",
+                    "fallback",
+                    "result"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    ],
+    "authorization": "宿主绑定冻结快照和授权来源。引擎输出仅为建议。外部发现只接收获准公开的标签，候选草案不得写入正式库。"
+  },
   "file": {
     "version": 4,
     "tools": [
@@ -2216,7 +3245,8 @@
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
-          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。"
+          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
+          "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
         },
         "authorization": "服务端绑定当前会话及其项目，加载本轮开始时冻结的已发布版本，不扩大工具和文件权限。",
         "timeoutMode": "本地有界同步操作，执行后检查耗时。"
@@ -2458,7 +3488,8 @@
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
-          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。"
+          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
+          "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
         },
         "authorization": "服务端绑定当前会话及其项目，加载本轮开始时冻结的已发布版本，不扩大工具和文件权限。",
         "timeoutMode": "本地有界同步操作，执行后检查耗时。"
@@ -2628,7 +3659,8 @@
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
-          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。"
+          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
+          "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
         },
         "authorization": "服务端绑定当前会话。数据工具仅接受该会话上传的原始 CSV；不能修改源文件或扩大文件访问权限。",
         "timeoutMode": "本地有界同步操作，执行后检查耗时。"
@@ -3039,7 +4071,8 @@
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
-          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。"
+          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
+          "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
         },
         "authorization": "服务端绑定当前会话。数据工具仅接受该会话上传的原始 CSV；不能修改源文件或扩大文件访问权限。",
         "timeoutMode": "复用预检总时限、停止信号和本轮共享模型调用额度。"
@@ -3368,7 +4401,8 @@
           "CSV_REQUIRED": "请选择或上传当前会话的 CSV 附件。",
           "INVALID_CSV": "CSV 格式无效。",
           "PRECHECK_ALREADY_RUN": "本轮已经执行另一项预检，请在下一轮提交新目标。",
-          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。"
+          "MATERIAL_PREFLIGHT_ALREADY_RUN": "本轮已有材料检查报告，请在下一轮提交另一目标。",
+          "BUDGET_EXHAUSTED": "本轮共享预算已耗尽。"
         },
         "authorization": "仅检查本轮会话附件或已绑定并授予读取权限的项目，不改变文件和权限。",
         "timeoutMode": "继承本轮停止信号和本地材料检查时限。"

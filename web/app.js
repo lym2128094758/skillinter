@@ -1026,6 +1026,10 @@ function appendEvent(list, {seq, type, payload}) {
     skill_completed: () => `技能完成 · ${payload.label}`,
     guidance_received: () => '收到补充引导', guidance_applied: () => '已应用补充引导',
     request_wait: () => `服务商${payload.status === 429 ? '限流' : '繁忙'} · 等待重试 ${payload.attempt}`,
+    context_snapshot: () => `上下文已精简 · 省略 ${payload.historyOmitted?.length ?? 0} 轮历史和 ${payload.toolRoundsOmitted ?? 0} 批旧回执 · ${payload.compactedReceipts?.length ?? 0} 份回执使用摘录`,
+    budget_denied: () => payload.message,
+    budget_finished: () => `本轮用量 · 模型 ${payload.modelCalls} 次（供应商重试 ${payload.retries} 次）· 工具 ${payload.toolCalls} 次${payload.unknownModelUsage ? ` · ${payload.unknownModelUsage} 次用量未知` : ''}`,
+    skill_engine_fallback: () => `技能检索回退 · ${payload.reason}`,
     audit_model: () => `正在规划 · ${payload.stage === 'steps' ? '可选步骤' : payload.stage === 'mapping' ? '字段映射' : `第 ${payload.call} 次`}`,
     audit_plan: () => `计划已生成 · ${payload.steps.length} 个步骤`,
     audit_skill_selection: () => payload.candidates.length ? `筛选技能 · ${payload.candidates.length} 个候选` : '等待补充 · 缺少适用技能或来源证据',
@@ -1037,6 +1041,7 @@ function appendEvent(list, {seq, type, payload}) {
   };
   const isTool = ['tool', 'tool_result', 'audit_tool'].includes(type);
   if (!isTool && !Object.hasOwn(lines, type)) return;
+  if (type === 'context_snapshot' && !payload.historyOmitted?.length && !payload.toolRoundsOmitted && !payload.compactedReceipts?.length) return;
   const name = payload.name ?? payload.tool;
   const output = type === 'tool_result' ? payload.output : payload.result;
   const key = `${payload.step}:${name}`;
@@ -1048,7 +1053,7 @@ function appendEvent(list, {seq, type, payload}) {
   const summary = document.createElement('summary');
   const icon = document.createElement('span');
   icon.className = 'execution-icon'; icon.setAttribute('aria-hidden', 'true');
-  const failed = output?.ok === false || (output?.data?.kind === 'project_tests' && output.data.status !== 'passed') ||
+  const failed = type === 'budget_denied' || output?.ok === false || (output?.data?.kind === 'project_tests' && output.data.status !== 'passed') ||
     (output?.data?.kind === 'material_preflight' && output.data.status === 'needs_input') ||
     (type === 'finished' && ['failed', 'stopped', 'interrupted', 'budget_exhausted'].includes(payload.status));
   const pending = type === 'tool';

@@ -70,6 +70,13 @@ test('main chat discovers and runs skills without a workflow form, persisting th
   assert.doesNotMatch(run.answer, /未经验证/);
   assert.equal(requests.length, 5);
   assert.equal(run.audit.report.metrics.modelCalls, 2);
+  const {data: ledger} = await (await fetch(base + '/api/runs/' + started.id + '/budget')).json();
+  assert.equal(ledger.rootRunId, started.id);
+  assert.equal(ledger.modelCalls, requests.length);
+  assert.equal(ledger.engineCalls, 1);
+  assert.deepEqual(ledger.entries.filter(entry => entry.kind === 'model').map(entry => entry.phase),
+    ['chat', 'chat', 'audit:mapping', 'audit:steps', 'chat']);
+  assert.equal(ledger.actualOutputTokens, 300);
   assert.match(events, /skill_search/);
   for (const name of ['report.json', 'mapping.csv', 'issues.csv', 'plan.json', 'replay.json']) {
     assert.ok(run.artifacts.some(file => file.name === name), name);
@@ -77,6 +84,8 @@ test('main chat discovers and runs skills without a workflow form, persisting th
   const contract = await (await fetch(base + '/api/tools/contract')).json();
   assert.deepEqual(contract.skills, chatSkillRegistry);
   const exported = JSON.parse(await readFile(new URL('./docs/tool-registry.json', import.meta.url), 'utf8'));
+  const intelligence = await (await fetch(base + '/api/skill-intelligence/contract')).json();
+  assert.deepEqual(intelligence, exported.skillIntelligence);
   assert.deepEqual(exported.file.tools, fileToolRegistry);
   assert.deepEqual(exported.audit.tools, auditTools);
   assert.deepEqual(exported.conversation.tools, chatSkillRegistry);
