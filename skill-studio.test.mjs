@@ -200,6 +200,6 @@ test('chat evidence becomes a project skill with isolated comparison, version hi
   assert.equal(savedWithoutChat.skill.projectId, project.id);
   assert.equal(dirname(dirname(savedWithoutChat.skill.storagePath)), join(await realpath(projectPath), '.sih', 'skills'));
   assert.ok((await call(studio + '?project=' + project.id, 200)).skills.some(skill => skill.id === savedWithoutChat.skill.id));
-  assert.equal((await call(studio + '/locations?project=' + project.id, 200)).project, join(projectPath, '.sih', 'skills'));
+  assert.equal((await call(studio + '/locations?project=' + project.id, 200)).project, join(await realpath(projectPath), '.sih', 'skills'));
   assert.equal((await call('/api/tasks', 200)).length, taskCount);
 });
