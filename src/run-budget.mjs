@@ -120,10 +120,11 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
   return {
     rootRunId, signal: bound, deadline, limits, remainingMs: () => Math.max(0, startedAt + limits.maxSeconds * 1000 - Date.now()),
     canCallModel: () => totals(entries).modelCalls < limits.maxModelCalls,
+    remainingModelCalls: () => Math.max(0, limits.maxModelCalls - totals(entries).modelCalls),
     modelUsage: phase => totals(entries.filter(entry => entry.kind === 'model' && entry.phase.startsWith(phase))),
     tool: (phase, name, call, requestSignal) => operation('tool', phase, name, call, requestSignal),
     engine: (phase, name, call, requestSignal) => operation('engine', phase, name, call, requestSignal),
-    async invoke(model, {phase, reduction, ...options}) {
+    async invoke(model, {phase, reduction, allowRetry = true, ...options}) {
       const maxTokens = options.maxTokens ?? 4096;
       const requestSignal = AbortSignal.any([bound, options.signal ?? bound]);
       const context = contextSnapshot(options.messages, options.tools, maxTokens, reduction);
@@ -141,7 +142,10 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
       try {
         if (model.accountsProviderAttempts) {
           args.prepareAttempt = prepareAttempt;
-          args.beforeRetry = () => check('model', context.estimatedTokens, maxTokens);
+          args.beforeRetry = () => {
+            if (!allowRetry) throw Object.assign(new Error('此子任务只允许一次模型请求。'), {code: 'MODEL_RETRY_DISABLED'});
+            check('model', context.estimatedTokens, maxTokens);
+          };
         } else settle = prepareAttempt(1);
         const result = await model.invoke(args);
         settle?.({status: 'completed', ...result});

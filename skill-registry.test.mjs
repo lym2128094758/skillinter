@@ -182,9 +182,21 @@ test('missing registered prerequisite blocks task file operations instead of sil
   const snapshot=f.registry.snapshot(task,localSkills);
   assert(snapshot.issues.some(issue=>issue.skillId===a.id&&issue.code==='RELATION_ENDPOINT_UNAVAILABLE'));
   const run=f.store.begin(task,'missing','blocked-task',{}).id;
-  const model={label:'missing-prerequisite-fixture',async invoke(){return {tool_calls:[{id:'read',function:{name:'read_file',arguments:'{"path":"evidence.txt"}'}}]};}};
+  const model={label:'missing-prerequisite-fixture',async invoke({messages}) {
+    if (messages.at(-1).role === 'tool') return {content: '前置技能不可用。'};
+    return {tool_calls:[
+      {id:'read',function:{name:'read_file',arguments:'{"path":"evidence.txt"}'}},
+      {id:'delegate',function:{name:'delegate_readonly',arguments:JSON.stringify({jobs:[{
+        role:'review',goal:'核对项目证据',inputs:[{path:'evidence.txt',offset:0,limit:1}],acceptance:'引用原文',
+      }]})}},
+    ]};
+  }};
   await executeRun({id:run,task,prompt:a.name,store:f.store,workspace:f.path,scope:{mode:'project_read',projectId:f.project.id,projectPath:f.path},
-    model,signal:new AbortController().signal,maxSteps:1,skillAccess:true,customSkill:a,localSkills,skillRegistrySnapshot:snapshot});
-  const output=f.store.events(run,0).find(event=>event.type==='tool_result'&&event.payload.name==='read_file').payload.output;
-  assert.equal(output.ok,false);assert.equal(output.error.code,'DEPENDENCY_INCOMPLETE');assert.equal(output.data,null);
+    model,signal:new AbortController().signal,maxSteps:4,entry:{},skillAccess:true,customSkill:a,localSkills,skillRegistrySnapshot:snapshot});
+  const events = f.store.events(run,0);
+  assert.equal(events.some(event => event.type === 'worker_started'), false);
+  for (const name of ['read_file', 'delegate_readonly']) {
+    const output=events.find(event=>event.type==='tool_result'&&event.payload.name===name).payload.output;
+    assert.equal(output.ok,false);assert.equal(output.error.code,'DEPENDENCY_INCOMPLETE');assert.equal(output.data,null);
+  }
 });

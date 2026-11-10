@@ -14,6 +14,7 @@
     "src/workflow.mjs",
     "src/skill-registry.mjs",
     "src/skill-intelligence.mjs",
+    "src/readonly-workers.mjs",
     "config.yaml"
   ],
   "skillRegistry": {
@@ -3112,6 +3113,336 @@
       }
     ]
   },
+  "workers": [
+    {
+      "name": "delegate_readonly",
+      "description": "把需要独立分析或复核的项目文件分给最多两个只读 Worker。子任务只获得指定文件片段，结果须由主任务汇总。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "jobs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "enum": [
+                    "analysis",
+                    "review"
+                  ]
+                },
+                "goal": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1200
+                },
+                "inputs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 300
+                      },
+                      "offset": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 80
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "offset",
+                      "limit"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                },
+                "acceptance": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600
+                }
+              },
+              "required": [
+                "role",
+                "goal",
+                "inputs",
+                "acceptance"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "jobs"
+        ],
+        "additionalProperties": false
+      },
+      "returns": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "enum": [
+                  true
+                ]
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "readonly_workers"
+                    ]
+                  },
+                  "workers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 36
+                        },
+                        "role": {
+                          "enum": [
+                            "analysis",
+                            "review"
+                          ]
+                        },
+                        "status": {
+                          "enum": [
+                            "completed",
+                            "blocked",
+                            "failed",
+                            "stopped"
+                          ]
+                        },
+                        "evidenceRefs": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 9007199254740991
+                          },
+                          "minItems": 0,
+                          "maxItems": 3
+                        },
+                        "blockers": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "minItems": 0,
+                          "maxItems": 4
+                        },
+                        "summary": {
+                          "type": "string",
+                          "maxLength": 1200
+                        },
+                        "usage": {
+                          "type": "object",
+                          "properties": {
+                            "modelCalls": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1
+                            },
+                            "inputTokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "outputTokens": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "unknownModelUsage": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1
+                            }
+                          },
+                          "required": [
+                            "modelCalls",
+                            "inputTokens",
+                            "outputTokens",
+                            "unknownModelUsage"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "artifacts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 36
+                              },
+                              "run": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 36
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 100
+                              },
+                              "kind": {
+                                "enum": [
+                                  "worker-report"
+                                ]
+                              },
+                              "sha256": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "size": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 32000
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "run",
+                              "name",
+                              "kind",
+                              "sha256",
+                              "size"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "minItems": 0,
+                          "maxItems": 1
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "role",
+                        "status",
+                        "evidenceRefs",
+                        "blockers",
+                        "summary",
+                        "usage",
+                        "artifacts"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1,
+                    "maxItems": 2
+                  }
+                },
+                "required": [
+                  "kind",
+                  "workers"
+                ],
+                "additionalProperties": false
+              },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "enum": [
+                      "OK"
+                    ]
+                  },
+                  "message": {
+                    "enum": [
+                      ""
+                    ]
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "ok",
+              "data",
+              "error"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "enum": [
+                  false
+                ]
+              },
+              "data": {
+                "enum": [
+                  null
+                ]
+              },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "ok",
+              "data",
+              "error"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "errors": {
+        "INVALID_ARGUMENTS": "请为每个子任务指定目标、验收要求和有效的项目相对文件路径。",
+        "WORKER_LIMIT": "本轮只读子任务额度已用完。",
+        "WORKER_BUDGET": "剩余模型额度不足，需为主任务保留一次汇总调用。"
+      },
+      "timeoutMs": 45000,
+      "idempotent": false,
+      "volatile": [
+        "id",
+        "evidenceRefs",
+        "usage",
+        "artifacts"
+      ],
+      "authorization": "仅当前已绑定项目且允许读取文件的会话。使用项目只读范围及明确输入清单，复用根任务预算。",
+      "ordering": "结果按请求中的子任务顺序返回，引用的回执按输入顺序保存。"
+    }
+  ],
   "conversation": {
     "version": 1,
     "tools": [

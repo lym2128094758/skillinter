@@ -107,6 +107,28 @@
       <div class="actions"><button type="button" id="cancel-project">取消</button><button class="primary-action" type="submit">添加并打开</button></div>
     </form>
   </dialog>
+  <dialog id="project-memory-dialog" aria-labelledby="project-memory-title">
+    <div class="folder-form">
+      <h2 id="project-memory-title">项目记忆</h2>
+      <p class="status">触发词命中当前任务时才参考。项目事实会核验来源文件指纹。</p>
+      <input id="project-memory-search" aria-label="搜索项目记忆" placeholder="搜索标题、内容或触发词">
+      <div id="project-memory-list"></div>
+      <form id="project-memory-form" class="folder-form">
+        <h3 id="project-memory-editor-title">新增记忆</h3>
+        <label>类型 <select id="project-memory-kind"><option value="preference">用户偏好</option><option value="fact">项目事实</option></select></label>
+        <label>标题 <input id="project-memory-name" maxlength="100" required></label>
+        <label>内容 <textarea id="project-memory-text" rows="3" maxlength="1200" required></textarea></label>
+        <label>触发词（逗号分隔） <input id="project-memory-triggers" maxlength="480" required></label>
+        <label id="project-memory-source-row" hidden>来源文件（项目相对路径） <input id="project-memory-source" maxlength="300" placeholder="docs/protocol.md"></label>
+        <p class="dialog-error" role="alert" hidden></p>
+        <div class="actions">
+          <button type="button" id="project-memory-reset">清空编辑</button>
+          <button type="button" id="project-memory-close">关闭</button>
+          <button class="primary-action" type="submit">确认保存</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
   <dialog id="file-access-dialog" aria-labelledby="file-access-title">
     <form id="file-access-form" class="folder-form">
       <h2 id="file-access-title">会话文件权限</h2>

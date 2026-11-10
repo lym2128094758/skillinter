@@ -31,6 +31,12 @@ try {
   app.server.listen(0, '127.0.0.1');
   await once(app.server, 'listening');
   const base = 'http://127.0.0.1:' + app.server.address().port;
+  const projectPath = join(scratch, 'memory-project');
+  await mkdir(projectPath);
+  const projectResponse = await fetch(base + '/api/projects', {method: 'POST', headers: {'content-type': 'application/json'},
+    body: JSON.stringify({path: projectPath})});
+  assert.equal(projectResponse.status, 201);
+  const memoryProject = await projectResponse.json();
   const get = async path => {
     const response = await fetch(base + path, {signal: AbortSignal.timeout(5_000)});
     assert.ok(response.ok, path);
@@ -161,10 +167,28 @@ try {
   await waitFor('技能中心打开', () => run("document.querySelector('#skill-studio-dialog').open"));
   await run("document.querySelector('#studio-tab-import').click();const select=document.querySelector('#studio-import-source');select.value='public';select.dispatchEvent(new Event('change'));true");
   assert.equal(await run("!document.querySelector('#studio-public-source').hidden&&document.querySelector('#studio-import-start').textContent==='核验公开来源并预览'"), true);
+  await run("document.querySelector('#close-skill-studio').click();true");
+  await waitFor('打开项目记忆', () => run(`(() => {
+    const entry = [...document.querySelectorAll('.project-memory-action')].find(item => item.ariaLabel === ${JSON.stringify(memoryProject.name + ' 的项目记忆')});
+    if (!entry) return false;
+    entry.click();
+    return document.querySelector('#project-memory-dialog').open;
+  })()`));
+  await waitFor('项目记忆加载完成', () => run("!document.querySelector('#project-memory-form [type=submit]').disabled"));
+  await run(`(() => {
+    document.querySelector('#project-memory-name').value = '实验报告样式';
+    document.querySelector('#project-memory-text').value = '用表格列出核验项';
+    document.querySelector('#project-memory-triggers').value = '实验报告';
+    document.querySelector('#project-memory-form').requestSubmit();
+    return true;
+  })()`);
+  await waitFor('页面保存项目记忆', () => run("document.querySelector('#project-memory-list summary')?.textContent.includes('实验报告样式')"));
+  const {memories} = await (await get('/api/projects/' + memoryProject.id + '/memories')).json();
+  assert.equal(memories[0]?.text, '用表格列出核验项');
   const output = resolve('.skillinter/evaluation');
   await mkdir(output, {recursive: true});
   await writeFile(join(output, 'graph-ci.json'), JSON.stringify({passed: true, results,registryEditor:{saved:true,removed:true},
-    skillEngineSettings: {saved: true}, publicDiscoveryForm: {visible: true}}, null, 2) + '\n');
+    skillEngineSettings: {saved: true}, publicDiscoveryForm: {visible: true}, projectMemory: {saved: true}}, null, 2) + '\n');
   console.log('图谱验收通过：历史链路和空候选与计划一致，材料预检可提交、引用发现并定位执行路径。');
 } finally {
   socket?.close();

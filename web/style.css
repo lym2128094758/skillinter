@@ -69,6 +69,14 @@ input, select { min-width: 0; padding: 6px 9px; border: 1px solid var(--line); b
 .group-action:hover { border-color: var(--line); }
 .folder-form { display: grid; gap: 8px; }
 .folder-form p, .folder-form h2 { margin: 0; }
+#project-memory-dialog { width: min(620px, 94vw); }
+#project-memory-list { display: grid; gap: 6px; max-height: 30vh; overflow: auto; }
+#project-memory-list details { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+#project-memory-list p { overflow-wrap: anywhere; white-space: pre-wrap; }
+#project-memory-form h3 { margin: 8px 0 0; }
+#project-memory-form label > :is(input,select,textarea) { width: 100%; margin-top: 3px; }
+.project-memory-action { font-size: 13px; }
+.project-memory-action + .group-action { margin-inline-start: 0; }
 #open-file-access[data-mode="full"] { color: light-dark(#8b4016, #ffca9c); }
 .task-row { display: flex; gap: 2px; margin: 2px 0; border: 1px solid transparent; border-radius: 8px; }
 .task-row:has([aria-current="true"]), .task-row:hover { border-color: var(--line); background: var(--bg); }

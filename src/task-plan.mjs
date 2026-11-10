@@ -1,5 +1,6 @@
 import { object, string, validate } from './schema.mjs';
 import { resultSchema, success, failure } from './tool-contract.mjs';
+import { visibleRunContext } from './store.mjs';
 
 const item = object({id: {...string, minLength: 1, maxLength: 40}, title: {...string, minLength: 1, maxLength: 200},
   status: {enum: ['pending', 'in_progress', 'completed', 'blocked']},
@@ -19,7 +20,8 @@ export const taskPlanTool = {name: 'update_plan',
   timeoutMode: '本地有界同步校验和事务提交。'};
 
 export function currentPlan(store, task) {
-  const row = store.query("SELECT e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'task_plan' ORDER BY e.seq DESC LIMIT 1", 'get', task);
+  const row = store.query(`SELECT e.payload FROM events e JOIN runs r ON r.id=e.run JOIN tasks t ON t.id=r.task
+    WHERE r.task=? AND e.type='task_plan' AND ${visibleRunContext} ORDER BY e.seq DESC LIMIT 1`, 'get', task);
   return row ? JSON.parse(row.payload) : null;
 }
 

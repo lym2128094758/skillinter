@@ -13,6 +13,8 @@ export const writableScope = mode => mode === 'project_write' || mode === 'full'
 export const isProjectScope = mode => mode === 'project_read' || mode === 'project_write';
 export const samePath = (a, b) => relative(a, b) === '';
 export const sameEntry = (a, b) => a.ino !== 0 && a.dev === b.dev && a.ino === b.ino;
+export const projectRelativePath = path => typeof path === 'string' && path.length <= 300 &&
+  !/[\\:\x00-\x1f]/.test(path) && path.split('/').every(part => part && !part.startsWith('.') && part === part.trim());
 
 export function inside(root, target) {
   const rel = relative(root, target);

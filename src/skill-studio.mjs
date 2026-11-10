@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { object, validate } from './schema.mjs';
-import { RequestError } from './store.mjs';
+import { RequestError, visibleRunContext } from './store.mjs';
 import { createSkillFiles, skillDigest, skillMarkdown } from './skill-files.mjs';
 import { parseSkillFile } from './skill-import.mjs';
 import { applicabilitySchema, validApplicabilityPaths } from './skill-applicability.mjs';
@@ -245,23 +245,23 @@ export function createSkillStudio(store, fileOptions = {}) {
       WHERE s.available = 1 AND (s.project_id IS NULL OR s.project_id = ?) ORDER BY v.created_at DESC, s.id`, 'all', projectFor(taskId)).map(readVersion);
   }
 
-  function origin(taskId, runId) {
+  function origin(taskId, runId, {scoped = false} = {}) {
     if (runId === null || runId === undefined) return null;
     if (typeof runId !== 'string' || !runId || !taskId) throw new RequestError(422, '执行编号或任务编号无效');
-    const selected = store.query(`SELECT rowid AS position, id, prompt, answer, status, error, input_file FROM runs
-      WHERE id = ? AND task = ?`, 'get', runId, taskId);
+    const selected = store.query(`SELECT r.rowid AS position,r.id,r.prompt,r.answer,r.status,r.error,r.input_file
+      FROM runs r JOIN tasks t ON t.id=r.task WHERE r.id=? AND r.task=? ${scoped ? 'AND ' + visibleRunContext : ''}`, 'get', runId, taskId);
     if (!selected) throw new RequestError(404, '此会话没有该轮执行');
     if (selected.status === 'running') throw new RequestError(409, '请等这轮执行结束后再提炼技能');
     return selected;
   }
 
   function conversationEvidence(taskId, runId) {
-    const selected = origin(taskId, runId);
+    const selected = origin(taskId, runId, {scoped: true});
     if (!selected) return null;
-    const preceding = store.query(`SELECT id, prompt, answer, status FROM runs WHERE task = ? AND rowid < ?
-      AND status <> 'running' ORDER BY rowid DESC LIMIT 3`, 'all', taskId, selected.position).reverse();
-    const subsequent = store.query(`SELECT id, prompt FROM runs WHERE task = ? AND rowid > ?
-      AND status <> 'running' ORDER BY rowid LIMIT 3`, 'all', taskId, selected.position);
+    const preceding = store.query(`SELECT r.id,r.prompt,r.answer,r.status FROM runs r JOIN tasks t ON t.id=r.task
+      WHERE r.task=? AND r.rowid<? AND r.status<>'running' AND ${visibleRunContext} ORDER BY r.rowid DESC LIMIT 3`, 'all', taskId, selected.position).reverse();
+    const subsequent = store.query(`SELECT r.id,r.prompt FROM runs r JOIN tasks t ON t.id=r.task
+      WHERE r.task=? AND r.rowid>? AND r.status<>'running' AND ${visibleRunContext} ORDER BY r.rowid LIMIT 3`, 'all', taskId, selected.position);
     const tools = store.query(`SELECT type, coalesce(json_extract(payload, '$.name'), json_extract(payload, '$.tool')) AS tool,
       CASE WHEN json_extract(payload, '$.output.data.kind') = 'material_preflight'
         THEN json_extract(payload, '$.output.data.status') = 'completed'

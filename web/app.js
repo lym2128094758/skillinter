@@ -675,6 +675,13 @@ function drawTasks() {
       const group = taskGroup(project.name, project.id, !!term, () => newProjectChat(project),
         '在 ' + project.name + ' 新建读写会话', true);
       group.querySelector('summary').title = project.path;
+      const memory = document.createElement('button');
+      memory.type = 'button';
+      memory.className = 'group-action project-memory-action';
+      memory.textContent = '记忆';
+      memory.setAttribute('aria-label', project.name + ' 的项目记忆');
+      memory.onclick = event => { event.preventDefault(); event.stopPropagation(); void openProjectMemory(project); };
+      group.querySelector('.group-action').before(memory);
       group.append(...(items.length ? items.map(drawTaskRow) : [emptyGroup('暂无项目会话')]));
       projectList.append(group);
     }
@@ -828,6 +835,122 @@ function dialogError(container, error) {
   message.textContent = error?.message ?? '';
   message.hidden = !error;
 }
+
+const memoryDialog = $('project-memory-dialog');
+const memoryForm = $('project-memory-form');
+let memoryProject, memoryItems = [], editingMemory = null, memoryBusy = false;
+const memoryUrl = () => '/api/projects/' + memoryProject.id + '/memories';
+function showMemoryEditor(item = null) {
+  editingMemory = item;
+  memoryForm.reset();
+  $('project-memory-editor-title').textContent = item ? '编辑记忆 · ' + item.title : '新增记忆';
+  $('project-memory-kind').value = item?.kind ?? 'preference';
+  $('project-memory-name').value = item?.title ?? '';
+  $('project-memory-text').value = item?.text ?? '';
+  $('project-memory-triggers').value = item?.triggers.join('，') ?? '';
+  $('project-memory-source').value = item?.source.path ?? '';
+  $('project-memory-kind').onchange();
+}
+
+function drawProjectMemories() {
+  const list = $('project-memory-list');
+  list.replaceChildren();
+  const filter = $('project-memory-search').value.normalize('NFKC').trim().toLowerCase();
+  const items = memoryItems.filter(item => [item.title, item.text, ...item.triggers].join(' ').normalize('NFKC').toLowerCase().includes(filter));
+  if (!items.length) list.append(emptyGroup(filter ? '没有匹配的记忆' : '当前项目还没有记忆'));
+  for (const item of items) {
+    const detail = document.createElement('details');
+    const title = document.createElement('summary');
+    title.textContent = item.title + ' · ' + (item.kind === 'fact' ? '项目事实' : '用户偏好') + (item.enabled ? '' : ' · 已停用');
+    const content = document.createElement('p');
+    content.textContent = item.text;
+    const source = document.createElement('p');
+    source.className = 'status';
+    const sourceLabel = (item.source.kind === 'file' ? item.source.path + ' · SHA-256 ' + item.source.sha256 : '用户确认') +
+      '\n触发词 ' + item.triggers.join('、');
+    source.textContent = sourceLabel;
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const add = (label, handler) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.onclick = handler;
+      actions.append(button);
+    };
+    add('编辑', () => { if (!memoryBusy) showMemoryEditor(item); });
+    if (item.source.kind === 'file') add('核验来源', () => void memoryWork(async () => {
+      const result = await api(memoryUrl() + '/' + item.id + '/verify');
+      source.textContent = sourceLabel + '\n' + ({current: '来源指纹一致', changed: '来源已变化，请核对并重新保存', unavailable: '来源无法读取'}[result.status] ?? result.status);
+    }));
+    add(item.enabled ? '停用' : '启用', () => void memoryWork(async () => {
+      await api(memoryUrl() + '/' + item.id, {revision: item.revision, enabled: !item.enabled}, 'PATCH');
+      if (editingMemory?.id === item.id) showMemoryEditor();
+      await loadProjectMemories();
+    }));
+    add('删除', () => {
+      if (memoryBusy || !window.confirm('删除这条项目记忆？')) return;
+      void memoryWork(async () => {
+        await api(memoryUrl() + '/' + item.id, {revision: item.revision}, 'DELETE');
+        if (editingMemory?.id === item.id) showMemoryEditor();
+        await loadProjectMemories();
+      });
+    });
+    detail.append(title, content, source, actions);
+    list.append(detail);
+  }
+}
+
+async function loadProjectMemories() {
+  memoryItems = (await api(memoryUrl())).memories;
+  drawProjectMemories();
+}
+
+async function memoryWork(action) {
+  if (memoryBusy) return;
+  memoryBusy = true;
+  const submit = memoryForm.querySelector('[type="submit"]');
+  submit.disabled = true;
+  dialogError(memoryDialog);
+  try { await action(); }
+  catch (error) { dialogError(memoryDialog, error); }
+  finally { memoryBusy = false; submit.disabled = false; }
+}
+
+async function openProjectMemory(project) {
+  if (memoryBusy || memoryDialog.open) return;
+  memoryProject = project;
+  memoryItems = [];
+  $('project-memory-title').textContent = project.name + ' · 项目记忆';
+  $('project-memory-search').value = '';
+  showMemoryEditor();
+  drawProjectMemories();
+  memoryDialog.showModal();
+  await memoryWork(loadProjectMemories);
+}
+
+$('project-memory-kind').onchange = () => {
+  const fact = $('project-memory-kind').value === 'fact';
+  $('project-memory-source-row').hidden = !fact;
+  $('project-memory-source').required = fact;
+};
+$('project-memory-search').oninput = drawProjectMemories;
+$('project-memory-reset').onclick = () => { if (!memoryBusy) showMemoryEditor(); };
+$('project-memory-close').onclick = () => { if (!memoryBusy) memoryDialog.close(); };
+memoryDialog.oncancel = event => { if (memoryBusy) event.preventDefault(); };
+memoryForm.onsubmit = event => {
+  event.preventDefault();
+  void memoryWork(async () => {
+    const kind = $('project-memory-kind').value;
+    const body = {kind, title: $('project-memory-name').value, text: $('project-memory-text').value,
+      triggers: $('project-memory-triggers').value.split(/[,，]/).map(value => value.trim()).filter(Boolean),
+      sourcePath: kind === 'fact' ? $('project-memory-source').value : '', confirmed: true};
+    if (editingMemory) await api(memoryUrl() + '/' + editingMemory.id, {...body, revision: editingMemory.revision}, 'PUT');
+    else await api(memoryUrl(), body);
+    showMemoryEditor();
+    await loadProjectMemories();
+  });
+};
 
 function settingsMessage(id, text = '', tone = '') {
   const message = $(id);
@@ -1033,6 +1156,10 @@ function appendEvent(list, {seq, type, payload}) {
     skill_engine_details: () => payload.encoder ? `SkillNet · ${payload.encoder.kind}${payload.encoder.degraded ? ' · 词法回退' : ''}` :
       `SkillNet ${payload.operation === 'propose' ? '候选' : '公开来源'} · ${payload.state ?? '已检查'}`,
     skill_retrieval: () => `检索引擎 · ${payload.provider} · ${payload.candidates.length} 项候选`,
+    worker_started: () => `只读子任务 · ${payload.role === 'review' ? '复核' : '分析'} · ${payload.goal}`,
+    worker_read: () => `子任务读取 · ${payload.path} · ${payload.ok ? '已保留回执' : payload.code}`,
+    worker_finished: () => `只读子任务 · ${{completed: '已返回待复核结果', failed: '失败', blocked: '受阻', stopped: '已停止'}[payload.status]} · ${payload.goal}`,
+    project_memory_used: () => `项目记忆 · ${payload.title} · ${{used: '已选为本轮上下文', changed: '来源已变化', unavailable: '来源无法读取', budget: '预算不足'}[payload.status]}`,
     audit_model: () => `正在规划 · ${payload.stage === 'steps' ? '可选步骤' : payload.stage === 'mapping' ? '字段映射' : `第 ${payload.call} 次`}`,
     audit_plan: () => `计划已生成 · ${payload.steps.length} 个步骤`,
     audit_skill_selection: () => payload.candidates.length ? `筛选技能 · ${payload.candidates.length} 个候选` : '等待补充 · 缺少适用技能或来源证据',
@@ -1044,22 +1171,30 @@ function appendEvent(list, {seq, type, payload}) {
   };
   const isTool = ['tool', 'tool_result', 'audit_tool'].includes(type);
   if (!isTool && !Object.hasOwn(lines, type)) return;
+  if (type === 'finished') for (const pending of list.querySelectorAll('[data-worker-id] .execution-step[data-state="running"]')) {
+    pending.dataset.state = 'failed';
+    pending.querySelector('.execution-icon').textContent = '!';
+    pending.querySelector('.execution-preview').textContent = '随主任务结束，未返回结果';
+  }
   if (type === 'context_snapshot' && !payload.historyOmitted?.length && !payload.toolRoundsOmitted && !payload.compactedReceipts?.length) return;
   const name = payload.name ?? payload.tool;
   const output = type === 'tool_result' ? payload.output : payload.result;
   const key = `${payload.step}:${name}`;
-  const previous = type === 'tool_result' ? [...list.children].reverse().find(item => item.dataset.toolKey === key && item.dataset.pending === 'true') : null;
+  const previous = type === 'worker_finished' ? [...list.children].find(item => item.dataset.workerId === payload.id) :
+    type === 'tool_result' ? [...list.children].reverse().find(item => item.dataset.toolKey === key && item.dataset.pending === 'true') : null;
   const li = previous ?? document.createElement('li');
+  if (type === 'worker_started') li.dataset.workerId = payload.id;
   if (seq) li.dataset.eventSeq = String(seq);
   const detail = document.createElement('details');
   detail.className = 'execution-step';
   const summary = document.createElement('summary');
   const icon = document.createElement('span');
   icon.className = 'execution-icon'; icon.setAttribute('aria-hidden', 'true');
-  const failed = type === 'budget_denied' || output?.ok === false || (output?.data?.kind === 'project_tests' && output.data.status !== 'passed') ||
+  const failed = type === 'budget_denied' || type === 'worker_read' && !payload.ok ||
+    type === 'worker_finished' && payload.status !== 'completed' || output?.ok === false || (output?.data?.kind === 'project_tests' && output.data.status !== 'passed') ||
     (output?.data?.kind === 'material_preflight' && output.data.status === 'needs_input') ||
     (type === 'finished' && ['failed', 'stopped', 'interrupted', 'budget_exhausted'].includes(payload.status));
-  const pending = type === 'tool';
+  const pending = type === 'tool' || type === 'worker_started';
   icon.textContent = failed ? '!' : pending || (!isTool && type !== 'finished' && type !== 'skill_completed') ? '·' : '✓';
   detail.dataset.state = failed ? 'failed' : pending ? 'running' : 'done';
   const title = document.createElement('span');
@@ -1068,7 +1203,7 @@ function appendEvent(list, {seq, type, payload}) {
   const preview = document.createElement('span');
   preview.className = 'execution-preview';
   preview.textContent = compact(isTool ? pending ? '执行中' : toolOutputSummary(output) :
-    payload.rationale || payload.reason?.message || payload.query || '');
+    payload.rationale || payload.reason?.message || payload.query || payload.summary || payload.blockers?.join('、') || '');
   summary.append(icon, title, preview);
   detail.append(summary);
   detail.addEventListener('toggle', () => {
@@ -1082,6 +1217,9 @@ function appendEvent(list, {seq, type, payload}) {
     };
     const pre = document.createElement('pre'); pre.className = 'execution-raw'; pre.tabIndex = 0;
     pre.setAttribute('aria-label', '完整执行记录'); pre.textContent = raw;
+    if (type === 'worker_finished') for (const artifact of payload.artifacts ?? []) {
+      body.append(fileLink(payload.taskId, artifact, '下载子任务报告'));
+    }
     body.append(copy, pre); detail.append(body);
   });
   if (isTool) { li.dataset.toolKey = key; li.dataset.pending = String(pending); }
@@ -1315,10 +1453,10 @@ function drawTranscript() {
           if (!run.planReceipts.some(receipt => receipt.seq === event.seq)) run.planReceipts.push({
             seq: event.seq, name: event.payload.name, planStep: event.payload.planStep, planRevision: event.payload.planRevision,
             planStepTitle: event.payload.planStepTitle,
-            ok: event.payload.output.ok && (event.payload.output.data?.kind !== 'project_tests' || event.payload.output.data.status === 'passed') &&
+            ...(event.payload.planOutcome ?? {ok: event.payload.output.ok && (event.payload.output.data?.kind !== 'project_tests' || event.payload.output.data.status === 'passed') &&
               (event.payload.output.data?.kind !== 'material_preflight' || event.payload.output.data.status === 'completed'),
             message: ['project_tests', 'material_preflight'].includes(event.payload.output.data?.kind) ? event.payload.output.data.summary :
-              event.payload.output.ok ? '调用成功' : event.payload.output.error.message,
+              event.payload.output.ok ? '调用成功' : event.payload.output.error.message}),
           });
           drawPlan();
         }

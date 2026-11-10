@@ -1,5 +1,5 @@
 import {createHash, randomUUID} from 'node:crypto';
-import {RequestError} from './store.mjs';
+import {RequestError, visibleRunContext} from './store.mjs';
 import {createRunBudget} from './run-budget.mjs';
 import {invokeSkillIntelligence} from './skill-intelligence.mjs';
 import {skillDigest, skillMarkdown} from './skill-files.mjs';
@@ -22,7 +22,8 @@ export function createSkillExperiences(store, {studio, projectFor, redact}) {
   ); CREATE INDEX IF NOT EXISTS experiences_scope ON skill_experiences(project_id,run_id);`);
 
   function collect(runId) {
-    const run = store.query(`SELECT r.rowid AS position,r.*,t.project_id,t.title FROM runs r JOIN tasks t ON t.id=r.task WHERE r.id=?`, 'get', runId);
+    const run = store.query(`SELECT r.rowid AS position,r.*,t.project_id,t.title FROM runs r JOIN tasks t ON t.id=r.task
+      WHERE r.id=? AND ${visibleRunContext}`, 'get', runId);
     if (!run || run.status === 'running') return null;
     const events = store.query('SELECT seq,type,payload FROM events WHERE run=? ORDER BY seq LIMIT 1001', 'all', runId);
     const limited = events.length > 1000;
@@ -64,7 +65,8 @@ export function createSkillExperiences(store, {studio, projectFor, redact}) {
     }
     for (const group of failures.values()) if (group.length >= 2) signals.push({code:'REPEATED_TOOL_ERROR',label:'同一工具错误重复出现（不据此推定原因）',evidenceRefs:group.slice(0,3).map(item=>ref(item.event,item.text))});
     const guidance = store.query('SELECT request,prompt FROM run_guidance WHERE run=? AND applied=1 ORDER BY rowid LIMIT 8', 'all', runId);
-    const next = store.query("SELECT id,prompt FROM runs WHERE task=? AND rowid>? ORDER BY rowid LIMIT 1", 'get', run.task, run.position);
+    const next = store.query(`SELECT r.id,r.prompt FROM runs r JOIN tasks t ON t.id=r.task
+      WHERE r.rowid=(SELECT min(rowid) FROM runs WHERE task=? AND rowid>?) AND ${visibleRunContext}`, 'get', run.task, run.position);
     for (const item of [...guidance.map(g=>({id:'guidance:'+g.request,runId,text:g.prompt,type:'user_guidance'})),
       ...(next ? [{id:'user:'+next.id,runId:next.id,text:next.prompt,type:'user_message'}] : [])]) {
       if (correction.test(item.text)) {
@@ -90,10 +92,12 @@ export function createSkillExperiences(store, {studio, projectFor, redact}) {
   }
   function list(context,{runId}={}) {
     const scope=projectFor(context);
-    if(runId){const run=store.query('SELECT r.id,t.project_id FROM runs r JOIN tasks t ON t.id=r.task WHERE r.id=?','get',runId);
+    if(runId){const run=store.query(`SELECT r.id,t.project_id FROM runs r JOIN tasks t ON t.id=r.task
+      WHERE r.id=? AND ${visibleRunContext}`,'get',runId);
       if(!run||run.project_id!==scope)throw new RequestError(404,'当前项目没有该执行。');collect(runId);
     }else{
-      for(const run of store.query("SELECT r.id FROM runs r JOIN tasks t ON t.id=r.task WHERE t.project_id IS ? AND r.status<>'running' ORDER BY r.rowid DESC LIMIT 200",'all',scope)) collect(run.id);
+      for(const run of store.query(`SELECT r.id FROM runs r JOIN tasks t ON t.id=r.task WHERE t.project_id IS ?
+        AND r.status<>'running' AND ${visibleRunContext} ORDER BY r.rowid DESC LIMIT 200`,'all',scope)) collect(run.id);
     }
     const rows=store.query(`SELECT e.id FROM skill_experiences e WHERE e.project_id IS ? ${runId?'AND e.run_id=?':''}
       AND e.rowid=(SELECT max(x.rowid) FROM skill_experiences x WHERE x.run_id=e.run_id) ORDER BY e.rowid DESC LIMIT 200`,'all',scope,...(runId?[runId]:[]));

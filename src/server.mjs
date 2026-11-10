@@ -31,6 +31,8 @@ import {createRunBudget, readRunBudget} from './run-budget.mjs';
 import {skillIntelligenceContract} from './skill-intelligence.mjs';
 import {createSkillnetConnection} from './skillnet-provider.mjs';
 import {createSkillDiscovery, publicCapabilityTags} from './skill-discovery.mjs';
+import {createProjectMemory} from './project-memory.mjs';
+import {readRunWorkers, workerTool} from './readonly-workers.mjs';
 
 const assets = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'],
   '/skill-studio.js': ['skill-studio.js', 'text/javascript'],
@@ -160,6 +162,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
   const settings = await createSettings({store, env});
   const skillnet = createSkillnetConnection({store, state, env});
   const discoveries = createSkillDiscovery({store, studio: skillStudio});
+  const projectMemories = createProjectMemory(store, state);
   let studioController;
   let optimizerController;
   const active = new Map();
@@ -231,6 +234,8 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
         store.run(historicalBudget[1]);
         return json(res, 200, success(readRunBudget(store, historicalBudget[1])));
       }
+      const historicalWorkers = /^\/api\/runs\/([a-f\d-]{36})\/workers$/.exec(pathname);
+      if (historicalWorkers && req.method === 'GET') return json(res, 200, {workers: readRunWorkers(store, historicalWorkers[1])});
       const historicalRegistry=/^\/api\/runs\/([a-f\d-]{36})\/skill-registry$/.exec(pathname);
       if(historicalRegistry&&req.method==='GET'){
         try{return json(res,200,success(skillRegistry.forRun(historicalRegistry[1])));}
@@ -479,7 +484,9 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
           studioController = undefined;
         }
       }
-      if (pathname === '/api/tools/contract' && req.method === 'GET') return json(res, 200, {version: CONTRACT_VERSION, tools: fileToolRegistry, skills: chatSkillRegistry});
+      if (pathname === '/api/tools/contract' && req.method === 'GET') return json(res, 200, {
+        version: CONTRACT_VERSION, tools: fileToolRegistry, skills: chatSkillRegistry, workers: [workerTool],
+      });
       if (pathname === '/api/audit/contract' && req.method === 'GET') return json(res, 200, {version: 2, tools: auditTools,
         limits: appConfig.audit, planSchema, reportSchema,
         plannerStages: {mapping: mappingDecisionSchema, steps: optionalDecisionSchema},
@@ -567,6 +574,18 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
           });
           return json(res, 201, store.addProject(path, basename(path) || path));
         }
+      }
+      const memoryRoute = /^\/api\/projects\/([a-f\d-]{36})\/memories(?:\/([a-f\d-]{36})(\/verify)?)?$/.exec(pathname);
+      if (memoryRoute) {
+        const [, project, id, verify] = memoryRoute;
+        if (verify && req.method === 'GET') return json(res, 200, await projectMemories.verify(project, id, AbortSignal.timeout(5000)));
+        if (!verify && !id && req.method === 'GET') return json(res, 200, {memories: projectMemories.list(project)});
+        if (!verify && ((!id && req.method === 'POST') || (id && req.method === 'PUT'))) {
+          return json(res, id ? 200 : 201, await projectMemories.save(project, id, await input(req, 12000), AbortSignal.timeout(5000)));
+        }
+        if (!verify && id && req.method === 'PATCH') return json(res, 200, projectMemories.toggle(project, id, await input(req, 1000)));
+        if (!verify && id && req.method === 'DELETE') return json(res, 200, projectMemories.remove(project, id, await input(req, 1000)));
+        throw new RequestError(405, '项目记忆操作无效。');
       }
       const accessRoute = /^\/api\/tasks\/([a-f\d-]{36})\/file-access$/.exec(pathname);
       if (accessRoute && req.method === 'PUT') {
@@ -701,6 +720,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
               scope: fileScope ? {...fileScope, state} : null,
               skillRegistrySnapshot:skillRegistry.snapshot(task,localSkills),
               skillEngine: skillnet.provider(undefined, details => store.record(run.id, 'skill_engine_details', details)),
+              projectMemories,
               context: {title: currentTask.title, goal: prompt, selectedFile: attachment ? {id: attachment.id, name: attachment.name, kind: attachment.kind} : null,
                 materials: materials.map(material => ({...material,
                 path: material.path.endsWith('.image') ? '' : fileScope?.mode && fileScope.mode !== 'attachments' ? 'attachment:' + material.path : material.path})),

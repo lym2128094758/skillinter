@@ -1,6 +1,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 
+// Shared by model history and active plans. Queries bind r to runs and t to tasks.
+export const visibleRunContext = `NOT EXISTS (SELECT 1 FROM events origin WHERE origin.run=r.id AND origin.type='started'
+  AND json_type(origin.payload,'$.fileScope')='object'
+  AND (json_extract(origin.payload,'$.fileScope.projectId') IS NOT t.project_id
+    OR (json_extract(origin.payload,'$.fileScope.mode')='full' AND t.file_access<>'full')
+    OR (t.file_access='attachments' AND json_extract(origin.payload,'$.fileScope.projectPath') IS NOT NULL)))`;
+
 export class RequestError extends Error {
   constructor(status, message) {
     super(message);
@@ -188,11 +195,11 @@ export class Store {
       .map(event => ({run: event.run, seq: event.seq, ...JSON.parse(event.payload)}));
     return {...task, files: files.filter(file => !file.run), runs: runs.map(run => ({...run, config: configByRun.get(run.id),
       guidance: guidance.filter(item => item.run === run.id), ended: endByRun.get(run.id)?.ended,
-      plan: plans.get(run.id), planReceipts: receipts.filter(item => item.run === run.id).map(({seq, name, planStep, planRevision, planStepTitle, output}) =>
+      plan: plans.get(run.id), planReceipts: receipts.filter(item => item.run === run.id).map(({seq, name, planStep, planRevision, planStepTitle, output, planOutcome}) =>
         ({seq, name, planStep, planRevision, planStepTitle,
-          ok: output.ok && (output.data?.kind !== 'project_tests' || output.data.status === 'passed') &&
+          ...(planOutcome ?? {ok: output.ok && (output.data?.kind !== 'project_tests' || output.data.status === 'passed') &&
             (output.data?.kind !== 'material_preflight' || output.data.status === 'completed'),
-          message: output.ok ? ['project_tests', 'material_preflight'].includes(output.data?.kind) ? output.data.summary : '调用成功' : output.error.message})),
+            message: output.ok ? ['project_tests', 'material_preflight'].includes(output.data?.kind) ? output.data.summary : '调用成功' : output.error.message})})),
       skill: adopted.get(run.id), skillSearch: searches.get(run.id), loadedSkills: loaded.get(run.id) ?? [],
       skillRoute: routes.get(run.id), skillTrace: skillTraces.get(run.id), skillApplications: applications.filter(item => item.run === run.id),
       skillApplicability: applicability.filter(item => item.run === run.id),
@@ -364,10 +371,12 @@ export class Store {
   }
 
   history(task) {
-    const rows = this.query(`SELECT r.id, r.prompt, r.answer, r.status, r.input_file FROM runs r WHERE r.task = ?
+    const rows = this.query(`SELECT r.id, r.prompt, r.answer, r.status, r.input_file FROM runs r JOIN tasks t ON t.id=r.task WHERE r.task = ?
       AND (r.status = 'completed' OR (r.status IN ('failed', 'stopped', 'interrupted') AND r.answer IS NOT NULL))
       AND NOT EXISTS (SELECT 1 FROM events e WHERE e.run = r.id AND e.type = 'started'
-      AND json_extract(e.payload, '$.mode') IN ('demo', 'diagnostic', 'audit-demo')) ORDER BY r.rowid DESC LIMIT 8`, 'all', task).reverse();
+      AND json_extract(e.payload, '$.mode') IN ('demo', 'diagnostic', 'audit-demo'))
+      AND ${visibleRunContext}
+      ORDER BY r.rowid DESC LIMIT 8`, 'all', task).reverse();
     return rows.map(row => ({...row, answer: row.status === 'completed' ? row.answer : `${row.answer}\n[该轮未完成，以上是已收到的部分回复]`, prompt: [row.prompt,
       ...this.query('SELECT prompt FROM run_guidance WHERE run = ? AND applied = 1 ORDER BY rowid', 'all', row.id)
         .map(message => `补充要求：${message.prompt}`)].join('\n\n')}));
