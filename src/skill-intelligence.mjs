@@ -34,10 +34,15 @@ const schemas = {
     data: object({snapshotSha256: sha, parent: ref, parentSha256: sha, draft: text(60000), diff: text(60000)}),
   },
 };
+Object.assign(schemas.discover.data.properties.sources.items.properties, {
+  body: {type: 'string', minLength: 1, maxLength: 65536},
+  pinnedUrl: text(1500), licenseSha256: sha, licensePath: text(300), retrievedAt: text(80),
+});
 
 export const skillIntelligenceContract = {
-  version: 1, timeoutMs: 5000, errors,
-  operations: Object.entries(schemas).map(([name, {parameters, data}]) => ({name, parameters,
+  version: 2, timeoutMs: 30000, errors,
+  operations: Object.entries(schemas).map(([name, {parameters, data}]) => ({name, parameters, timeoutMs: name === 'discover' ? 60000 : 30000,
+    idempotent: name !== 'propose', authorization: '宿主冻结允许的引用和来源，不授予写入权限。',
     returns: resultSchema(object({provider: text(80), version: text(80), fallback: {anyOf: [{enum: [null]}, {enum: Object.keys(errors)}]}, result: data}))})),
   authorization: '宿主绑定冻结快照和授权来源。引擎输出仅为建议。外部发现只接收获准公开的标签，候选草案不得写入正式库。',
 };
@@ -49,7 +54,7 @@ const sourceAllowed = source => {
   catch { return false; }
 };
 
-export async function invokeSkillIntelligence({name, input, provider, fallback, allowedRefs = [], budget, signal = budget.signal, emit}) {
+export async function invokeSkillIntelligence({name, input, provider, fallback, allowedRefs = [], relations = [], budget, signal = budget.signal, emit = () => {}}) {
   const schema = schemas[name];
   const refs = new Set(allowedRefs.map(key));
   const known = ref => refs.has(key(ref));
@@ -62,7 +67,8 @@ export async function invokeSkillIntelligence({name, input, provider, fallback, 
 
   async function attempt(engine) {
     const started = performance.now();
-    const timeout = AbortSignal.timeout(Math.max(1, Math.min(skillIntelligenceContract.timeoutMs, budget.remainingMs())));
+    const timeoutMs = skillIntelligenceContract.operations.find(item => item.name === name).timeoutMs;
+    const timeout = AbortSignal.timeout(Math.max(1, Math.min(timeoutMs, budget.remainingMs())));
     const bound = AbortSignal.any([budget.signal, signal, timeout]);
     let data, code, version = null;
     try {
@@ -70,7 +76,7 @@ export async function invokeSkillIntelligence({name, input, provider, fallback, 
       else {
         const reply = await budget.engine('skill-intelligence', name, requestSignal =>
           withAbort(requestSignal, () => engine[name](structuredClone(input), {
-            signal: requestSignal, ...(name === 'search' ? {allowedRefs: structuredClone(allowedRefs)} : {}),
+            signal: requestSignal, ...(name === 'search' ? {allowedRefs: structuredClone(allowedRefs), relations: structuredClone(relations)} : {}),
           })), bound);
         version = reply?.version;
         data = reply?.data;
@@ -81,11 +87,14 @@ export async function invokeSkillIntelligence({name, input, provider, fallback, 
         else if (name === 'plan' && !linked(data.relations) ||
           name === 'propose' && (key(data.parent) !== key(input.parent) || data.parentSha256 !== input.parentSha256)) code = 'UNKNOWN_REFERENCE';
         else if (name === 'discover' && (data.sources.length > input.limit ||
-          !data.sources.every(item => input.allowedSources.includes(item.source)))) code = 'SOURCE_NOT_ALLOWED';
+          !data.sources.every(item => input.allowedSources.includes(item.source) &&
+            (!item.body || createHash('sha256').update(item.body).digest('hex') === item.contentSha256) &&
+            (!item.pinnedUrl || item.pinnedUrl.includes('/blob/' + item.commit + '/'))))) code = 'SOURCE_NOT_ALLOWED';
       }
     } catch (error) {
       code = budget.deadline.aborted || error.code === 'BUDGET_EXHAUSTED' ? 'BUDGET_EXHAUSTED' :
-        signal.aborted || budget.signal.aborted ? 'ABORTED' : timeout.aborted ? 'ENGINE_TIMEOUT' : 'PROVIDER_ERROR';
+        signal.aborted || budget.signal.aborted ? 'ABORTED' : timeout.aborted ? 'ENGINE_TIMEOUT' :
+          Object.hasOwn(errors, error.code) ? error.code : 'PROVIDER_ERROR';
     }
     emit('skill_engine_call', {invocationId, name, provider: engine?.id ?? null, version: typeof version === 'string' ? version.slice(0, 80) : null,
       inputSha256: digest(input), responseSha256: code ? null : digest(data), elapsedMs: Math.round(performance.now() - started),

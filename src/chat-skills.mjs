@@ -10,7 +10,7 @@ import { skillSessionRegistry, sessionErrors } from './skill-session.mjs';
 import { projectTestTool } from './project-tests.mjs';
 import { executePreflight, materialSkills, preflightInput } from './preflight.mjs';
 import { deliverySchema } from './skill-delivery.mjs';
-import {invokeSkillIntelligence} from './skill-intelligence.mjs';
+import {retrieveSkills} from './skill-retrieval.mjs';
 
 const errors = {...sessionErrors, INVALID_ARGUMENT: '技能工具参数无效。', ATTACHMENT_NOT_FOUND: '附件不属于当前会话或不存在。',
   CSV_REQUIRED: '请选择或上传当前会话的 CSV 附件。', INVALID_CSV: 'CSV 格式无效。',
@@ -96,7 +96,7 @@ function skillCatalog() {
   return catalog;
 }
 
-export function searchSkills({query, limit = 5, executable_only = false}, localSkills = [], snapshot) {
+function searchableCards(localSkills, snapshot) {
   const source = skillCatalog();
   const byCatalogId = new Map(source.entries.map(item => [item.id, item]));
   const visibleSkills = snapshot ? localSkills.filter(skill => snapshot.skills.some(ref => ref.skillId === skill.id && ref.selectable)) : localSkills;
@@ -105,9 +105,14 @@ export function searchSkills({query, limit = 5, executable_only = false}, localS
   const local = visibleSkills.map(skill => ({id: skill.id, label: skill.name, domain: '已发布技能', description: skill.description,
     nodeId: byCatalogId.get(snapshot ? externalBySkill.get(skill.id) : skill.name)?.nodeId ?? '', executable: true, tool: 'load_skill', version: String(skill.version)}));
   const catalogSha256 = local.length ? digest({base: source.sha256, local}) : source.sha256;
+  return {catalogSha256, cards: [...source.entries.filter(item => item.executable || !installedNames.has(item.id)), ...local]};
+}
+
+export function searchSkills({query, limit = 5, executable_only = false}, localSkills = [], snapshot) {
+  const {catalogSha256, cards} = searchableCards(localSkills, snapshot);
   const terms = [...new Set([...new Intl.Segmenter('zh', {granularity: 'word'}).segment(query.toLowerCase())]
     .filter(part => part.isWordLike).map(part => part.segment))];
-  const matches = [...source.entries.filter(item => item.executable || !installedNames.has(item.id)), ...local].filter(item => !executable_only || item.executable).map(item => {
+  const matches = cards.filter(item => !executable_only || item.executable).map(item => {
     const title = (item.label + ' ' + item.domain).toLowerCase();
     const text = (item.id + ' ' + item.description).toLowerCase();
     return {item, score: terms.reduce((score, term) => score + (title.includes(term) ? 3 : text.includes(term) ? 1 : 0), 0)};
@@ -115,7 +120,7 @@ export function searchSkills({query, limit = 5, executable_only = false}, localS
   return {query, matches: matches.slice(0, limit).map(row => row.item), truncated: matches.length > limit, catalogSha256};
 }
 
-export function createChatSkills({store, task, run, model, signal, entry, localSkills = [], customSkill, session, scope, workspace, context, budget, registrySnapshot}) {
+export function createChatSkills({store, task, run, model, signal, entry, localSkills = [], customSkill, session, scope, workspace, context, budget, registrySnapshot, skillEngine}) {
   const cache = new Map();
   let precheckKey;
   let materialPreflightKey;
@@ -145,20 +150,18 @@ export function createChatSkills({store, task, run, model, signal, entry, localS
       let data;
       if (name === 'search_skills') {
         if (budget) {
-          const snapshotSha256 = registrySnapshot?.sha256 ?? skillCatalog().sha256;
-          let matches;
-          const installed = registrySnapshot?.skills.filter(skill => skill.selectable).map(skill => ({id: skill.skillId, version: String(skill.version)})) ??
-            localSkills.map(skill => ({id: skill.id, version: String(skill.version)}));
-          const result = await invokeSkillIntelligence({name: 'search', budget, signal, allowedRefs: [...skillCatalog().entries, ...installed],
+          const {cards, catalogSha256} = searchableCards(localSkills, registrySnapshot);
+          const snapshot = registrySnapshot ?? {sha256: catalogSha256, relations: []};
+          let localResult;
+          const {result, matches} = await retrieveSkills({goal: args.query, limit: args.limit ?? 5, budget, signal,
+            cards: cards.filter(card => !args.executable_only || card.executable), snapshot, provider: skillEngine,
             emit: (type, payload) => store.record(run, type, payload),
-            input: {goal: args.query, snapshotSha256, limit: args.limit ?? 5, mode: 'local'},
-            provider: {id: 'sih-local', search() {
-              matches = searchSkills(args, localSkills, registrySnapshot);
-              return {version: '1', data: {snapshotSha256, candidates: matches.matches.map(({id, version}) =>
-                ({skill: {id, version}, reason: '本地目录分词匹配', path: []}))}};
-            }}});
+            local: () => { localResult = searchSkills(args, localSkills, registrySnapshot); return localResult.matches; }});
           if (!result.ok) return failure(errors, Object.hasOwn(errors, result.error.code) ? result.error.code : 'INTERNAL');
-          data = matches;
+          data = {query: args.query, matches: matches.map(({engineReason, ...card}) => card),
+            truncated: localResult?.truncated ?? false, catalogSha256};
+          store.record(run, 'skill_retrieval', {provider: result.data.provider, fallback: result.data.fallback,
+            candidates: matches.map(card => ({id: card.id, reason: card.engineReason}))});
         } else data = searchSkills(args, localSkills, registrySnapshot);
         store.record(run, 'skill_search', data);
       } else if (name === 'load_skill') {

@@ -243,6 +243,18 @@
         <p id="model-feedback" class="settings-message" role="status" hidden></p>
         <div class="settings-actions"><button id="test-model" type="button">测试连接</button><button class="primary-action" id="save-model" type="submit">保存模型设置</button></div>
       </form>
+      <form id="engine-form" class="settings-card">
+        <h4>SkillNet 技能引擎</h4>
+        <label><input id="engine-enabled" type="checkbox">启用混合检索</label>
+        <label for="engine-path">SkillNet 源码目录</label>
+        <input id="engine-path" type="text" maxlength="1000" placeholder="本机 skillnet-demo 目录">
+        <label for="engine-python">Python 程序</label>
+        <input id="engine-python" type="text" maxlength="1000" value="python">
+        <label for="engine-encoder">编码器</label>
+        <select id="engine-encoder"><option value="auto">自动，缺模型时说明词法回退</option><option value="dense">本地稠密模型</option><option value="lexical">词法向量</option></select>
+        <p id="engine-status" class="status" role="status"></p>
+        <div class="settings-actions"><button id="engine-test" type="button">检测引擎</button><button type="submit">保存引擎设置</button></div>
+      </form>
     </section>
     <section id="run-view" aria-labelledby="run-heading" hidden>
       <div class="settings-intro"><h3 id="run-heading">运行</h3><p>限制单轮任务的模型调用和工具循环。</p></div>
@@ -300,7 +312,15 @@
       <label for="studio-import-scope">导入到</label>
       <select id="studio-import-scope"><option value="global">用户技能（所有项目可用）</option><option value="project">项目技能（仅当前项目可用）</option></select>
       <label for="studio-import-source">导入来源</label>
-      <select id="studio-import-source"><option value="libraries">扫描本机 Agent 技能库（推荐）</option><option value="library-path">扫描其他技能库目录</option><option value="file">单个技能文件</option><option value="directory">本地目录（逐项编辑）</option></select>
+      <select id="studio-import-source"><option value="libraries">扫描本机 Agent 技能库（推荐）</option><option value="public">SkillNet 公开技能来源</option><option value="library-path">扫描其他技能库目录</option><option value="file">单个技能文件</option><option value="directory">本地目录（逐项编辑）</option></select>
+      <div id="studio-public-source" hidden>
+        <label for="studio-public-tag">公开能力标签</label>
+        <select id="studio-public-tag"><option value="software testing">软件测试</option><option value="web research">公开研究</option><option value="citation verification">文献引用核验</option><option value="data analysis">数据分析</option><option value="document extraction">文档提取</option><option value="frontend development">前端开发</option><option value="backend development">后端开发</option><option value="data visualization">数据可视化</option></select>
+        <label for="studio-public-urls">GitHub SKILL.md 链接，每行一个，最多两个</label>
+        <textarea id="studio-public-urls" rows="3" maxlength="3000" placeholder="https://github.com/owner/repo/blob/main/skills/example/SKILL.md"></textarea>
+        <label><input id="studio-public-confirm" type="checkbox">允许读取这些公开来源，并将所选公开标签用于此次发现</label>
+        <p class="status">先在设置中连接本机 SkillNet。预览会固定提交、正文和许可指纹。确认后仅导入 SKILL.md，配套资源需另行补齐。</p>
+      </div>
       <div id="studio-library-row">
         <p class="status">自动发现 Codex、Claude、DSH、Agent Skills 等用户目录及目标项目中的技能库。按技能名和正文检查重复，只补充缺少的技能，保留配套文件。</p>
         <div id="studio-library-sources" class="studio-list"></div>

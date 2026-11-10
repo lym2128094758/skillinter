@@ -152,9 +152,19 @@ try {
     const data=await(await get('/api/skill-registry?task='+task)).json();
     return !data.data.relations.some(edge=>edge.source===relationA&&edge.target===relationB&&edge.type==='depend_on');
   });
+  await run("document.querySelector('#settings').click();true");
+  await waitFor('技能引擎设置加载', () => run("document.querySelector('#engine-status').textContent.includes('本地匹配')"));
+  await run("document.querySelector('#engine-enabled').checked=false;document.querySelector('#engine-form').requestSubmit();true");
+  await waitFor('保存引擎设置', () => run("document.querySelector('#engine-status').textContent.includes('已保存')"));
+  assert.equal((await (await get('/api/skill-intelligence/settings')).json()).revision, 1);
+  await run("document.querySelector('#close-settings').click();document.querySelector('#choose-custom-skill').click();true");
+  await waitFor('技能中心打开', () => run("document.querySelector('#skill-studio-dialog').open"));
+  await run("document.querySelector('#studio-tab-import').click();const select=document.querySelector('#studio-import-source');select.value='public';select.dispatchEvent(new Event('change'));true");
+  assert.equal(await run("!document.querySelector('#studio-public-source').hidden&&document.querySelector('#studio-import-start').textContent==='核验公开来源并预览'"), true);
   const output = resolve('.skillinter/evaluation');
   await mkdir(output, {recursive: true});
-  await writeFile(join(output, 'graph-ci.json'), JSON.stringify({passed: true, results,registryEditor:{saved:true,removed:true}}, null, 2) + '\n');
+  await writeFile(join(output, 'graph-ci.json'), JSON.stringify({passed: true, results,registryEditor:{saved:true,removed:true},
+    skillEngineSettings: {saved: true}, publicDiscoveryForm: {visible: true}}, null, 2) + '\n');
   console.log('图谱验收通过：历史链路和空候选与计划一致，材料预检可提交、引用发现并定位执行路径。');
 } finally {
   socket?.close();

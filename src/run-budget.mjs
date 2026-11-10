@@ -52,6 +52,10 @@ function totals(entries) {
 }
 
 export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
+  if (store.run(rootRunId).status !== 'running' || store.query(
+    "SELECT 1 FROM events WHERE run = ? AND type = 'budget_started' LIMIT 1", 'get', rootRunId)) {
+    throw new BudgetError('根任务已有预算或已经结束，不能重新初始化。');
+  }
   const limits = Object.freeze({...config.runBudget, maxModelCalls: 5, ...overrides});
   const startedAt = Date.now();
   const deadline = AbortSignal.timeout(limits.maxSeconds * 1000);
@@ -63,6 +67,7 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
 
   function check(kind, input = 0, output = 0) {
     signal.throwIfAborted();
+    if (store.run(rootRunId).status !== 'running') throw new BudgetError('根任务已经结束，不能继续调用。');
     if (deadline.aborted || Date.now() >= startedAt + limits.maxSeconds * 1000) throw new BudgetError('根任务时间预算已耗尽');
     if (closed) throw new BudgetError('根任务预算已关闭');
     const usage = totals(entries);

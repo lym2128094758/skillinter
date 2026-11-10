@@ -15,6 +15,7 @@ import {fileErrors} from './tools.mjs';
 import {failure} from './tool-contract.mjs';
 import {BudgetError, createRunBudget} from './run-budget.mjs';
 import {buildChatContext, compactToolResult, historyTurn} from './context-manager.mjs';
+import {retrieveSkills} from './skill-retrieval.mjs';
 
 function visibleText(content) {
   return content.replace(/<(?:mm:)?think>[\s\S]*?(?:<\/(?:mm:)?think>|$)/gi, '')
@@ -204,7 +205,7 @@ function explicitFileRequest(prompt) {
 }
 
 export async function executeRun({id, task, prompt, store, workspace, model, signal, maxSteps = 5, skill, attachment, entry, scope, skillRegistrySnapshot,
-  skillAccess = false, customSkill, localSkills = [], context = {}, toolAllowlist, budgetLimits, maxOutputPerCall}) {
+  skillAccess = false, customSkill, localSkills = [], context = {}, toolAllowlist, budgetLimits, maxOutputPerCall, skillEngine}) {
   const stopped = signal;
   const budget = createRunBudget({store, rootRunId: id, signal, limits: {...budgetLimits, maxModelCalls: skill ? 0 : maxSteps}});
   signal = budget.signal;
@@ -248,7 +249,17 @@ export async function executeRun({id, task, prompt, store, workspace, model, sig
     if (skillAccess && localSkills.length && !materialRequest) {
       const previousGoal = /^(?:请)?(?:继续|接着|调整|改进|重做|按刚才|根据刚才)/.test(prompt.trim()) ? store.history(task).at(-1)?.prompt ?? '' : '';
       skillGoal = [previousGoal, prompt].filter(Boolean).join('\n');
-      const route = routeSkills({prompt: skillGoal, materials: context.materials ?? [], localSkills, customSkill,registrySnapshot:skillRegistrySnapshot});
+      const routeOptions = {prompt: skillGoal, materials: context.materials ?? [], localSkills, customSkill, registrySnapshot:skillRegistrySnapshot};
+      let engineCandidates;
+      if (skillEngine && !customSkill) {
+        const cards = localSkills.filter(skill => skillRegistrySnapshot.skills.some(ref => ref.skillId === skill.id && ref.selectable));
+        const found = await retrieveSkills({goal: skillGoal, limit: 2, cards, snapshot: skillRegistrySnapshot, provider: skillEngine,
+          budget, signal, emit: (type, payload) => store.record(id, type, payload),
+          local: () => routeSkills(routeOptions).candidates.filter(card => !card.reason.includes('前置')).slice(0, 2)});
+        if (!found.result.ok) throw Object.assign(new Error(found.result.error.message), {code: found.result.error.code});
+        engineCandidates = found.matches;
+      }
+      const route = routeSkills({...routeOptions, engineCandidates});
       session = createSkillSession({store, task, run: id, localSkills, route, scope, tools, signal, context: {...context, goal: skillGoal}});
       automatic = await session.prepare();
       const {registrySnapshot: frozenRegistry, ...visibleRoute}=automatic.route;
@@ -277,7 +288,7 @@ For finish_skill.evidence, use operationReceipts from verify_skill_output or the
 首条系统上下文的服务端工具回执索引提供 seq、skillId、工具名及结果，工具返回 JSON 保持原契约。完成一个技能后调用 finish_skill，以本轮该技能的真实成功回执序号作为 evidence，再开始后继技能。applied 只是有回执的应用报告，不代表独立质量验证。生成文本类结果也应按用户目标写出可复核产物（仅在允许写入且用户要求时），不能仅凭加载指南或阅读资料标记应用完成。
 任务最终回复说明产物、实际采用的技能、未完成或待复核项；不要用“马上执行”代替实际执行。用户可通过对话修改计划。` : '';
     const skills = skillAccess ? createChatSkills({store, task, run: id, model, budget, signal, entry, localSkills, customSkill, session,
-      scope, workspace, context, registrySnapshot: skillRegistrySnapshot}) : null;
+      scope, workspace, context, registrySnapshot: skillRegistrySnapshot, skillEngine}) : null;
     const fullContract = contract + sessionContract;
     store.record(id, 'request_context', {contractVersion: CONTRACT_VERSION,
       sha256: createHash('sha256').update(fullContract).digest('hex'), system: fullContract, tools, context});

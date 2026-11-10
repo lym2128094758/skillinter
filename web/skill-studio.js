@@ -120,12 +120,14 @@ export function createSkillStudio({api, getTask, onSelect, canSelect, onOpenTask
     const mode = $('studio-import-source').value;
     const scan = mode === 'libraries' || mode === 'library-path';
     $('studio-library-row').hidden = mode !== 'libraries';
+    $('studio-public-source').hidden = mode !== 'public';
     $('studio-import-file-row').hidden = mode !== 'file';
     $('studio-import-path-row').hidden = mode !== 'directory' && mode !== 'library-path';
-    $('studio-import-start').textContent = scan ? '扫描并检查重复' : '读取并预览';
+    $('studio-import-start').textContent = mode === 'public' ? '核验公开来源并预览' : scan ? '扫描并检查重复' : '读取并预览';
     $('studio-import-help').textContent = scan
       ? '支持含 SKILL.md 的标准技能包；扫描不调用模型、不运行脚本。按技能名及正文去重，导入时保留脚本、参考资料和资源文件，不覆盖已有技能。'
       : '单文件和逐项编辑模式导入技能正文；如需保留配套脚本和资料，请使用技能库扫描。';
+    if (mode === 'public') $('studio-import-help').textContent = '公开来源先固定版本并预览，审核后才保存到所选范围。执行记录可查看来源请求和限流原因。';
     clearScan();
     if (mode === 'libraries') void loadSources();
   }
@@ -704,6 +706,43 @@ export function createSkillStudio({api, getTask, onSelect, canSelect, onOpenTask
     const targetScope = $('studio-import-scope').value;
     if (targetScope === 'project' && !selectedProject) { message(error, '请选择目标项目。'); return; }
     const mode = $('studio-import-source').value;
+    if (mode === 'public') {
+      if (!$('studio-public-confirm').checked) { message(error, '请先确认允许读取公开来源。'); return; }
+      const sources = $('studio-public-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+      void work('SkillNet 正在固定来源、提交和许可…', async isCurrent => {
+        const preview = await api('/api/skill-intelligence/discover', {taskId, ...projectBody(), confirmed: true,
+          request: crypto.randomUUID(), tags: [$('studio-public-tag').value], sources});
+        if (!isCurrent()) return;
+        const rows = preview.candidates.map(candidate => {
+          const row = node('section', '', 'studio-card');
+          const link = node('a', candidate.pinnedUrl);
+          link.href = candidate.pinnedUrl; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          const details = node('details');
+          const body = node('pre', candidate.body);
+          body.style.maxHeight = '320px'; body.style.overflow = 'auto'; body.style.whiteSpace = 'pre-wrap';
+          details.append(node('summary', '查看技能原文'), body);
+          const confirmation = node('label');
+          const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
+          confirmation.append(checkbox, document.createTextNode('已审核来源、正文及许可，接受仅导入 SKILL.md'));
+          const button = action('确认导入', () => void work('正在保存审核后的技能…', async () => {
+            await api('/api/skill-intelligence/discoveries/' + preview.id + '/import',
+              {taskId, ...projectBody(), candidateId: candidate.id, targetScope, confirmed: checkbox.checked});
+            button.disabled = true; button.textContent = '已导入，可在下一轮采用';
+          }));
+          button.disabled = true;
+          checkbox.onchange = () => { button.disabled = !checkbox.checked || candidate.status !== 'missing'; };
+          row.append(node('h4', candidate.title), link,
+            node('p', candidate.license + ' · ' + candidate.commit, 'status'),
+            node('p', '正文 SHA-256 · ' + candidate.contentSha256, 'status'),
+            node('p', '许可 SHA-256 · ' + candidate.licenseSha256, 'status'),
+            node('p', {missing: '尚未收录，等待审核', exists: '已存在', conflict: '同名冲突，请使用现有技能的改进入口'}[candidate.status], 'status'),
+            details, confirmation, button);
+          return row;
+        });
+        $('studio-import-results').replaceChildren(...(rows.length ? rows : [node('p', '没有通过来源与许可核验的技能。执行记录保留了失败或空选原因。', 'status')]));
+      });
+      return;
+    }
     if (mode === 'libraries' || mode === 'library-path') {
       const paths = mode === 'libraries'
         ? [...$('studio-library-sources').querySelectorAll('input:checked')].map(input => input.value)

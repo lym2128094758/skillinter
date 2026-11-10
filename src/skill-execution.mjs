@@ -30,7 +30,7 @@ export const executionTools = ['list_workspace','read_file','create_file','repla
   'read_skill_resource','start_skill','finish_skill','verify_skill_output','update_plan'];
 export const executionSha256 = digest(['skill-execution.mjs','runner.mjs','skill-session.mjs','skill-delivery.mjs','tools.mjs','file-scope.mjs','schema.mjs',
   'chat-skills.mjs','task-plan.mjs','preflight.mjs','skill-files.mjs','skill-routing.mjs','skill-registry.mjs',
-  'run-budget.mjs','context-manager.mjs','../config.yaml']
+  'run-budget.mjs','context-manager.mjs','skill-retrieval.mjs','skill-intelligence.mjs','../config.yaml']
   .map(path=>readFileSync(new URL(path,import.meta.url),'utf8')));
 const canonical = skill => ({name:skill.name,description:skill.description,instructions:skill.instructions,tests:skill.tests,
   ...(skill.applicability?{applicability:skill.applicability}:{}),...(skill.delivery?{delivery:skill.delivery}:{})});

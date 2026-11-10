@@ -91,6 +91,7 @@ test('large receipts remain intact in storage, while the model receives bounded 
 
 test('reservations survive interruption, and overlapping model calls share concurrency capacity', async t => {
   const {store, run, budget} = fixture(t, {maxConcurrent: 1});
+  assert.throws(() => createRunBudget({store, rootRunId: run, signal: budget.signal}), /不能重新初始化/);
   let finish;
   const model = {label: 'fixture', invoke: () => new Promise(resolve => { finish = resolve; })};
   const pending = budget.invoke(model, {messages, maxTokens: 64, phase: 'chat'});
@@ -100,6 +101,7 @@ test('reservations survive interruption, and overlapping model calls share concu
   assert.equal(restored.entries[0].status, 'interrupted');
   assert.equal(restored.chargedOutputTokens, 64);
   assert.equal(restored.unknownModelUsage, 1);
+  await assert.rejects(budget.tool('chat', 'late-read', () => assert.fail('terminal task must not execute')), /已经结束/);
   finish({content: '结束'});
   await pending;
 });
@@ -133,6 +135,8 @@ test('skill adapter rejects unknown references, falls back locally and stops wit
   const result = await invokeSkillIntelligence({...options,
     provider: {id: 'external', search: () => reply({...known, version: '2'})}});
   assert.equal(result.data.fallback, 'UNKNOWN_REFERENCE');
+  const invalid = await invokeSkillIntelligence({...options, input: {...options.input, snapshotSha256: 'invalid'}});
+  assert.equal(invalid.error.code, 'INVALID_CONTRACT');
   const pending = invokeSkillIntelligence({...options, provider: {id: 'external',
     search: (_, {signal}) => sleep(10000, null, {signal})}});
   controller.abort();

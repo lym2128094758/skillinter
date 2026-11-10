@@ -1030,6 +1030,8 @@ function appendEvent(list, {seq, type, payload}) {
     budget_denied: () => payload.message,
     budget_finished: () => `本轮用量 · 模型 ${payload.modelCalls} 次（供应商重试 ${payload.retries} 次）· 工具 ${payload.toolCalls} 次${payload.unknownModelUsage ? ` · ${payload.unknownModelUsage} 次用量未知` : ''}`,
     skill_engine_fallback: () => `技能检索回退 · ${payload.reason}`,
+    skill_engine_details: () => payload.encoder ? `SkillNet · ${payload.encoder.kind}${payload.encoder.degraded ? ' · 词法回退' : ''}` : `SkillNet 公开来源 · ${payload.state ?? '已检查'}`,
+    skill_retrieval: () => `检索引擎 · ${payload.provider} · ${payload.candidates.length} 项候选`,
     audit_model: () => `正在规划 · ${payload.stage === 'steps' ? '可选步骤' : payload.stage === 'mapping' ? '字段映射' : `第 ${payload.call} 次`}`,
     audit_plan: () => `计划已生成 · ${payload.steps.length} 个步骤`,
     audit_skill_selection: () => payload.candidates.length ? `筛选技能 · ${payload.candidates.length} 个候选` : '等待补充 · 缺少适用技能或来源证据',
@@ -1849,3 +1851,4 @@ try {
   await selectTask(tasks.find(item => item.id === saved)?.id);
   if (!task && selection === 1) void showGraph(true);
 } catch (error) { showError(error); loading = false; updateControls(); }
+import './skill-engine.js';

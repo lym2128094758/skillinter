@@ -29,9 +29,12 @@ import {validate} from './schema.mjs';
 import {success,failure} from './tool-contract.mjs';
 import {createRunBudget, readRunBudget} from './run-budget.mjs';
 import {skillIntelligenceContract} from './skill-intelligence.mjs';
+import {createSkillnetConnection} from './skillnet-provider.mjs';
+import {createSkillDiscovery, publicCapabilityTags} from './skill-discovery.mjs';
 
 const assets = {'/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'],
   '/skill-studio.js': ['skill-studio.js', 'text/javascript'],
+  '/skill-engine.js': ['skill-engine.js', 'text/javascript'],
   '/skill-runtime.js': ['skill-runtime.js', 'text/javascript'],
   '/skill-execution.js': ['skill-execution.js', 'text/javascript'],
   '/skill-experiences.js': ['skill-experiences.js', 'text/javascript'],
@@ -155,6 +158,8 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
   const skillRegistry=createSkillRegistry({store,studio:skillStudio,projectFor:registryProjectFor});
   const skillGraph = createSkillGraph({store,studio:skillStudio,projectFor:registryProjectFor,registry:skillRegistry});
   const settings = await createSettings({store, env});
+  const skillnet = createSkillnetConnection({store, state, env});
+  const discoveries = createSkillDiscovery({store, studio: skillStudio});
   let studioController;
   let optimizerController;
   const active = new Map();
@@ -179,6 +184,48 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
       }
       if(pathname==='/api/skill-registry/contract'&&req.method==='GET')return json(res,200,registryContract);
       if (pathname === '/api/skill-intelligence/contract' && req.method === 'GET') return json(res, 200, skillIntelligenceContract);
+      if (pathname === '/api/skill-intelligence/settings' && req.method === 'GET') return json(res, 200, skillnet.view());
+      if (pathname === '/api/skill-intelligence/tags' && req.method === 'GET') return json(res, 200, {tags: publicCapabilityTags});
+      if (pathname === '/api/skill-intelligence/discover' && req.method === 'POST') {
+        const body = await input(req, 8000);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) throw new RequestError(422, '公开发现请求无效。');
+        const context = skillContext(body.taskId ?? null, body.projectId);
+        if (typeof body.request !== 'string' || !/^[\w-]{1,80}$/.test(body.request)) throw new RequestError(422, '公开发现提交编号无效。');
+        const taskId = body.taskId ?? store.createTask(context && typeof context === 'object' ? context.projectId : null).id;
+        const run = store.begin(taskId, body.request, '读取已授权的公开技能来源', {mode: 'skill-discovery', model: 'SkillNet 来源核验'});
+        if (!run.started) throw new RequestError(409, '本次发现请求已提交，请查看运行记录。');
+        const controller = new AbortController();
+        const cancel = () => controller.abort();
+        const entry = {controller, interrupt: null, job: null};
+        active.set(run.id, entry);
+        res.once('close', cancel);
+        entry.job = discoveries.preview({context, run: run.id, tags: body.tags, sources: body.sources, confirmed: body.confirmed,
+          signal: controller.signal, provider: skillnet.provider(undefined, details => store.record(run.id, 'skill_engine_details', details))});
+        try { return json(res, 200, await entry.job); }
+        catch (error) {
+          if (store.run(run.id).status === 'running') store.finish(run.id, 'failed', {error: error.message});
+          throw error;
+        } finally { res.off('close', cancel); active.delete(run.id); }
+      }
+      const discovery = /^\/api\/skill-intelligence\/discoveries\/([a-f\d-]{36})(\/import)?$/.exec(pathname);
+      if (discovery && req.method === 'GET' && !discovery[2]) return json(res, 200, discoveries.get(discovery[1],
+        skillContext(searchParams.get('task') ?? null, searchParams.get('project'))));
+      if (discovery?.[2] && req.method === 'POST') {
+        const body = await input(req, 8000);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) throw new RequestError(422, '导入请求无效。');
+        return json(res, 201, discoveries.import({id: discovery[1], candidateId: body.candidateId,
+          context: skillContext(body.taskId ?? null, body.projectId), targetScope: body.targetScope, confirmed: body.confirmed}));
+      }
+      if (['/api/skill-intelligence/settings', '/api/skill-intelligence/test'].includes(pathname) && req.method === 'POST') {
+        const body = await input(req, 8000);
+        if (pathname.endsWith('/settings')) return json(res, 200, skillnet.save(body));
+        const controller = new AbortController();
+        const cancel = () => controller.abort();
+        res.once('close', cancel);
+        try { return json(res, 200, await skillnet.test(body, AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]))); }
+        catch { throw new RequestError(502, 'SkillNet 连接检测失败，请检查目录、Python 和依赖。'); }
+        finally { res.off('close', cancel); }
+      }
       const historicalBudget = /^\/api\/runs\/([a-f\d-]{36})\/budget$/.exec(pathname);
       if (historicalBudget && req.method === 'GET') {
         store.run(historicalBudget[1]);
@@ -641,6 +688,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
               file: attachment, model: config.model, limits, signal: controller.signal, entry}) : executeRun({id: run.id, task, prompt, store, workspace: taskWorkspace, ...config, skill, attachment,
               scope: fileScope ? {...fileScope, state} : null,
               skillRegistrySnapshot:skillRegistry.snapshot(task,localSkills),
+              skillEngine: skillnet.provider(undefined, details => store.record(run.id, 'skill_engine_details', details)),
               context: {title: currentTask.title, goal: prompt, selectedFile: attachment ? {id: attachment.id, name: attachment.name, kind: attachment.kind} : null,
                 materials: materials.map(material => ({...material,
                 path: material.path.endsWith('.image') ? '' : fileScope?.mode && fileScope.mode !== 'attachments' ? 'attachment:' + material.path : material.path})),

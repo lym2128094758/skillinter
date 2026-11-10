@@ -18,6 +18,7 @@ export function validate(schema, value, path = '$') {
       if (typeof item !== 'number' || !Number.isFinite(item) || (rule.type === 'integer' && !Number.isInteger(item)) || item < (rule.minimum ?? -Infinity) || item > (rule.maximum ?? Infinity)) errors.push(`${location}: invalid number`);
     } else if (rule.type && typeof item !== rule.type) errors.push(`${location}: ${rule.type} required`);
     if (typeof item === 'string' && (item.length < (rule.minLength ?? 0) || item.length > (rule.maxLength ?? Infinity))) errors.push(`${location}: invalid string length`);
+    if (typeof item === 'string' && rule.pattern && !new RegExp(rule.pattern).test(item)) errors.push(`${location}: invalid string pattern`);
   }
   visit(schema, value, path);
   return errors.slice(0, 20);

@@ -1122,8 +1122,8 @@
     }
   },
   "skillIntelligence": {
-    "version": 1,
-    "timeoutMs": 5000,
+    "version": 2,
+    "timeoutMs": 30000,
     "errors": {
       "ENGINE_UNAVAILABLE": "技能引擎不可用。",
       "ENGINE_TIMEOUT": "技能引擎响应超时。",
@@ -1171,6 +1171,9 @@
           ],
           "additionalProperties": false
         },
+        "timeoutMs": 30000,
+        "idempotent": true,
+        "authorization": "宿主冻结允许的引用和来源，不授予写入权限。",
         "returns": {
           "anyOf": [
             {
@@ -1480,6 +1483,9 @@
           ],
           "additionalProperties": false
         },
+        "timeoutMs": 30000,
+        "idempotent": true,
+        "authorization": "宿主冻结允许的引用和来源，不授予写入权限。",
         "returns": {
           "anyOf": [
             {
@@ -1736,6 +1742,9 @@
           ],
           "additionalProperties": false
         },
+        "timeoutMs": 60000,
+        "idempotent": true,
+        "authorization": "宿主冻结允许的引用和来源，不授予写入权限。",
         "returns": {
           "anyOf": [
             {
@@ -1811,6 +1820,30 @@
                                 "type": "string",
                                 "minLength": 1,
                                 "maxLength": 1000
+                              },
+                              "body": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 65536
+                              },
+                              "pinnedUrl": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 1500
+                              },
+                              "licenseSha256": {
+                                "type": "string",
+                                "pattern": "^[a-f0-9]{64}$"
+                              },
+                              "licensePath": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 300
+                              },
+                              "retrievedAt": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
                               }
                             },
                             "required": [
@@ -1972,6 +2005,9 @@
           ],
           "additionalProperties": false
         },
+        "timeoutMs": 30000,
+        "idempotent": false,
+        "authorization": "宿主冻结允许的引用和来源，不授予写入权限。",
         "returns": {
           "anyOf": [
             {

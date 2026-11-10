@@ -14,8 +14,8 @@ function words(text) {
 }
 
 /** Small, deterministic candidate set. Graph relationships never grant execution rights. */
-export function routeSkills({prompt, materials = [], localSkills, customSkill, maxSkills = 6, graphData = graph, registrySnapshot,preserveIdentities=false}) {
-  if(registrySnapshot)return routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkills,registrySnapshot});
+export function routeSkills({prompt, materials = [], localSkills, customSkill, maxSkills = 6, graphData = graph, registrySnapshot,preserveIdentities=false, engineCandidates}) {
+  if(registrySnapshot)return routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkills,registrySnapshot,engineCandidates});
   const preferred = new Map();
   for (const skill of localSkills) {
     const previous = preferred.get(skill.name);
@@ -84,7 +84,7 @@ export function relationsForSkills(names) {
   return graph.edges.filter(edge => selected.has(edge.source) && selected.has(edge.target) && ['depend_on', 'compose_with'].includes(edge.type));
 }
 
-function routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkills,registrySnapshot}) {
+function routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkills,registrySnapshot,engineCandidates}) {
   const snapshot=structuredClone(registrySnapshot);
   const allowed=new Set(snapshot.skills.filter(skill=>skill.selectable).map(skill=>skill.skillId));
   // Ranking is still deterministic; UUID identity replaces legacy name projection.
@@ -106,7 +106,10 @@ function routeRegisteredSkills({prompt,materials,localSkills,customSkill,maxSkil
     visiting.delete(id);
     if(selected.size<maxSkills)selected.set(id,{id,name:skill.name,version:skill.version,nodeId:id,reason,description:skill.description.slice(0,500)});
   }
-  const primary=customSkill?[{id:customSkill.id,reason:'用户明确选择'}]:ranked.ranking.slice(0,2)
+  const primary=customSkill?[{id:customSkill.id,reason:'用户明确选择'}]:engineCandidates !== undefined ? engineCandidates.slice(0,2)
+    .filter(item => allowed.has(item.id) && versions.has(item.id) &&
+      goalApplicability(versions.get(item.id).applicability, prompt).every(check => check.status === 'passed'))
+    .map(item => ({id: item.id, reason: item.engineReason})) : ranked.ranking.slice(0,2)
     .filter(item=>item.score>=ranked.ranking[0].score*.85).map(item=>({...item,reason:'任务匹配：'+item.matched.slice(0,5).join('、')}));
   for(const item of primary){
     const skill=versions.get(item.id);
