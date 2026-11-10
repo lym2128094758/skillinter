@@ -84,7 +84,7 @@
       const host=window.SkillLibraryHost;
       if(!host)return;
       if(event.data.action==='focus')host.focus(event.data.id);
-      if(event.data.action==='execution')host.execution(event.data.ids??[],event.data.states??[]);
+      if(event.data.action==='execution')host.execution(event.data);
       if(event.data.action==='enable')host.enable(event.data.value);
     });
     window.addEventListener('sih-skill-graph-ready',()=>notify('ready'));

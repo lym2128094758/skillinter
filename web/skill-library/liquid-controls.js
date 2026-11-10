@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  const maxOverflow=20; // Maximum distance the lens edge can extend past the capsule, in pixels.
+  const maxOverflow=16; // Maximum distance the lens edge can extend past the capsule, in pixels.
   for(const group of document.querySelectorAll('.view-switch')){
     const buttons=[...group.querySelectorAll('.view-button')];
     const lens=document.createElement('span');lens.className='view-lens';lens.setAttribute('aria-hidden','true');group.prepend(lens);
@@ -76,4 +76,64 @@
     new ResizeObserver(()=>sync(false)).observe(group);
     sync(false);
   }
+})();
+
+// The glass surface moves over the fixed button and its label.
+(() => {
+  const dragThreshold = 5;
+  const maxTravel = 8;
+  let drag = null;
+  let suppressClickUntil = 0;
+
+  document.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.button !== 0 || drag) return;
+    suppressClickUntil = 0;
+    const button = event.target instanceof Element && event.target.closest('button');
+    if (!button || button.matches(':disabled, [aria-disabled="true"]') || button.closest('.rail-views, .view-switch')) return;
+    drag = {button, pointer: event.pointerId, x: event.clientX, y: event.clientY, moved: false};
+    button.setAttribute('data-glass-pressed', '');
+  }, true);
+
+  document.addEventListener('pointermove', event => {
+    if (drag?.pointer !== event.pointerId) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    const distance = Math.hypot(dx, dy);
+    if (!drag.moved) {
+      if (distance < dragThreshold || !drag.button.isConnected) return;
+      drag.button.setPointerCapture(event.pointerId);
+      drag.button.setAttribute('data-glass-dragging', '');
+      drag.moved = true;
+    }
+    event.preventDefault();
+    const ratio = maxTravel * Math.tanh(distance / maxTravel) / (distance || 1);
+    drag.button.style.setProperty('--glass-button-offset', `${dx * ratio}px ${dy * ratio}px`);
+  }, {capture: true, passive: false});
+
+  function release() {
+    if (!drag) return;
+    drag.button.removeAttribute('data-glass-pressed');
+    if (drag.moved) {
+      drag.button.removeAttribute('data-glass-dragging');
+      drag.button.style.removeProperty('--glass-button-offset');
+      suppressClickUntil = performance.now() + 400;
+    }
+    drag = null;
+  }
+
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+    document.addEventListener(type, event => {
+      if (drag?.pointer !== event.pointerId) return;
+      if (type === 'lostpointercapture' && event.target !== drag.button) return;
+      release();
+    }, true);
+  }
+  window.addEventListener('blur', release);
+
+  document.addEventListener('click', event => {
+    if (!event.isTrusted || !event.detail || performance.now() >= suppressClickUntil) return;
+    suppressClickUntil = 0;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
 })();

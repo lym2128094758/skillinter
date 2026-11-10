@@ -29,27 +29,40 @@
     nodeCache:new Map(),listLimit:100,listNodes:[],visibleNodes:[],visibleEdges:[],degree:new Map(),adjacency:new Map(),
     colorMap:new Map(),transform:d3.zoomIdentity,connect:false,first:null,dragging:false,request:0,
     detailController:null,width:0,height:0};
-  let executionIds = new Set(), executionStates = new Map(), hostEnabled = true;
+  let executionNodes = [], executionEdges = [], executionStates = new Map();
+  let hasExecution = false, executionView = false, hostEnabled = true;
   window.SkillLibraryHost = {
     selected: () => state.selectedId,
     async reload(){const id=state.selectedId;await loadLibrary();if(id&&state.nodes.some(node=>node.id===id))await selectNode(id);},
     focus(id) {
       if (!state.nodes.some(node=>node.id===id)) return;
-      $("searchInput").value='';state.hiddenGroups.clear();state.mode='global';rebuild(true);
+      if (executionView && !executionStates.has(id)) setExecutionView(false);
+      if (!executionView) {
+        $("searchInput").value='';state.hiddenGroups.clear();state.mode='global';rebuild(true);
+      }
       selectNode(id);
     },
-    execution(ids,states) {
-      const known = new Set(state.nodes.map(node=>node.id));
-      executionIds = new Set(ids.filter(id=>known.has(id)));
-      executionStates = new Map(states.filter(([id])=>known.has(id)));
-      if(state.nodes.length)rebuild(false);
-      document.documentElement.dataset.executionIds=JSON.stringify([...executionIds]);
+    execution({active = false, nodes = [], edges = [], open = false}) {
+      if (!active && !hasExecution) return;
+      const previous = JSON.stringify([executionNodes.map(node=>node.id), executionEdges.map(edge=>edge.key)]);
+      hasExecution = active;
+      executionNodes = nodes;
+      executionStates = new Map(nodes.map(node=>[node.id,node.state]));
+      executionEdges = [...new Map(edges.map(edge=>{
+        const key = 'execution:' + JSON.stringify([edge.source,edge.target]);
+        return [key,{...edge,key,kind:'execution'}];
+      })).values()];
+      const changed = previous !== JSON.stringify([nodes.map(node=>node.id), executionEdges.map(edge=>edge.key)]);
+      document.documentElement.dataset.executionIds=JSON.stringify([...executionStates.keys()]);
+      if (open || !active && executionView) setExecutionView(active);
+      else if (changed) rebuild(executionView);
+      else {syncHeader();updateAppearance();}
     },
     enable(value) {
       hostEnabled=Boolean(value);
       sphere.enable(hostEnabled&&graphDimension==='sphere');
       if (!hostEnabled) simulation.stop();
-      else if (graphDimension==='plane') simulation.alpha(.1).restart();
+      else if (graphDimension==='plane' && !executionView) simulation.alpha(.1).restart();
     },
   };
   const sphereCanvas=$("sphereGraph"),sphereTip=$("sphereTooltip");
@@ -142,8 +155,34 @@
   function visibleRadius(node) { return Math.max(radius(node), 3 * settings.nodeSize / state.transform.k); }
   function options() {
     return {hiddenGroups:state.hiddenGroups,query:$("searchInput").value.trim(),mode:state.mode,selectedId:state.selectedId,
-      depth:settings.depth,showOrphans:settings.showOrphans,maxNodes:settings.maxNodes,pinnedIds:[...executionIds],
+      depth:settings.depth,showOrphans:settings.showOrphans,maxNodes:settings.maxNodes,pinnedIds:[...executionStates.keys()],
       kinds:new Set([settings.showMentions&&"mention",settings.showTopics&&"topic",settings.showManual&&"manual"].filter(Boolean))};
+  }
+  function withExecutionEdges(result) {
+    const ids = new Set(result.nodes.map(node=>node.id));
+    return [...result.edges, ...executionEdges.filter(edge=>ids.has(edge.source)&&ids.has(edge.target))];
+  }
+  function executionGraph() {
+    const installed = new Map(state.nodes.map(node=>[node.id,node]));
+    const nodes = executionNodes.map(node=>({...installed.get(node.id),id:node.id,name:node.name,
+      group:installed.get(node.id)?.group ?? '历史执行记录',historical:!installed.has(node.id)}));
+    const degree = new Map(nodes.map(node=>[node.id,0]));
+    for(const {source,target} of executionEdges) {
+      degree.set(source,degree.get(source)+1);
+      degree.set(target,degree.get(target)+1);
+    }
+    return {nodes,edges:[],matchedNodes:nodes,degree};
+  }
+  function setExecutionView(value) {
+    executionView = value;
+    state.mode = "global";
+    planeGlobalView = null;
+    state.detailController?.abort();
+    state.selectedId = null;
+    $("detailPanel").hidden = true;
+    $("settingsPanel").hidden = true;
+    setConnect(false);
+    rebuild(true);
   }
   async function loadLibrary() {
     const version = ++state.request;
@@ -198,33 +237,44 @@
     $("skillList").replaceChildren();
     const list=[...state.listNodes].sort((a,b)=>a.name.localeCompare(b.name));
     for(const node of list.slice(0,state.listLimit)){
-      const button=document.createElement("button");button.className="skill-list-item";button.textContent=node.name;button.title=node.source+" · "+node.path;
+      const button=document.createElement("button");button.className="skill-list-item";setButtonLabel(button,node.name);button.title=node.source+" · "+node.path;
+      if(node.historical){button.disabled=true;button.title="历史执行记录";}
       button.setAttribute("aria-pressed",node.id===state.selectedId);
       button.addEventListener("click",()=>selectNode(node.id));
       $("skillList").append(button);
     }
     if(list.length>state.listLimit){
-      const more=document.createElement('button');more.className='skill-list-item list-more';more.textContent='再显示 100 项（还有 '+(list.length-state.listLimit)+' 项）';
+      const more=document.createElement('button');more.className='skill-list-item list-more';setButtonLabel(more,'再显示 100 项（还有 '+(list.length-state.listLimit)+' 项）');
       more.onclick=()=>{state.listLimit+=100;buildSkillList();};$('skillList').append(more);
     }
+  }
+  function setButtonLabel(button,text) {
+    const label = document.createElement('span');
+    label.className = 'glass-label';
+    label.textContent = text;
+    button.replaceChildren(label);
   }
   function syncHeader() {
     const local=state.mode==="local";
     for(const id of ["globalTab","globalViewButton"]) $(id).classList.toggle("active",!local);
     for(const id of ["localTab","localViewButton"]) {$(id).classList.toggle("active",local);$(id).disabled=!state.selectedId;}
     $("globalTab").setAttribute("aria-selected",!local);$("localTab").setAttribute("aria-selected",local);
-    $("graphSummary").textContent=state.visibleNodes.length+" / "+state.listNodes.length+" 个节点 · "+state.visibleEdges.length+" 条关系";
-    $("activeFilter").textContent=local?"深度 "+settings.depth:settings.showTopics?"包含推测主题关联":"正文提及与自定义关联";
+    $("executionViewButton").hidden=!hasExecution;
+    $("executionViewButton").setAttribute("aria-pressed",String(executionView));
+    $("executionLegend").hidden=!hasExecution;
+    $("graphSummary").textContent=executionView?`本轮 · ${state.visibleNodes.length} 个节点 · ${state.visibleEdges.length} 条执行依赖`:
+      state.visibleNodes.length+" / "+state.listNodes.length+" 个节点 · "+state.visibleEdges.length+" 条关系";
+    $("activeFilter").textContent=executionView?"来自本轮执行记录":local?"深度 "+settings.depth:settings.showTopics?"包含推测主题关联":"正文提及与自定义关联";
     $("emptyState").hidden=state.visibleNodes.length>0;
-    $("emptyState").querySelector("h3").textContent=state.nodes.length?"没有符合条件的 Skill":"还没有找到 Skill";
-    $("emptyState").querySelector("p").textContent=local?"当前 Skill 被筛选条件排除。清除筛选或返回全局图。":"调整搜索词或来源筛选。";
+    $("emptyState").querySelector("h3").textContent=executionView?"本轮没有已执行的技能":state.nodes.length?"没有符合条件的 Skill":"还没有找到 Skill";
+    $("emptyState").querySelector("p").textContent=executionView?"可以切换到全局查看技能库。":local?"当前 Skill 被筛选条件排除。清除筛选或返回全局图。":"调整搜索词或来源筛选。";
     if(graphDimension==="sphere"&&sphere){
-      const catalogue=model.filterGraph(state.nodes,state.edges,{...options(),mode:"global",pinnedIds:[...executionIds,...state.visibleNodes.map(node=>node.id)]});
+      const catalogue=executionView?executionGraph():model.filterGraph(state.nodes,state.edges,{...options(),mode:"global",pinnedIds:[...executionStates.keys(),...state.visibleNodes.map(node=>node.id)]});
       sphere.setData({nodes:catalogue.nodes.map(n=>({...n,domain:n.group,degree:catalogue.degree.get(n.id)||0,color:colorMapSphere(n)})),
-        edges:catalogue.edges.map(e=>({source:e.source,target:e.target,type:e.kind}))});
+        edges:withExecutionEdges(catalogue).map(e=>({source:e.source,target:e.target,type:e.kind,key:e.key}))});
       const visibleIds=new Set(state.visibleNodes.map(n=>n.id));
       sphere.setFilter(n=>visibleIds.has(n.id));
-      sphere.select(state.selectedId);sphere.highlight(state.hoverId?[state.hoverId]:[]);
+      sphere.select(state.selectedId);
       sphere.local(local?state.selectedId:null);
       syncSphereAppearance();
     }
@@ -234,7 +284,7 @@
     sphere.appearance(settings);
     sphere.labels(settings.showLabels);
     sphere.setColors(state.visibleNodes.map(n=>[n.id,colorMapSphere(n)]));
-    sphere.highlight([...executionIds]);
+    sphere.highlight([...executionStates.keys()]);
     sphere.states([...executionStates]);
   }
   function setDimension(value){
@@ -256,7 +306,7 @@
     $("sphereViewButton").classList.toggle("active",spherical);$("sphereViewButton").setAttribute("aria-pressed",String(spherical));
     $("graphTools").hidden=spherical;$("graphFootnote").hidden=spherical;
     setConnect(false);rebuild(false,false,true);
-    if(!spherical&&state.mode==="local")fitGraph(false);
+    if(!spherical&&(executionView||state.mode==="local"))fitGraph(false);
     if(spherical){if(state.selectedId)sphere.focus(state.selectedId);sphereCanvas.focus({preventScroll:true});}
     if(matchMedia("(prefers-reduced-motion: reduce)").matches){finishDimensionMorph();return;}
     const to=spherical?sphere.geometry(true):planeGeometry();
@@ -268,16 +318,16 @@
   function rebuild(fit=false,animate=false,preserveLayout=false) {
     if(dimensionMorph)finishDimensionMorph();
     simulation.stop(); state.hoverId=null; $("nodeTooltip").hidden=true;
-    const result=model.filterGraph(state.nodes,state.edges,options());
+    const result=executionView?executionGraph():model.filterGraph(state.nodes,state.edges,options());
     state.degree=result.degree;state.listNodes=result.matchedNodes;
     state.width=$("graphStage").clientWidth;state.height=$("graphStage").clientHeight;
     const cx=state.width/2,cy=state.height/2;
     state.visibleNodes=result.nodes.map((node,index)=>{
       let sim=state.nodeCache.get(node.id);
       if(!sim){const angle=index*2.399963;const r=17*Math.sqrt(index);sim={x:cx+Math.cos(angle)*r,y:cy+Math.sin(angle)*r,vx:0,vy:0};state.nodeCache.set(node.id,sim);}
-      return Object.assign(sim,node);
+      return Object.assign(sim,node,{historical:node.historical??false});
     });
-    state.visibleEdges=result.edges.map((edge)=>({...edge,sourceId:edge.source,targetId:edge.target}));
+    state.visibleEdges=withExecutionEdges(result).map((edge)=>({...edge,sourceId:edge.source,targetId:edge.target}));
     state.adjacency=new Map(state.visibleNodes.map((n)=>[n.id,new Set()]));
     state.visibleEdges.forEach((e)=>{state.adjacency.get(e.source).add(e.target);state.adjacency.get(e.target).add(e.source);});
     linkSelection=d3.select("#linksLayer").selectAll("line").data(state.visibleEdges,(e)=>e.key).join("line").attr("class",(e)=>"graph-link "+e.kind);
@@ -288,7 +338,8 @@
       g.append("circle").attr("class","node-core");
       g.append("text").attr("text-anchor","middle");
       return g;
-    }).attr("aria-label",(n)=>"查看 Skill "+n.name);
+    }).attr("aria-label",(n)=>n.historical?n.name+" · 历史执行记录":"查看 Skill "+n.name)
+      .attr("tabindex",(n)=>n.historical?null:0).attr("role",(n)=>n.historical?"img":"button");
     nodeSelection.select("text").text((n)=>n.name);
     nodeSelection.on("pointerenter",(event,n)=>{if(!state.dragging){state.hoverId=n.id;updateAppearance();}})
       .on("pointerleave",()=>{if(!state.dragging){state.hoverId=null;updateAppearance();}})
@@ -313,7 +364,7 @@
       if(graphDimension==="plane"&&fit&&!keepPositions)simulation.alpha(.9).tick(40);
       tick();
       if(fit&&graphDimension==="plane")fitGraph(animate);
-      if(graphDimension==="plane"&&!keepPositions)simulation.alpha(fit?.10:.25).restart();
+      if(hostEnabled&&graphDimension==="plane"&&!executionView&&!keepPositions)simulation.alpha(fit?.10:.25).restart();
     }
     syncHeader();buildSkillList();updateAppearance();
   }
@@ -342,18 +393,18 @@
     const k=state.transform.k,hover=state.hoverId;
     const neighbors=state.adjacency.get(hover)||new Set();
     nodeSelection.classed("selected",(n)=>n.id===state.selectedId)
-      .classed('execution-used',n=>executionIds.has(n.id))
+      .classed('execution-used',n=>executionStates.has(n.id))
       .attr('data-execution-state',n=>executionStates.get(n.id)??null)
       .classed("connect-first",(n)=>n.id===state.first)
-      .classed("dimmed",(n)=>!!hover&&settings.focusOnHover&&n.id!==hover&&!neighbors.has(n.id));
+      .classed("dimmed",(n)=>!executionStates.has(n.id)&&!!hover&&settings.focusOnHover&&n.id!==hover&&!neighbors.has(n.id));
     nodeSelection.select(".node-hit").attr("r",(n)=>Math.max(visibleRadius(n)+3,9/k));
     nodeSelection.select(".node-core").attr("r",visibleRadius).attr("fill",color);
     nodeSelection.select(".node-halo").attr("r",(n)=>visibleRadius(n)+3.5);
     updateLabels();
-    linkSelection.classed("dimmed",(e)=>!!hover&&settings.focusOnHover&&e.sourceId!==hover&&e.targetId!==hover)
+    linkSelection.classed("dimmed",(e)=>e.kind!=="execution"&&!!hover&&settings.focusOnHover&&e.sourceId!==hover&&e.targetId!==hover)
       .classed("active",(e)=>!!hover&&(e.sourceId===hover||e.targetId===hover))
-      .style("stroke-width",settings.linkWidth)
-      .attr("marker-end",(e)=>settings.showArrows&&e.forward?"url(#arrowEnd)":null)
+      .style("stroke-width",(e)=>e.kind==="execution"?2.5:settings.linkWidth)
+      .attr("marker-end",(e)=>e.kind==="execution"?"url(#executionArrow)":settings.showArrows&&e.forward?"url(#arrowEnd)":null)
       .attr("marker-start",(e)=>settings.showArrows&&e.backward?"url(#arrowStart)":null);
   }
   function updateLabels() {
@@ -362,7 +413,7 @@
     const k = state.transform.k;
     const fontSize = 12 * Math.sqrt(k);
     const fade = model.labelOpacity(k, settings.labelThreshold);
-    const priority = (node) => node.id === state.hoverId ? 2 : node.id === state.selectedId ? 1 : 0;
+    const priority = (node) => node.id === state.hoverId ? 3 : node.id === state.selectedId ? 2 : executionStates.has(node.id) ? 1 : 0;
     const ordered = state.visibleNodes.filter((node) => fade > 0 || priority(node))
       .sort((a,b) => priority(b) - priority(a) || state.degree.get(b.id) - state.degree.get(a.id));
     const boxes = [];
@@ -381,7 +432,7 @@
       .style("opacity", (node) => !visible.has(node.id) ? 0 : priority(node) ? 1 : fade);
   }
   function fitGraph(animate=true) {
-    if(!state.visibleNodes.length)return;
+    if(!state.visibleNodes.length||state.width<1||state.height<1)return;
     animate=animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches;
     const stage=$("graphStage").getBoundingClientRect(),panel=$("detailPanel");
     const overlap=panel.hidden?0:Math.max(0,Math.min(stage.right,panel.getBoundingClientRect().right)-Math.max(stage.left,panel.getBoundingClientRect().left));
@@ -396,6 +447,7 @@
     state.selectedId=id;state.hoverId=null;$("settingsPanel").hidden=true;$("detailPanel").hidden=false;
     if(graphDimension==="sphere"&&state.mode!=="local")sphere.focus(id);
     if(state.mode==="local"||!state.visibleNodes.some(node=>node.id===id))rebuild(true,true);
+    else if(executionView&&graphDimension==="plane")fitGraph(false);
     syncHeader();updateAppearance();buildSkillList();
     const n=state.nodes.find((n)=>n.id===id);
     $("detailName").textContent=n.name;$("detailGroup").textContent=n.group;
@@ -406,11 +458,11 @@
     $("detailNeighbors").replaceChildren();
     for(const e of adjacent){
       const other=state.nodes.find((n)=>n.id===(e.source===id?e.target:e.source));
-      const button=document.createElement("button");button.textContent=other.name;button.className="neighbor-button";
+      const button=document.createElement("button");setButtonLabel(button,other.name);button.className="neighbor-button";
       button.title=e.kinds.map((kind)=>({mention:"正文提及",manual:"自定义关联",topic:"推测主题"}[kind])).join("、");
       button.addEventListener("click",()=>selectNode(other.id));$("detailNeighbors").append(button);
       if(e.kinds.includes('manual')&&state.edges.some(raw=>raw.kind==='manual'&&!raw.registryType&&new Set([raw.source,raw.target]).has(id)&&new Set([raw.source,raw.target]).has(other.id))) {
-        const remove=document.createElement('button');remove.className='neighbor-button';remove.textContent='移除与 '+other.name+' 的自定义关联';
+        const remove=document.createElement('button');remove.className='neighbor-button';setButtonLabel(remove,'移除与 '+other.name+' 的自定义关联');
         remove.addEventListener('click',async()=>{
           try {
             const response=await requestLibrary('/api/relations',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:id,target:other.id})});
@@ -470,8 +522,13 @@
     }
   }
   function setMode(mode) {
+    if(executionView&&mode==="global"){setExecutionView(false);return;}
     if(mode==="global"){clearSelection();return;}
-    if(state.selectedId)enterLocal(state.selectedId);
+    if(state.selectedId){
+      const id=state.selectedId;
+      if(executionView)setExecutionView(false);
+      enterLocal(id);
+    }
   }
   function setConnect(active) {
     state.connect=active;state.first=null;$("connectHint").hidden=!active;
@@ -493,7 +550,7 @@
   $("closeSettings").addEventListener("click",()=>{$("settingsPanel").hidden=true;});
   $("closeDetail").addEventListener("click",()=>{
     $("detailPanel").hidden=true;
-    if(graphDimension==="plane"&&state.mode==="local")fitGraph(true);
+    if(graphDimension==="plane"&&(executionView||state.mode==="local"))fitGraph(true);
   });
   $("resetSettings").addEventListener("click",()=>{settings=viewDefaults();customColors={};syncControls();saveSettings();buildColors();buildGroups();rebuild(true);});
   let searchTimer;
@@ -501,6 +558,7 @@
   $("searchInput").title='支持 name:、path:、source:、"短语" 和 -排除词';
   for(const id of ["globalTab","globalViewButton"])$(id).addEventListener("click",()=>setMode("global"));
   for(const id of ["localTab","localViewButton"])$(id).addEventListener("click",()=>setMode("local"));
+  $("executionViewButton").addEventListener("click",()=>setExecutionView(!executionView));
   $("planeViewButton").addEventListener("click",()=>setDimension("plane"));
   $("sphereViewButton").addEventListener("click",()=>setDimension("sphere"));
   $("showLocalButton").addEventListener("click",()=>{$("detailPanel").hidden=true;setMode("local");});
@@ -542,10 +600,10 @@
   new ResizeObserver(()=>{
     clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{
       const width=$("graphStage").clientWidth,height=$("graphStage").clientHeight;
-      if(!state.visibleNodes.length||!state.width)return;
+      if(width<1||height<1)return;
       if(Math.abs(width-state.width)<2&&Math.abs(height-state.height)<2)return;
       state.width=width;state.height=height;
-      if(graphDimension==="plane"){configureForces();fitGraph(false);}
+      if(graphDimension==="plane"&&state.visibleNodes.length){configureForces(!executionView);fitGraph(false);}
     },120);
   }).observe($("graphStage"));
   window.addEventListener("skill-library-theme", () => {

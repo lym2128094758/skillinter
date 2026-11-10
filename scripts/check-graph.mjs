@@ -58,15 +58,67 @@ try {
     const message = JSON.parse(data);
     pending.get(message.id)?.(message);
   };
-  async function run(expression) {
+  async function send(method, params) {
     const id = ++sequence;
     const reply = await new Promise((resolve, reject) => {
       const timer = setTimeout(() => { pending.delete(id); reject(new Error('浏览器指令超时')); }, 3_000);
       pending.set(id, result => { pending.delete(id); clearTimeout(timer); resolve(result); });
-      socket.send(JSON.stringify({id, method: 'Runtime.evaluate', params: {expression, returnByValue: true}}));
+      socket.send(JSON.stringify({id, method, params}));
     });
-    if (reply.error || reply.result?.exceptionDetails) throw new Error('页面执行失败：' + expression);
-    return reply.result.result.value;
+    if (reply.error) throw new Error(method + ': ' + reply.error.message);
+    return reply.result;
+  }
+  async function run(expression) {
+    const result = await send('Runtime.evaluate', {expression, returnByValue: true});
+    if (result.exceptionDetails) throw new Error('页面执行失败：' + expression);
+    return result.result.value;
+  }
+  async function checkGlassButton(selector, opened, embedded = false) {
+    const scope = embedded
+      ? "document.querySelector('#skill-graph-frame').contentDocument"
+      : 'document';
+    const button = `${scope}.querySelector(${JSON.stringify(selector)})`;
+    const {x, y} = await run(`(() => {
+      const b = ${button};
+      const r = b.getBoundingClientRect();
+      const frame = b.ownerDocument.defaultView.frameElement;
+      const origin = frame?.getBoundingClientRect();
+      return {x: (origin?.left ?? 0) + r.left + r.width / 2, y: (origin?.top ?? 0) + r.top + r.height / 2};
+    })()`);
+    const mouse = (type, x, y, buttons) => send('Input.dispatchMouseEvent', {
+      type, x, y, buttons, button: type === 'mouseMoved' ? 'none' : 'left', clickCount: 1
+    });
+    const dragX = x < 40 ? x + 32 : x - 32;
+    const appearance = () => run(`(() => {
+      const element = ${button};
+      const content = element.querySelector('svg') ?? element.ownerDocument.createRange();
+      if (content instanceof element.ownerDocument.defaultView.Range) content.selectNodeContents(element);
+      const {x, y, width, height} = content.getBoundingClientRect();
+      const glass = getComputedStyle(element, '::before');
+      return {content: [x, y, width, height], offset: glass.translate, tint: glass.backgroundColor};
+    })()`);
+    assert.equal(await run(opened), false);
+    const resting = await appearance();
+    await mouse('mousePressed', x, y, 1);
+    const pressed = await waitFor(selector + ' 玻璃按下变深', async () => {
+      const current = await appearance();
+      return current.tint !== resting.tint ? current : null;
+    });
+    assert.deepEqual(pressed.content, resting.content, selector + ' 按下时底层保持原位');
+    await mouse('mouseMoved', dragX, y - 16, 1);
+    const dragged = await appearance();
+    const distance = Math.hypot(...dragged.offset.split(' ').map(parseFloat));
+    assert.ok(distance > 5 && distance <= 8, selector + ' 玻璃层跟手且最多偏移 8 像素');
+    assert.deepEqual(dragged.content, resting.content, selector + ' 拖动时底层保持原位');
+    await mouse('mouseReleased', dragX, y - 16, 0);
+    assert.equal(await run(opened), false, selector + ' 拖动不触发点击');
+    await waitFor(selector + ' 玻璃松手回弹', async () => {
+      const current = await appearance();
+      return current.offset === 'none' && current.tint === resting.tint;
+    });
+    await mouse('mousePressed', x, y, 1);
+    await mouse('mouseReleased', x, y, 0);
+    await waitFor(selector + ' 点击可用', () => run(opened));
   }
 
   const installed = new Map();
@@ -78,12 +130,37 @@ try {
       installed.set(node.nodeId,(await response.json()).skill.id);
     }
   }
-  async function checkEmbedded(expected) {
-    const rendered=await waitFor('嵌入图谱高亮',async()=>{
-      const value=await run("JSON.parse(document.querySelector('#skill-graph-frame')?.contentDocument?.documentElement.dataset.executionIds||'null')");
-      return JSON.stringify(value)===JSON.stringify(expected)?value:null;
-    });
-    assert.deepEqual(rendered,expected);
+  async function checkEmbedded(expected, expectedEdges) {
+    const visible = await waitFor('当前会话的图谱高亮', () => run(`(() => {
+      const frame = document.querySelector('#skill-graph-frame');
+      const doc = frame.contentDocument;
+      if (doc?.URL !== frame.src ||
+          doc.documentElement.dataset.executionIds !== ${JSON.stringify(JSON.stringify(expected))}) return null;
+      const stage = doc.querySelector('#graphStage').getBoundingClientRect();
+      const nodes = [...doc.querySelectorAll('#nodesLayer .graph-node')];
+      const points = nodes.map(node => node.querySelector('.node-core').getBoundingClientRect());
+      const center = (min, max) => (Math.min(...points.map(min)) + Math.max(...points.map(max))) / 2;
+      const x = (center(p => p.left, p => p.right) - stage.left) / stage.width;
+      const y = (center(p => p.top, p => p.bottom) - stage.top) / stage.height;
+      return {
+        ids: nodes.filter(node => node.classList.contains('execution-used')).map(node => node.__data__.id),
+        total: nodes.length,
+        edges: [...doc.querySelectorAll('.graph-link.execution')].map(line => ({
+          source: line.__data__.sourceId, target: line.__data__.targetId, arrow: line.getAttribute('marker-end')
+        })),
+        centered: x > .2 && x < .8 && y > .2 && y < .8,
+        empty: !doc.querySelector('#emptyState').hidden,
+      };
+    })()`));
+    assert.deepEqual(visible.ids, expected);
+    assert.equal(visible.total, expected.length);
+    assert.deepEqual(visible.edges, expectedEdges.map(edge => ({...edge, arrow: 'url(#executionArrow)'})));
+    assert.equal(visible.empty, !expected.length);
+    if (expected.length) assert.ok(visible.centered, '执行链应位于画布中央');
+  }
+  function recordedEdges(graph, idsByStep) {
+    return graph.edges.map(({from, to}) => ({source: idsByStep.get(from), target: idsByStep.get(to)}))
+      .filter(({source, target}) => source && target && source !== target);
   }
   const results = [];
   for (const variant of ['unit', 'plain', 'missing-unit']) {
@@ -100,13 +177,24 @@ try {
     const sse = await (await get('/api/runs/' + record.id + '/events')).text();
     const events = sse.split('\n').filter(line => line.startsWith('data: ')).map(line => JSON.parse(line.slice(6)));
     assert.deepEqual(projectSkillGraph(events), plan.graph);
-    await installGraphNodes(plan.graph.nodes);
+    await installGraphNodes(variant === 'unit' ? plan.graph.nodes.slice(1) : plan.graph.nodes);
     await run("document.querySelector('.skill-evidence button').click()");
     const highlighted = await waitFor('球体高亮 ' + variant, () => run(
       "!document.querySelector('#graph-run-evidence').hidden&&JSON.parse(document.querySelector('#graph-run-evidence').dataset.highlighted||'null')"));
-    const expected = [...new Set(plan.graph.nodes.map(node => installed.get(node.nodeId)))];
+    const steps = new Map(plan.graph.nodes.filter(node => node.state !== 'planned')
+      .map(node => [node.step, installed.get(node.nodeId) ?? 'execution:' + node.id]));
+    const expected = [...new Set(steps.values())];
     assert.deepEqual(highlighted, expected, variant);
-    await checkEmbedded(expected);
+    const expectedEdges = recordedEdges(plan.graph, steps);
+    await checkEmbedded(expected, expectedEdges);
+    if (variant === 'unit') {
+      assert.ok(expected.some(id => id.startsWith('execution:')), '未安装技能应作为历史节点保留');
+      const graphDoc = "document.querySelector('#skill-graph-frame').contentDocument";
+      await run(graphDoc + ".querySelector('#globalViewButton').click();true");
+      assert.equal(await run(graphDoc + ".querySelector('#executionViewButton').getAttribute('aria-pressed')"), 'false');
+      await run(graphDoc + ".querySelector('#executionViewButton').click();true");
+      await checkEmbedded(expected, expectedEdges);
+    }
     if (variant === 'missing-unit') {
       assert.deepEqual(highlighted, []);
       assert.equal(record.audit.report.metrics.modelCalls, 0);
@@ -137,7 +225,8 @@ try {
   const active = await waitFor('材料预检高亮', () => run(
     "!document.querySelector('#graph-run-evidence').hidden&&JSON.parse(document.querySelector('#graph-run-evidence').dataset.highlighted||'null')"));
   assert.deepEqual(active, checked.preflight.trace.graph.nodes.map(node => installed.get(node.nodeId)));
-  await checkEmbedded(active);
+  await checkEmbedded(active, recordedEdges(checked.preflight.trace.graph,
+    new Map(checked.preflight.trace.graph.nodes.map(node => [node.step, installed.get(node.nodeId)]))));
   const [relationA,relationB]=[...installed.values()];
   await run("document.querySelector('#skill-graph-frame').contentWindow.SkillLibraryHost.focus("+JSON.stringify(relationA)+");true");
   await waitFor('执行关系编辑器',()=>run("document.querySelector('#skill-graph-frame').contentDocument.querySelector('#registryEditor code')?.textContent==="+JSON.stringify(relationA)));
@@ -158,7 +247,9 @@ try {
     const data=await(await get('/api/skill-registry?task='+task)).json();
     return !data.data.relations.some(edge=>edge.source===relationA&&edge.target===relationB&&edge.type==='depend_on');
   });
-  await run("document.querySelector('#settings').click();true");
+  await checkGlassButton('#settingsButton',
+    "!document.querySelector('#skill-graph-frame').contentDocument.querySelector('#settingsPanel').hidden", true);
+  await checkGlassButton('#settings', "document.querySelector('#settings-dialog').open");
   await waitFor('技能引擎设置加载', () => run("document.querySelector('#engine-status').textContent.includes('本地匹配')"));
   await run("document.querySelector('#engine-enabled').checked=false;document.querySelector('#engine-form').requestSubmit();true");
   await waitFor('保存引擎设置', () => run("document.querySelector('#engine-status').textContent.includes('已保存')"));
@@ -175,6 +266,17 @@ try {
     return document.querySelector('#project-memory-dialog').open;
   })()`));
   await waitFor('项目记忆加载完成', () => run("!document.querySelector('#project-memory-form [type=submit]').disabled"));
+  assert.equal(await run("document.querySelector('#project-memory-name').value"), '报告与验收');
+  assert.deepEqual((await (await get('/api/projects/' + memoryProject.id + '/memories')).json()).memories, []);
+  assert.equal(await run(`(() => {
+    const button = document.querySelector('.project-memory-action');
+    const row = button.parentElement;
+    const height = button.getBoundingClientRect().height;
+    row.style.width = '88px';
+    const remainsSingleLine = button.getBoundingClientRect().height === height;
+    row.style.removeProperty('width');
+    return remainsSingleLine;
+  })()`), true);
   await run(`(() => {
     document.querySelector('#project-memory-name').value = '实验报告样式';
     document.querySelector('#project-memory-text').value = '用表格列出核验项';

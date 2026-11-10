@@ -168,7 +168,7 @@ setInterval(() => {
 
 function drawModelSelection() {
   const modelName = modelChoice || modelDirectory.defaultModel;
-  $('choose-model').textContent = modelName || '连接模型';
+  $('choose-model-label').textContent = modelName || '连接模型';
   $('choose-model').title = modelName ? (modelChoice ? modelName : '跟随默认模型 · ' + modelName) : '选择或连接模型';
   const selected = modelDirectory.models.find(row => row.id === (modelChoice || modelDirectory.defaultModel));
   const levels = selected?.efforts ?? ['default'];
@@ -243,7 +243,7 @@ function exportConversation(item) {
   });
 }
 let uploading = false, graphNodes, graphLoad;
-let graphContext = '', graphFocus = null, graphExecution = {ids:[],states:[]};
+let graphContext = '', graphFocus = null, graphExecution = {}, graphRequest = 0, graphRunId = null;
 const graphFrame = $('skill-graph-frame');
 function graphMessage(action, data = {}) {
   graphFrame.contentWindow?.postMessage({type:'sih-skill-graph-control',action,...data},location.origin);
@@ -253,15 +253,16 @@ window.addEventListener('message', async event => {
   const {action,id} = event.data;
   if(action==='selected'&&typeof id==='string'){graphFocus=id;return;}
   if (action === 'ready') {
+    graphMessage('enable',{value:!$('graph-panel').hidden});
+    graphMessage('execution',graphExecution);
+    if (graphFocus) graphMessage('focus',{id:graphFocus});
     try {
-      const context=task?.id ? '?task='+encodeURIComponent(task.id) : '';
-      const graph=await api('/api/skill-graph/skills'+context);
+      const context = graphContext;
+      const graph = await api('/api/skill-graph/skills'+(context ? '?task='+encodeURIComponent(context) : ''));
+      if (context !== graphContext) return;
       graphNodes=new Map(graph.nodes.map(node=>[node.id,node]));
       $('graph-status').textContent=`我的 Skill 图谱 · ${graph.nodes.length} 项已安装技能`;
     } catch(error) { $('graph-status').textContent=error.message; }
-    graphMessage('execution',graphExecution);
-    if (graphFocus) graphMessage('focus',{id:graphFocus});
-    graphMessage('enable',{value:!$('graph-panel').hidden});
     return;
   }
   if (action === 'expand') { showTaskPanel(false);return; }
@@ -297,7 +298,8 @@ jumpToLatest.onclick = () => {
   scrollToLatest();
 };
 
-async function showGraph(show, skillId) {
+async function showGraph(show, skillId, runId) {
+  const request = ++graphRequest;
   $('graph-panel').hidden = !show;
   $('graph-run-evidence').hidden = true;
   $('transcript').hidden = show;
@@ -305,59 +307,80 @@ async function showGraph(show, skillId) {
   graphMessage('enable',{value:show});
   if (!show) return;
   const context = task?.id ?? '';
-  if (graphContext !== context) {graphLoad=undefined;graphContext=context;}
+  graphExecution = {};
+  graphFocus = null;
+  graphRunId = null;
+  if (graphContext !== context) {graphLoad=undefined;graphContext=context;graphNodes=undefined;}
   if (!graphLoad) {
     $('graph-status').textContent='正在载入我的 Skill 图谱…';
     graphLoad = (async () => {
       const suffix = context ? '?task='+encodeURIComponent(context) : '';
       const graph = await api('/api/skill-graph/skills'+suffix);
+      if (context !== graphContext) return;
       graphNodes = new Map(graph.nodes.map(node => [node.id, node]));
       graphFrame.src='/skill-library/index.html'+suffix;
       $('graph-status').textContent = `我的 Skill 图谱 · ${graph.nodes.length} 项已安装技能`;
     })().catch(error => {
+      if (context !== graphContext) return;
       $('graph-status').textContent = `图谱加载失败：${error.message}`;
       graphLoad = undefined;
     });
   }
   await graphLoad;
-  if ($('graph-panel').hidden || !graphNodes) return;
+  if (request !== graphRequest || !graphNodes) return;
   const latest = task?.runs.findLast(run => run.preflight?.trace || run.audit?.skillTrace || run.skillTrace);
   const trace = typeof skillId === 'object' ? skillId : skillId ? null : latest?.preflight?.trace ?? latest?.audit?.skillTrace ?? latest?.skillTrace;
   if (trace) {
+    graphRunId = runId ?? latest?.id;
     drawRunGraph(trace);
     return;
   }
   $('graph-run-evidence').hidden = true;
-  graphFocus = null;
-  graphExecution={ids:[],states:[]};graphMessage('execution',graphExecution);
+  graphMessage('execution',graphExecution);
   if (!skillId) return;
   const node = graphNodes.get(skillId) ?? [...graphNodes.values()].find(node=>node.name===skillId);
   if (!node) return;
-  graphFocus=node.id;
-  graphExecution={ids:[node.id],states:[]};graphMessage('execution',graphExecution);
   showGraphNode(node);
 }
 
-function drawRunGraph(trace) {
+function drawRunGraph(trace, open = true) {
   const {nodes, edges} = trace.graph;
-  const attempt = trace.attempt ?? trace.graph.attempt ?? 1;
-  const resolveNode = node => graphNodes.get(node.id) ?? graphNodes.get(node.nodeId) ?? [...graphNodes.values()].find(item=>item.name===node.label||item.name===node.name||item.name===node.nodeId);
-  const adopted = nodes.filter(node=>trace.kind!=='skill-session'||node.started);
-  const ids = [...new Set(adopted.map(node=>resolveNode(node)?.id).filter(Boolean))];
+  const {attempt = trace.graph.attempt} = trace;
+  const installedByStep = new Map(nodes.map(node => {
+    let installed = graphNodes.get(node.id) ?? graphNodes.get(node.nodeId);
+    if (!installed && trace.kind !== 'skill-session') {
+      const matches = [...graphNodes.values()].filter(item => item.name === node.nodeId);
+      if (matches.length === 1) installed = matches[0];
+    }
+    return [node.step, installed];
+  }));
+  const adopted = nodes.filter(node => trace.kind === 'skill-session' ? node.started : node.state !== 'planned');
+  const executionSteps = new Map(adopted.map(node => [node.step,
+    installedByStep.get(node.step)?.id ?? 'execution:' + (node.id ?? node.step)]));
+  const executionNodes = [...new Map(adopted.map(node => {
+    const id = executionSteps.get(node.step);
+    const state = ['succeeded','applied'].includes(node.state) ? 'done' :
+      ['failed','blocked','interrupted','unfinished'].includes(node.state) ? 'failed' : 'running';
+    return [id, {id, name: node.label, state}];
+  })).values()];
+  const executionEdges = edges.flatMap(({from, to}) => {
+    const source = executionSteps.get(from), target = executionSteps.get(to);
+    return source && target && source !== target ? [{source, target}] : [];
+  });
   const panel = $('graph-run-evidence');
   panel.hidden = false;
   const title = document.createElement('strong');
   title.textContent = trace.kind === 'skill-session' ? '技能执行记录 · ' + nodes.filter(node => node.started).length + ' 项实际开始 · ' + nodes.filter(node => node.state === 'applied').length + ' 项已应用' :
-    attempt === null ? '没有采用的技能计划' : '第 ' + attempt + ' 版计划 · ' + nodes.length + ' 个步骤';
+    attempt === null ? '没有采用的技能计划' : '第 ' + (attempt ?? 1) + ' 版计划 · ' + adopted.length + ' 个步骤有执行记录';
   const provenance = document.createElement('p');
-  const missingCount=adopted.filter(node=>!resolveNode(node)).length;
-  provenance.textContent = `标记来自本轮执行日志${missingCount ? `，其中 ${missingCount} 项在当前已安装库中没有节点` : ''}。实际执行依赖列在下方。`;
+  const missingCount = adopted.filter(node => !installedByStep.get(node.step)).length;
+  provenance.textContent = `高亮和箭头来自本轮执行记录${missingCount ? `，其中 ${missingCount} 项以历史节点显示` : ''}。`;
   const buttons = document.createElement('div');
   const states = {planned: '未执行', loaded: '已加载，未执行', running: '应用中', applied: '已应用，有回执', blocked: '条件不足', unfinished: '未记录完成', interrupted: '已停止', succeeded: '已完成', failed: '失败'};
   for (const node of nodes) {
     const button = document.createElement('button');
     button.type = 'button';
-    const installed = resolveNode(node);
+    const installed = installedByStep.get(node.step);
     button.dataset.nodeId = installed?.id ?? '';
     button.textContent = node.label + ' · ' + states[node.state];
     button.title = node.id + '@' + node.version;
@@ -369,18 +392,15 @@ function drawRunGraph(trace) {
   }
   const dependencies = document.createElement('p');
   const labels = new Map(nodes.map(node => [node.step, node.label]));
-  dependencies.textContent = edges.map(({from, to}) => labels.get(from) + ' → ' + labels.get(to)).join('  ·  ');
+  dependencies.textContent = edges.filter(({from, to}) => executionSteps.has(from) && executionSteps.has(to))
+    .map(({from, to}) => labels.get(from) + ' → ' + labels.get(to)).join('  ·  ');
   const missing = document.createElement('p');
   missing.textContent = (trace.selection?.missing ?? []).map(item => item.field + ' 缺少可用于换算至 ' + item.expectedUnit + ' 的来源单位').join('；');
   panel.replaceChildren(title, provenance, buttons, dependencies, missing);
-  graphExecution={ids,states:adopted.flatMap(node=>{
-    const id=resolveNode(node)?.id;
-    return id ? [[id,['succeeded','applied'].includes(node.state)?'done':['failed','blocked','interrupted'].includes(node.state)?'failed':'running']] : [];
-  })};
-  graphFocus=ids[0]??null;
-  graphMessage('execution',graphExecution);
-  panel.dataset.highlighted = JSON.stringify(ids);
-  if (graphFocus) graphMessage('focus',{id:graphFocus});
+  graphExecution = {active: true, nodes: executionNodes, edges: executionEdges, open: true};
+  if (open) graphFocus = null;
+  graphMessage('execution',{...graphExecution, open});
+  panel.dataset.highlighted = JSON.stringify(executionNodes.map(node => node.id));
 }
 
 function showGraphNode(node) {
@@ -442,7 +462,9 @@ function drawFiles(selected = $('analysis-file').value) {
   }
   $('saved-attachments').hidden = !files.length;
   $('saved-attachment-list').replaceChildren(...files.map(file => {
-    const button = document.createElement('button'); button.type = 'button'; button.textContent = file.name;
+    const button = document.createElement('button'); button.type = 'button';
+    const label = document.createElement('span'); label.className = 'glass-label'; label.textContent = file.name;
+    button.append(label);
     button.title = `附带 ${file.name}`;
     button.onclick = () => { drawFiles(file.id); saveDraft(); $('composer-menu').hidePopover(); $('prompt').focus(); };
     return button;
@@ -495,7 +517,7 @@ function drawSkillEvidence(container, taskId, run) {
     const graph = document.createElement('button');
     graph.type = 'button';
     graph.textContent = '查看实际执行路径';
-    graph.onclick = () => void showGraph(true, trace);
+    graph.onclick = () => void showGraph(true, trace, run.id);
     const follow = document.createElement('button');
     follow.type = 'button';
     follow.textContent = '引用发现继续对话';
@@ -551,7 +573,7 @@ function drawSkillEvidence(container, taskId, run) {
       const graph = document.createElement('button');
       graph.type = 'button';
       graph.textContent = '查看技能执行图';
-      graph.onclick = () => void showGraph(true, skillTrace);
+      graph.onclick = () => void showGraph(true, skillTrace, run.id);
       traceActions.push(graph);
       const selection = document.createElement('p');
       const adopted = skillTrace.graph.nodes.map(node => node.label).join('、');
@@ -608,9 +630,12 @@ function drawTaskRow(item) {
   row.className = 'task-row';
   const button = document.createElement('button');
   button.className = 'task-open';
-  button.textContent = item.title;
+  const label = document.createElement('span');
+  label.className = 'glass-label';
+  label.textContent = item.title;
+  button.append(label);
   button.title = item.title;
-  if (item.status === 'running') { button.textContent = `● ${item.title}`; button.title = `${item.title} · 执行中`; }
+  if (item.status === 'running') { label.textContent = `● ${item.title}`; button.title = `${item.title} · 执行中`; }
   if (item.id === task?.id) button.setAttribute('aria-current', 'true');
   button.onclick = () => void selectTask(item.id);
   const options = document.createElement('button');
@@ -844,12 +869,20 @@ function showMemoryEditor(item = null) {
   editingMemory = item;
   memoryForm.reset();
   $('project-memory-editor-title').textContent = item ? '编辑记忆 · ' + item.title : '新增记忆';
+  $('project-memory-default').hidden = Boolean(item);
   $('project-memory-kind').value = item?.kind ?? 'preference';
   $('project-memory-name').value = item?.title ?? '';
   $('project-memory-text').value = item?.text ?? '';
   $('project-memory-triggers').value = item?.triggers.join('，') ?? '';
   $('project-memory-source').value = item?.source.path ?? '';
   $('project-memory-kind').onchange();
+}
+
+function fillDefaultMemory() {
+  showMemoryEditor();
+  $('project-memory-name').value = '报告与验收';
+  $('project-memory-text').value = '核对项目材料时，每条结论注明对应的文件路径和行号。证据不足的事项单独标为待确认。';
+  $('project-memory-triggers').value = '报告，核对，验收';
 }
 
 function drawProjectMemories() {
@@ -926,7 +959,12 @@ async function openProjectMemory(project) {
   showMemoryEditor();
   drawProjectMemories();
   memoryDialog.showModal();
-  await memoryWork(loadProjectMemories);
+  await memoryWork(async () => {
+    await loadProjectMemories();
+    const untouched = $('project-memory-kind').value === 'preference' &&
+      ['project-memory-name', 'project-memory-text', 'project-memory-triggers'].every(id => !$(id).value);
+    if (!memoryItems.length && untouched) fillDefaultMemory();
+  });
 }
 
 $('project-memory-kind').onchange = () => {
@@ -935,6 +973,7 @@ $('project-memory-kind').onchange = () => {
   $('project-memory-source').required = fact;
 };
 $('project-memory-search').oninput = drawProjectMemories;
+$('project-memory-default').onclick = () => { if (!memoryBusy && !editingMemory) fillDefaultMemory(); };
 $('project-memory-reset').onclick = () => { if (!memoryBusy) showMemoryEditor(); };
 $('project-memory-close').onclick = () => { if (!memoryBusy) memoryDialog.close(); };
 memoryDialog.oncancel = event => { if (memoryBusy) event.preventDefault(); };
@@ -990,7 +1029,6 @@ function fillPreferences(data) {
   modelConnected = data.mode !== 'unconfigured';
   $('active-mode').textContent = modelModes[data.mode];
   $('active-model').textContent = data.activeModel;
-  $('model').textContent = data.activeModel;
   $('environment-option').hidden = !data.environmentModel;
   $('model-mode').value = data.mode === 'environment' ? 'environment' : 'api';
   $('api-endpoint').value = data.endpoint.replace(/\/chat\/completions\/?$/, '');
@@ -1303,7 +1341,7 @@ function drawTranscript() {
     skillPanel.className = 'skill-runtime';
     const drawSkillRuntime = () => skillRuntimeModule?.renderSkillRuntime(skillPanel, run, {
       taskId,
-      onGraph: trace => void showGraph(true, trace),
+      onGraph: trace => void showGraph(true, trace, run.id),
       onOpen: id => studio?.openSkill(id),
       onReceipt: seq => {
         const item = list.querySelector('[data-event-seq="' + seq + '"]');
@@ -1432,7 +1470,7 @@ function drawTranscript() {
         }
         if (event.type === 'skill_route') { run.skillRoute = event.payload; skillPanel.open = true; drawSkillRuntime(); }
         if (event.type === 'skill_runtime') { run.skillTrace = event.payload; drawSkillRuntime();
-          if (graphNodes && !$('graph-panel').hidden) drawRunGraph(event.payload);
+          if (graphRunId === run.id && graphNodes && !$('graph-panel').hidden) drawRunGraph(event.payload, false);
         }
         if (event.type === 'skill_application') { run.skillApplications ??= []; run.skillApplications.push(event.payload); drawSkillRuntime(); }
         if (event.type === 'skill_applicability') { run.skillApplicability ??= []; run.skillApplicability.push(event.payload); drawSkillRuntime(); }
@@ -1976,13 +2014,17 @@ $('audit-form').onsubmit = async event => {
   } finally { updateControls(); }
 };
 
+void import('./skill-engine.js').catch(() => {
+  $('engine-status').textContent = '技能引擎模块未加载。请重新启动 Skillinter 后刷新页面。';
+  for (const control of $('engine-form').querySelectorAll('input, select, button')) control.disabled = true;
+});
+
 try {
   loading = true;
   updateControls();
   const [status, history, directory] = await Promise.all([api('/api/status'), api('/api/tasks'), api('/api/projects').catch(() => null)]);
   projectsAvailable = Array.isArray(directory);
   projects = directory ?? [];
-  $('model').textContent = status.model;
   modelConnected = status.connected;
   void loadModels();
   tasks = history;
@@ -1990,4 +2032,3 @@ try {
   await selectTask(tasks.find(item => item.id === saved)?.id);
   if (!task && selection === 1) void showGraph(true);
 } catch (error) { showError(error); loading = false; updateControls(); }
-import './skill-engine.js';
