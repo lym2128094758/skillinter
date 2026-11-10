@@ -181,10 +181,14 @@ export class Store {
       .map(event => [event.run, JSON.parse(event.payload)]));
     const briefs = new Map(this.query("SELECT e.run,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='task_brief' ORDER BY e.seq", 'all', id)
       .map(event=>[event.run,JSON.parse(event.payload)]));
+    const chains = new Map(this.query("SELECT e.run,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='task_skill_chain' ORDER BY e.seq",'all',id)
+      .map(event=>[event.run,JSON.parse(event.payload)]));
     const librarySearches = this.query("SELECT e.run,e.seq,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='skill_library_search' ORDER BY e.seq",'all',id)
       .map(event=>({run:event.run,seq:event.seq,...JSON.parse(event.payload)}));
     const external = this.query("SELECT e.run,e.type,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type IN ('external_skill_discovery','external_skill_adopted') ORDER BY e.seq", 'all', id)
       .map(event=>({...event,payload:JSON.parse(event.payload)}));
+    const installations = this.query("SELECT e.run,e.payload FROM events e JOIN runs r ON r.id=e.run WHERE r.task=? AND e.type='external_skill_installed' ORDER BY e.seq",'all',id)
+      .map(event=>({run:event.run,...JSON.parse(event.payload)}));
     const capabilityFits = new Map(this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'capability_fit' ORDER BY e.seq", 'all', id)
       .map(event => [event.run, JSON.parse(event.payload)]));
     const searches = new Map(this.query("SELECT e.run, e.payload FROM events e JOIN runs r ON r.id = e.run WHERE r.task = ? AND e.type = 'skill_search' ORDER BY e.seq", 'all', id)
@@ -242,7 +246,7 @@ export class Store {
       skillRoute: routes.get(run.id), skillTrace: skillTraces.get(run.id), skillApplications: applications.filter(item => item.run === run.id),
       skillApplicability: applicability.filter(item => item.run === run.id),
       skillDeliveries: deliveries.filter(item => item.run === run.id),
-      taskBrief:briefs.get(run.id),skillLibrarySearches:librarySearches.filter(item=>item.run===run.id),externalSkills:[...new Map(external.filter(e=>e.run===run.id).flatMap(e=>e.type==='external_skill_discovery'?e.payload.candidates:[e.payload]).map(item=>[item.id,item])).values()],
+      taskBrief:briefs.get(run.id),taskSkillChain:chains.get(run.id),skillLibrarySearches:librarySearches.filter(item=>item.run===run.id),installedSkills:installations.filter(item=>item.run===run.id),externalSkills:[...new Map(external.filter(e=>e.run===run.id).flatMap(e=>e.type==='external_skill_discovery'?e.payload.candidates:[e.payload]).map(item=>[item.id,item])).values()],
       audit: audits.get(run.id), preflight: preflights.get(run.id), citationVerification: citations.get(run.id),
       capabilityFit: capabilityFits.get(run.id), artifacts: files.filter(file => file.run === run.id)}))
       .map(run => ({...run, outcome: summarizeRun(run)}))};

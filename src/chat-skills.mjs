@@ -103,28 +103,30 @@ function searchableCards(localSkills, snapshot) {
   const visibleSkills = snapshot ? localSkills.filter(skill => snapshot.skills.some(ref => ref.skillId === skill.id && ref.selectable)) : localSkills;
   const externalBySkill = new Map(snapshot?.externalRefs.map(ref => [ref.skillId, ref.externalId]));
   const installedNames = new Set(snapshot ? snapshot.externalRefs.map(ref => ref.externalId) : visibleSkills.map(skill => skill.name));
-  const local = visibleSkills.map(skill => ({id: skill.id, label: skill.name, domain: '已发布技能', description: skill.description,
+  const local = visibleSkills.map(skill => ({id: skill.id, label: skill.name, domain: skill.categories?.join(' ') || '已发布技能', description: skill.description, learningWeight: skill.learningWeight,
     nodeId: byCatalogId.get(snapshot ? externalBySkill.get(skill.id) : skill.name)?.nodeId ?? '', executable: true, tool: 'load_skill', version: String(skill.version)}));
   const catalogSha256 = local.length ? digest({base: source.sha256, local}) : source.sha256;
   return {catalogSha256, cards: [...source.entries.filter(item => item.executable || !installedNames.has(item.id)), ...local]};
 }
 
-export function searchSkills({query, limit = 5, executable_only = false}, localSkills = [], snapshot) {
+export function searchSkills({query, limit = 5, executable_only = false, installedOnly = false}, localSkills = [], snapshot) {
   const {catalogSha256, cards} = searchableCards(localSkills, snapshot);
   const normalized = query.toLowerCase();
   const terms = [...new Set([...new Intl.Segmenter('zh', {granularity: 'word'}).segment(normalized)]
     .filter(part => part.isWordLike).map(part => part.segment))];
   for (const [pattern, aliases] of [
+    [/探索性分析|探索性数据分析|探索分析|相关性分析|相关系数|分布分析|\beda\b/i, ['exploratory','correlations','distributions']],
     [/绘图|画图|图表|可视化/, ['plot','figure','visualization','chart']],
+    [/流程图|工作流图|架构图|图稿复刻/, ['flowchart','diagram','drawio','draw.io']],
     [/论文|写作|撰写/, ['paper','academic','writing','manuscript']],
     [/建模|模型|求解/, ['modeling','mathematical','optimization']],
   ]) if (pattern.test(normalized)) terms.push(...aliases);
-  const matches = cards.filter(item => !executable_only || item.executable).map(item => {
+  const matches = cards.filter(item => installedOnly ? item.tool === 'load_skill' : !executable_only || item.executable).map(item => {
     const title = (item.label + ' ' + item.domain).toLowerCase();
     const text = (item.id + ' ' + item.description).toLowerCase();
-    return {item, score: terms.reduce((score, term) => score + (title.includes(term) ? 3 : text.includes(term) ? 1 : 0), 0)};
+    return {item, score: terms.reduce((score, term) => score + (title.includes(term) ? 3 : text.includes(term) ? 1 : 0), 0) * (1 + (item.learningWeight ?? 0))};
   }).filter(row => row.score > 0).sort((a, b) => b.score - a.score || (a.item.id < b.item.id ? -1 : a.item.id > b.item.id ? 1 : 0));
-  return {query, matches: matches.slice(0, limit).map(row => row.item), truncated: matches.length > limit, catalogSha256};
+  return {query, matches: matches.slice(0, limit).map(({item: {learningWeight, ...card}}) => card), truncated: matches.length > limit, catalogSha256};
 }
 
 export function createChatSkills({store, task, run, model, signal, entry, localSkills = [], customSkill, session, scope, workspace, context, budget, registrySnapshot, skillEngine}) {
@@ -166,7 +168,7 @@ export function createChatSkills({store, task, run, model, signal, entry, localS
             emit: (type, payload) => store.record(run, type, payload),
             local: () => { localResult = searchSkills(args, localSkills, registrySnapshot); return localResult.matches; }});
           if (!result.ok) return failure(errors, Object.hasOwn(errors, result.error.code) ? result.error.code : 'INTERNAL');
-          data = {query: args.query, matches: matches.map(({engineReason, ...card}) => card),
+          data = {query: args.query, matches: matches.map(({engineReason, learningWeight, ...card}) => card),
             truncated: localResult?.truncated ?? false, catalogSha256};
           store.record(run, 'skill_retrieval', {provider: result.data.provider, fallback: result.data.fallback,
             candidates: matches.map(card => ({id: card.id, reason: card.engineReason}))});

@@ -241,7 +241,13 @@ export function createSkillStudio({api, getTask, onSelect, canSelect, onOpenTask
   function drawLibrary(skills) {
     const query = $('studio-search').value.trim().toLocaleLowerCase();
     const filter = $('studio-filter').value;
+    const categorySelect = $('studio-category');
+    const category = categorySelect.value;
+    const categories = [...new Set(skills.flatMap(skill => skill.categories ?? []))].sort((a,b)=>a.localeCompare(b,'zh'));
+    categorySelect.replaceChildren(new Option('所有分类',''),...categories.map(label=>new Option(label,label)));
+    categorySelect.value = categories.includes(category) ? category : '';
     skills = skills.filter(skill => (!query || (skill.name + ' ' + skill.description).toLocaleLowerCase().includes(query)) &&
+      (!categorySelect.value || skill.categories?.includes(categorySelect.value)) &&
       (filter === 'all' || Boolean(skill.projectId) === (filter === 'project')));
     const total = skills.length;
     libraryPage = Math.min(libraryPage, Math.max(0, Math.ceil(total / 50) - 1));
@@ -252,6 +258,7 @@ export function createSkillStudio({api, getTask, onSelect, canSelect, onOpenTask
       summary.append(node('h4', `${skill.name} · v${skill.version}`), node('p', skill.description, 'status'),
         node('span', skill.projectId ? '本项目' : '所有会话', 'studio-scope'));
       summary.append(node('p', skill.tests.length ? skill.tests.length + ' 个测试用例' : '尚未添加对照测试', 'status'));
+      if (skill.categories?.length) summary.append(node('p',skill.categories.join(' · '),'status'));
       if (skill.storagePath) summary.append(node('p', skill.storagePath, 'status studio-file-path'));
       const buttons = node('div', '', 'actions');
       const use = action('用于下一轮', () => useSkill(skill), 'primary-action');
@@ -699,7 +706,16 @@ export function createSkillStudio({api, getTask, onSelect, canSelect, onOpenTask
     });
   };
   $('studio-refresh').onclick = () => void openLibrary();
-  $('studio-search').oninput = $('studio-filter').onchange = () => { libraryPage = 0; drawLibrary(library); };
+  $('studio-organize').onclick = () => void work('正在整理本机技能分类…', async isCurrent => {
+    const result = await api(studioUrl+'/organize',{taskId,...projectBody()});
+    if (!isCurrent()) return;
+    const {skills} = await api(withTask(studioUrl));
+    if (!isCurrent()) return;
+    library = skills;
+    drawLibrary(library);
+    message(status, result.updated ? '模型已整理 '+result.updated+' 个技能。'+(result.remaining ? '还有 '+result.remaining+' 个可继续整理。' : '') : '当前技能版本的分类已整理。');
+  });
+  $('studio-search').oninput = $('studio-filter').onchange = $('studio-category').onchange = () => { libraryPage = 0; drawLibrary(library); };
   $('studio-manual').onclick = () => { $('studio-ai-fields').hidden = true; if ($('studio-draft').hidden) drawDraft({name: '', description: '', instructions: '', tests: []}); };
   $('studio-ai').onclick = () => { $('studio-ai-fields').hidden = false; $('studio-feedback').focus(); };
   $('studio-import-start').onclick = () => {

@@ -20,6 +20,11 @@ export function readRunBudget(store, rootRunId) {
     if (type === 'budget_reserved') entries.set(event.id, event);
     if (type === 'budget_settled' && entries.has(event.id)) Object.assign(entries.get(event.id), event);
     if (type === 'budget_finished') endedAt = event.endedAt;
+    if (type === 'budget_extended') {
+      if (event.maxInputTokens != null) limits.maxInputTokens = event.maxInputTokens;
+      if (event.maxOutputTokens != null) limits.maxOutputTokens = event.maxOutputTokens;
+      if (event.maxToolCalls != null) limits.maxToolCalls = event.maxToolCalls;
+    }
   }
   const run = store.run(rootRunId);
   const terminal = run.status !== 'running';
@@ -51,7 +56,7 @@ function totals(entries) {
   return usage;
 }
 
-export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
+export function createRunBudget({store, rootRunId, signal, limits: overrides, requestInputExtension}) {
   if (store.run(rootRunId).status !== 'running' || store.query(
     "SELECT 1 FROM events WHERE run = ? AND type = 'budget_started' LIMIT 1", 'get', rootRunId)) {
     throw new BudgetError('根任务已有预算或已经结束，不能重新初始化。');
@@ -61,6 +66,10 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
   const deadline = AbortSignal.timeout(limits.maxSeconds * 1000);
   const bound = AbortSignal.any([signal, deadline]);
   const entries = [];
+  let maxInputTokens = limits.maxInputTokens;
+  let maxOutputTokens = limits.maxOutputTokens;
+  let maxToolCalls = limits.maxToolCalls ?? Infinity;
+  let extensionPending;
   let closed = false;
   const record = (type, payload) => store.record(rootRunId, type, {rootRunId, ...payload});
   record('budget_started', {limits, startedAt});
@@ -73,11 +82,11 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
     const usage = totals(entries);
     let message;
     if (kind === 'model' && usage.modelCalls >= limits.maxModelCalls) message = '本轮共享模型调用预算已耗尽';
-    else if (kind === 'tool' && usage.toolCalls >= limits.maxToolCalls) message = '根任务工具调用预算已耗尽';
-    else if (kind === 'engine' && usage.engineCalls >= limits.maxToolCalls) message = '根任务引擎调用预算已耗尽';
+    else if (kind === 'tool' && usage.toolCalls >= maxToolCalls) message = '根任务工具调用预算已耗尽';
+    else if (kind === 'engine' && usage.engineCalls >= maxToolCalls) message = '根任务引擎调用预算已耗尽';
     else if (entries.filter(entry => !entry.status && entry.kind === kind).length >= limits.maxConcurrent) message = '根任务并发预算已耗尽';
-    else if (kind === 'model' && usage.chargedInputTokens + input > limits.maxInputTokens) message = '根任务累计输入预算已耗尽';
-    else if (kind === 'model' && usage.chargedOutputTokens + output > limits.maxOutputTokens) message = '根任务累计输出预算已耗尽';
+    else if (kind === 'model' && usage.chargedInputTokens + input > maxInputTokens) message = '根任务累计输入预算已耗尽';
+    else if (kind === 'model' && usage.chargedOutputTokens + output > maxOutputTokens) message = '根任务累计输出预算已耗尽';
     if (message) {
       record('budget_denied', {kind, message});
       throw new BudgetError(message);
@@ -105,6 +114,7 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
 
   async function operation(kind, phase, name, call, requestSignal = bound) {
     const combined = AbortSignal.any([bound, requestSignal]);
+    if (totals(entries)[kind + 'Calls'] >= maxToolCalls) await ensureBudget(kind, 1, combined);
     const settle = reserve(kind, {phase, name}, combined);
     try {
       const result = await call(combined);
@@ -114,6 +124,36 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
       settle({status: error?.name === 'TimeoutError' ? 'timeout' : 'failed'});
       if (deadline.aborted && !signal.aborted) throw new BudgetError('根任务时间预算已耗尽');
       throw error;
+    }
+  }
+
+  async function ensureBudget(kind, estimated, requestSignal) {
+    const isInput = kind === 'input';
+    const isCalls = kind === 'tool' || kind === 'engine';
+    const used = () => totals(entries)[isCalls ? kind + 'Calls' : isInput ? 'chargedInputTokens' : 'chargedOutputTokens'];
+    const limit = () => isCalls ? maxToolCalls : isInput ? maxInputTokens : maxOutputTokens;
+    const increment = isCalls ? 200 : 30000000;
+    while (used() + estimated > limit()) {
+      if (!requestInputExtension) {
+        const message = isCalls ? `根任务${kind === 'tool' ? '工具' : '引擎'}调用预算已耗尽` : `根任务累计${isInput ? '输入' : '输出'}预算已耗尽`;
+        record('budget_denied',{kind:isCalls ? kind : 'model',message});
+        throw new BudgetError(message);
+      }
+      if (!extensionPending) {
+        extensionPending = (async () => {
+          const approved = await requestInputExtension({
+            rootRunId, kind, currentLimit:limit(), used:used(),
+            nextLimit:limit()+increment, signal:bound,
+          });
+          bound.throwIfAborted();
+          if (!approved) throw new BudgetError(`用户未同意增加${isCalls ? '调用次数' : isInput ? '输入' : '输出'}预算`);
+          if (isCalls) { maxToolCalls += increment; record('budget_extended',{maxToolCalls,increment}); }
+          else if (isInput) { maxInputTokens += 30000000; record('budget_extended',{maxInputTokens,increment:30000000}); }
+          else { maxOutputTokens += 30000000; record('budget_extended',{maxOutputTokens,increment:30000000}); }
+        })().finally(() => { extensionPending = null; });
+      }
+      await extensionPending;
+      requestSignal.throwIfAborted();
     }
   }
 
@@ -135,6 +175,8 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
         record('budget_denied', {kind: 'model', message});
         throw new BudgetError(message);
       }
+      await ensureBudget('input',context.estimatedTokens,requestSignal);
+      await ensureBudget('output',maxTokens,requestSignal);
       const prepareAttempt = attempt => reserve('model', {phase, attempt, model: model.label,
         estimatedInputTokens: context.estimatedTokens, outputReserved: maxTokens, contextSha256: context.sha256}, requestSignal);
       const args = {...options, maxTokens, signal: requestSignal};
@@ -142,8 +184,10 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
       try {
         if (model.accountsProviderAttempts) {
           args.prepareAttempt = prepareAttempt;
-          args.beforeRetry = () => {
+          args.beforeRetry = async () => {
             if (!allowRetry) throw Object.assign(new Error('此子任务只允许一次模型请求。'), {code: 'MODEL_RETRY_DISABLED'});
+            await ensureBudget('input',context.estimatedTokens,requestSignal);
+            await ensureBudget('output',maxTokens,requestSignal);
             check('model', context.estimatedTokens, maxTokens);
           };
         } else settle = prepareAttempt(1);
@@ -151,7 +195,7 @@ export function createRunBudget({store, rootRunId, signal, limits: overrides}) {
         settle?.({status: 'completed', ...result});
         requestSignal.throwIfAborted();
         const usage = totals(entries);
-        if (usage.chargedInputTokens > limits.maxInputTokens || usage.chargedOutputTokens > limits.maxOutputTokens) {
+        if (usage.chargedOutputTokens > maxOutputTokens) {
           const message = '服务商报告的用量超出根任务预算，已停止继续执行。';
           record('budget_denied', {kind: 'model', message});
           throw new BudgetError(message);

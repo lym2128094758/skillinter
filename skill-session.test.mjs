@@ -215,6 +215,38 @@ test('automatic activation binds real task receipts and length retries never exe
   assert.equal(f.store.run(f.run).status, 'completed');
 });
 
+test('separate output truncations each receive their own retry allowance', async t => {
+  const f = await fixture(t);
+  await writeFile(join(f.root, 'input.txt'), 'verified local input');
+  let requests = 0;
+  await executeRun({id: f.run, task: f.task, prompt: 'Read the input', store: f.store, workspace: f.root,
+    scope: f.scope, signal: f.controller.signal, skillAccess: false, maxSteps: 8,
+    model: {label: 'bounded-provider', async invoke() {
+      requests++;
+      if ([1, 3, 5].includes(requests)) return {finishReason: 'length', tool_calls: [call('create_file', {path: 'TRUNCATED.md', content: 'must not execute'})]};
+      if ([2, 4].includes(requests)) return {tool_calls: [call('read_file', {path: 'input.txt'})]};
+      return {content: 'Read complete.'};
+    }}});
+  const events = f.store.events(f.run, 0);
+  assert.deepEqual(events.filter(event => event.type === 'model_output_retry').map(event => event.payload.attempt), [1, 1, 1]);
+  assert.equal(f.store.run(f.run).status, 'completed');
+  await assert.rejects(readFile(join(f.root, 'TRUNCATED.md')), {code: 'ENOENT'});
+});
+
+test('long output retries expand the per-request budget without executing truncated calls', async t => {
+  const f = await fixture(t); let requests = 0; const limits = [];
+  await executeRun({id:f.run, task:f.task, prompt:'完成任务', store:f.store, workspace:f.root,
+    scope:f.scope, signal:f.controller.signal, skillAccess:false, maxSteps:4,
+    model:{label:'fixture', outputRetryCeiling:32768, async invoke({maxTokens}) {
+      limits.push(maxTokens); requests++;
+      if (requests < 3) return {finishReason:'length', tool_calls:[call('create_file',{path:'TRUNCATED.md',content:'not allowed'})]};
+      return {content:'完成。'};
+    }}});
+  assert.deepEqual(limits,[4096,8192,16384]);
+  assert.equal(f.store.run(f.run).status,'completed');
+  await assert.rejects(readFile(join(f.root,'TRUNCATED.md')),{code:'ENOENT'});
+});
+
 test('missing command capabilities block activation, links are not followed, and replanning retains the original blocked evidence', async t => {
   const f = await fixture(t);
   const blocked = f.publish('command-dependent'), alternative = f.publish('text-only');

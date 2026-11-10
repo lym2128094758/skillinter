@@ -38,6 +38,7 @@ export function routeSkills({prompt, materials = [], localSkills, customSkill, m
       (exact ? 1 : Math.max(0.35, Math.sqrt(120 / (120 + skill.description.length))));
     return {skill, score, matched, exact, intent, declaredGoal};
   }).filter(item => item.exact || item.declaredGoal || item.intent && item.matched.length >= 1 || item.matched.length >= 2 && item.score >= 5 && item.matched.length / Math.max(terms.length, 1) >= 0.18)
+    .map(item => ({...item, score: item.score * (1 + (item.skill.learningWeight ?? 0))}))
     .sort((a, b) => b.score - a.score || a.skill.name.localeCompare(b.skill.name, 'en') || a.skill.id.localeCompare(b.skill.id));
   const rejected = matches.map(item => ({item, checks: goalApplicability(item.skill.applicability, prompt)}))
     .filter(({checks}) => checks.some(check => check.status !== 'passed'));

@@ -56,7 +56,7 @@ test('uploaded text is readable through the real task and tool entry points', as
   assert.equal(detail.runs[0].answer, 'sample factual content');
   assert.equal(requests.length, 2);
   assert.deepEqual(requests[0].tools.map(tool => tool.function.name), ['list_workspace', 'read_file', 'search_skills', 'analyze_csv', 'precheck_table', 'material_preflight', 'update_plan',
-    'read_document','prepare_task','discover_skills','adopt_discovered_skill','read_discovered_resource','search_skill_libraries','inspect_runtime']);
+    'read_document','prepare_task','discover_skills','adopt_discovered_skill','read_discovered_resource','install_discovered_skill','search_skill_libraries','inspect_runtime']);
   assert.ok(!requests[0].tools.some(tool=>tool.function.name==='run_python'),'附件模式不暴露代码执行');
   assert.match(trace, /contractVersion/);
   assert.match(trace, /sha256/);

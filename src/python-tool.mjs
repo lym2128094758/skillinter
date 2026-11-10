@@ -11,13 +11,13 @@ export const pythonErrors={...fileErrors,INVALID_ARGUMENT:'Python 执行参数�
   APPROVAL_DECLINED:'用户拒绝了本次 Python 执行。',APPROVAL_EXPIRED:'Python 执行确认已过期。',
   APPROVAL_SUPERSEDED:'收到新引导，已撤回待确认的 Python 执行。',ABORTED:'Python 执行已停止。',
   PYTHON_UNAVAILABLE:'Python 无法启动，请安装并配置到 PATH。',TIMEOUT:'Python 执行超过 60 秒，已停止。'};
-export const pythonTool={name:'run_python',description:'运行已经写入并读取确认的项目 Python 脚本，用于计算、求解、绘图或文档处理。必须提供脚本当前 SHA-256，每次由用户在界面确认；使用固定 python -I，冻结脚本字节，无 shell，最长60秒。代码有当前系统账号权限，不是沙箱。退出码0不代表业务结果正确。',
+export const pythonTool={name:'run_python',description:'运行已经写入并读取确认的项目 Python 脚本，用于计算、求解、绘图或文档处理。必须提供脚本当前 SHA-256，按运行设置自动同意或等待用户确认；使用固定 python -I，冻结脚本字节，无 shell，最长60秒。代码有当前系统账号权限，不是沙箱。退出码0不代表业务结果正确。',
   parameters:object({path:{...str,minLength:1,pattern:'\\.py$'},sha256:{type:'string',pattern:'^[a-f0-9]{64}$'},purpose:{...str,minLength:1,maxLength:500}}),
   returns:resultSchema(object({kind:{enum:['python_execution']},status:{enum:['passed','failed']},script:str,scriptSha256:str,
     exitCode:{anyOf:[{type:'integer'},{enum:[null]}]},stdout:{type:'string',maxLength:16000},stderr:{type:'string',maxLength:16000},
     truncated:{type:'boolean'},volatile:object({elapsedMs:{type:'integer'}})})),
   errors:pythonErrors,timeoutMs:60000,approvalTimeoutMs:60000,idempotent:false,volatile:['data.stdout','data.stderr','data.volatile.elapsedMs'],
-  ordering:'stdout和stderr分别按进程写入顺序，保留前16000字节并注明截断。',authorization:'项目读写且每次经用户明确确认。最小环境不含模型密钥；Python仍有操作系统账号权限。',timeoutMode:'确认和运行各60秒，父停止或超时终止进程树。'};
+  ordering:'stdout和stderr分别按进程写入顺序，保留前16000字节并注明截断。',authorization:'项目读写，按运行设置自动同意或逐次确认。最小环境不含模型密钥；Python仍有操作系统账号权限。',timeoutMode:'确认和运行各60秒，父停止或超时终止进程树。'};
 export async function runPython(args,{scope,workspace,signal,store,run,entry}) {
   if(validate(pythonTool.parameters,args).length)return failure(pythonErrors,'INVALID_ARGUMENT');
   if(!scope?.projectId||!scope.projectPath||!writableScope(scope.mode)||!entry)return failure(pythonErrors,'PYTHON_NOT_ALLOWED');

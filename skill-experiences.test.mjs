@@ -114,6 +114,52 @@ test('experience HTTP routes and chat projection expose real references without 
   const state=await fetch(base+'/api/skill-studio/experiences/'+list.experiences[0].id+'/state',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({taskId:task.id,state:'dismissed'})});assert.equal(state.status,200);
 });
 
+test('domain learning remembers reviewed labels and turns one feedback into separate skill candidates', async t => {
+  const {store,studio,project,task,skill,start} = await fixture(t);
+  const plot = studio.publish({taskId:task.id,targetScope:'project',baseVersion:0,draft:{
+    ...document,name:'plot-report',description:'科研绘图与统计图表',instructions:'为报告绘制图表。',
+  }});
+  const unused = studio.publish({taskId:task.id,targetScope:'project',baseVersion:0,draft:{
+    ...document,name:'solver',description:'算法求解',instructions:'分析约束。',
+  }});
+  assert.equal(studio.list(task.id).find(item=>item.id===plot.id).categories[0],'制图');
+  const classifier = {async invoke({messages}) {
+    const cards = JSON.parse(messages[1].content);
+    return {content:JSON.stringify(cards.map(({index})=>({index,categories:['工程','文档']})))};
+  }};
+  assert.deepEqual(await studio.organize({context:task.id,model:classifier,signal:AbortSignal.timeout(1000)}),{updated:3,remaining:0});
+  assert.deepEqual(studio.list(task.id).find(item=>item.id===plot.id).categories,['工程','文档']);
+  assert.deepEqual(await studio.organize({context:task.id,signal:AbortSignal.timeout(1000)}),{updated:0,remaining:0});
+
+  const run = start('整理文档报告');
+  store.record(run.id,'skill_runtime',{graph:{nodes:[
+    ...[skill,plot].map(({id,name,version})=>({id,name,version,started:true,state:'applied'})),
+    {id:unused.id,name:unused.name,version:unused.version,started:false,state:'loaded'},
+  ]}});
+  store.finish(run.id,'completed',{answer:'已汇总报告与图表。'});
+  studio.learning.recordRun(run.id);
+  const prior = studio.learning.weights(project.id,'整理文档').get(skill.id);
+  studio.learning.recordRun(run.id);
+  assert.equal(studio.learning.weights(project.id,'整理文档').get(skill.id),prior);
+  studio.learning.saveFeedback(run.id,'helpful','图表和引用都便于复核。');
+  assert(studio.learning.weights(project.id,'整理文档').get(skill.id)>prior);
+  assert.equal(studio.learning.weights(project.id,'整理文档').has(unused.id),false);
+  assert.equal(studio.learning.weights(project.id,'训练算法').size,0);
+  assert.equal(studio.learning.weights(null,'整理文档').size,0);
+
+  const id = studio.experiences.collect(run.id);
+  const item = studio.experiences.get(id,task.id);
+  assert.deepEqual(item.skills.map(entry=>entry.id),[skill.id,plot.id]);
+  assert.equal(item.signals[0].code,'USER_FEEDBACK');
+  for (const target of item.skills) {
+    const proposal = await studio.experiences.propose({id,context:task.id,skillId:target.id,model:draftModel()});
+    const candidate = studio.candidates.get(proposal.candidateId,task.id);
+    assert.equal(candidate.skillId,target.id);
+    assert.equal(candidate.publishedVersion,null);
+    assert.equal(studio.get(target.id,task.id).version,1);
+  }
+});
+
 test('repair requires matching frozen versions and verifier; overflowing observation logs are explicitly partial',async t=>{
   const f=await fixture(t),run=f.start();f.delivery(run,'failed');f.delivery(run,'passed',{contractSha256:'changed'});
   f.delivery(run,'failed',{frozenBeforeExecution:false});f.delivery(run,'passed',{verifierSha256:'other'});

@@ -38,7 +38,35 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   }
   const allowed=(sources??['anthropics/skills','openai/skills']).filter(source=>/^[\w.-]+\/[\w.-]+$/.test(source)).slice(0,4);
-  return {async close(){for(const value of trees.values())await value.close?.();},async execute(name,args) {
+  return {
+    async package(id) {
+      const found=candidates.get(id);
+      if (!found) throw Object.assign(new Error(onlineErrors.SKILL_NOT_FOUND),{code:'SKILL_NOT_FOUND'});
+      const source=trees.get(found.card.repository);
+      if (!source || source.tree.truncated) throw Object.assign(new Error(onlineErrors.SOURCE_INVALID),{code:'SOURCE_INVALID'});
+      const prefix=found.card.path.slice(0,found.card.path.lastIndexOf('/')+1);
+      const files=(source.tree.tree ?? []).filter(item=>item.path.startsWith(prefix)&&item.path.length>prefix.length&&item.type!=='tree');
+      if (!files.length || files.length>128 || files.some(item=>item.type!=='blob'||item.mode==='120000'||!Number.isSafeInteger(item.size)||item.size>2000000) ||
+          files.reduce((sum,item)=>sum+item.size,0)>8000000) {
+        throw Object.assign(new Error(onlineErrors.SOURCE_INVALID),{code:'SOURCE_INVALID'});
+      }
+      const bound=AbortSignal.any([signal,AbortSignal.timeout(20000)]);
+      const entries=[];
+      for (const file of files) {
+        bound.throwIfAborted();
+        const saved=source.transport==='git'?await source.read(file.path):null;
+        const blob=saved?null:await github('/repos/'+found.card.repository+'/git/blobs/'+file.sha,bound,3000000);
+        if (blob && blob.encoding!=='base64') throw Object.assign(new Error(onlineErrors.SOURCE_INVALID),{code:'SOURCE_INVALID'});
+        const bytes=saved?saved.bytes:Buffer.from(blob.content,'base64');
+        const sha=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+        if (bytes.length!==file.size || sha!==file.sha) throw Object.assign(new Error(onlineErrors.SOURCE_INVALID),{code:'SOURCE_INVALID'});
+        entries.push({path:file.path.slice(prefix.length),bytes});
+      }
+      const guide=entries.find(item=>item.path==='SKILL.md');
+      if (!guide || hash(guide.bytes)!==found.card.sha256) throw Object.assign(new Error(onlineErrors.SOURCE_INVALID),{code:'SOURCE_INVALID'});
+      return {card:{...found.card},entries};
+    },
+    async close(){for(const value of trees.values())await value.close?.();},async execute(name,args) {
     const definition=onlineSkillTools.find(tool=>tool.name===name);
     if(!definition||validate(definition.parameters,args).length)return failure(onlineErrors,'INVALID_ARGUMENT');
     if(signal.aborted)return failure(onlineErrors,'ABORTED');
@@ -77,7 +105,7 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
     if (english.length) {
       try {
         const params=new URLSearchParams({q:english.join(' ')+' agent skills',sort:'stars',order:'desc',per_page:'10'});
-        const result=await github('/search/repositories?'+params,bound,300000);
+        const result=await github('/search/repositories?'+params,AbortSignal.any([bound,AbortSignal.timeout(4000)]),300000);
         for(const item of result.items??[]) {
           const name=item.full_name;
           if (typeof name==='string' && /^[\w.-]+\/[\w.-]+$/.test(name) && !item.private && !item.archived && !repositories.includes(name)) repositories.push(name);
@@ -86,17 +114,18 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
       } catch {unavailable.push('GitHub 公开仓库搜索');}
     }
     await Promise.all(repositories.map(async repository=>{
+      const sourceBound=AbortSignal.any([bound,AbortSignal.timeout(6000)]);
       try {
         if(!trees.has(repository)) {
           try {
-          const commit=await github('/repos/'+repository+'/commits/HEAD',bound,200000);
+          const commit=await github('/repos/'+repository+'/commits/HEAD',sourceBound,200000);
           if(!/^[a-f0-9]{40}$/.test(commit.sha))throw Error('SOURCE_INVALID');
-          const [tree,license]=await Promise.all([github('/repos/'+repository+'/git/trees/'+commit.sha+'?recursive=1',bound),
-            github('/repos/'+repository+'/license?ref='+commit.sha,bound,100000).catch(error=>{if(error.status===404)return {};throw error;})]);
+          const [tree,license]=await Promise.all([github('/repos/'+repository+'/git/trees/'+commit.sha+'?recursive=1',sourceBound),
+            github('/repos/'+repository+'/license?ref='+commit.sha,sourceBound,100000).catch(error=>{if(error.status===404)return {};throw error;})]);
           trees.set(repository,{tree,commit:commit.sha,license:license.license?.spdx_id??'',licenseSha256:license.sha});
           } catch(error) {
             if(!gitFallback)throw error;
-            const fallback=await openGitSkillSource(repository,bound);
+            const fallback=await openGitSkillSource(repository,sourceBound);
             trees.set(repository,fallback);
             emit('external_skill_transport',{repository,transport:'git',reason:'GitHub API不可用，使用无检出只读Git快照。',commit:fallback.commit});
           }
@@ -118,7 +147,7 @@ export function createOnlineSkills({sources,signal,emit=()=>{},fetcher=fetch,git
       try {
         const source=trees.get(ref.repository),saved=source?.transport==='git'?await source.read(ref.path):null;
         const blob=saved?{encoding:'base64',size:saved.size,content:saved.bytes.toString('base64')}:
-          await github('/repos/'+ref.repository+'/git/blobs/'+ref.blob,bound,110000);
+          await github('/repos/'+ref.repository+'/git/blobs/'+ref.blob,AbortSignal.any([bound,AbortSignal.timeout(2500)]),110000);
         if(blob.encoding!=='base64'||blob.size>64000)throw Error('SOURCE_INVALID');
         const bytes=Buffer.from(blob.content,'base64');
         const gitSha=createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0')).update(bytes).digest('hex');

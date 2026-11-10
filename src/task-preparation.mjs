@@ -9,9 +9,10 @@ const str={type:'string',maxLength:2000};
 const strings={type:'array',maxItems:12,items:str};
 const step=object({id:{...str,maxLength:40},title:{...str,maxLength:200},depends_on:{type:'array',maxItems:12,items:{...str,maxLength:40}},skill_query:{...str,maxLength:500}});
 export const preparationErrors={INVALID_ARGUMENT:'任务整理参数无效。',SOURCE_NOT_READ:'任务说明引用了本轮未读取的材料回执。',
+  SKILL_SELECTION_FIRST:'请先用 prepare_task 按维度找本机候选。有候选时先尝试 select_task_skill_chain，再为缺口联网。',
   SOURCE_CHANGED:'材料在读取后变化或当前不可读，请重新读取再整理任务。',
   INVALID_PLAN:'任务步骤存在无效依赖、重名或循环。',TASK_NOT_PREPARED:'请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。',ABORTED:'任务整理已停止。',PREPARATION_FAILED:'任务整理未完成。'};
-export const prepareTaskTool={name:'prepare_task',description:'读过题目及材料后，保留原始用户目标，整理清晰目标、约束、交付要求、假设、必要问题与有依赖的子任务。为每步查询已安装技能，返回候选或缺口，并生成可见计划。source_receipts填本轮成功读取材料的回执序号。不能把假设或优化后的措辞当成用户已确认约束。',
+export const prepareTaskTool={name:'prepare_task',description:'读过题目及材料后，保留原始用户目标，整理目标、约束、交付要求和有依赖的子任务。将本轮需要的能力分开成步骤，为每个步骤给出聚焦该能力的 skill_query。逐步搜索本机技能并返回候选或缺口。source_receipts 填本轮成功读取材料的回执序号。不能把假设当成用户已确认的约束。',
   parameters:object({objective:{...str,minLength:1},constraints:strings,deliverables:strings,assumptions:strings,questions:strings,
     source_receipts:{type:'array',maxItems:20,items:{type:'integer',minimum:1}},steps:{type:'array',minItems:1,maxItems:12,items:step}}),
   returns:resultSchema(object({revision:{type:'integer',minimum:1},originalGoal:{type:'string',maxLength:16000},objective:str,constraints:strings,deliverables:strings,assumptions:strings,questions:strings,
@@ -70,8 +71,12 @@ export async function prepareTask(args,{store,task,run,prompt,signal,search,work
   try {
     const bound=AbortSignal.any([signal,AbortSignal.timeout(60000)]);
     for(const step of args.steps) {
-      bound.throwIfAborted();const found=await search(step.skill_query||step.title,bound);
-      const candidates=found.filter(item=>item.executable&&item.tool==='load_skill').slice(0,3)
+      bound.throwIfAborted();
+      const query=step.skill_query.trim() || step.title;
+      const eligible=items=>items.filter(item=>item.executable&&item.tool==='load_skill');
+      let found=eligible(await search(query,bound));
+      if (!found.length && query !== step.title) found=eligible(await search(step.title,bound));
+      const candidates=found.slice(0,3)
         .map(item=>({id:item.id,name:item.label??item.name,version:String(item.version)}));
       steps.push({...step,candidates,gap:candidates.length===0});
     }

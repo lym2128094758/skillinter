@@ -424,6 +424,24 @@ function fileLink(taskId, file, label = file.name) {
   return link;
 }
 
+function deliverableCard(taskId, file) {
+  const card = fileLink(taskId, file);
+  card.className = 'deliverable-card';
+  card.replaceChildren();
+  const icon = document.createElement('span');
+  icon.className = 'deliverable-icon';
+  icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.75h8l4 4V20a1.25 1.25 0 0 1-1.25 1.25H6A1.25 1.25 0 0 1 4.75 20V4A1.25 1.25 0 0 1 6 2.75Z"/><path d="M14 2.75V7h4M8 11h8M8 14.5h8M8 18h5"/></svg>';
+  const label = document.createElement('span'); label.className = 'deliverable-label';
+  const name = document.createElement('strong'); name.textContent = file.name;
+  const meta = document.createElement('small');
+  const extension = file.name.includes('.') ? file.name.split('.').pop().toUpperCase() : '文件';
+  const size = file.size >= 1048576 ? (file.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.ceil((file.size ?? 0) / 1024)) + ' KB';
+  meta.textContent = extension + ' · ' + size;
+  label.append(name, meta); card.append(icon, label);
+  card.setAttribute('aria-label', '下载文件 ' + file.name);
+  return card;
+}
+
 function imagePreview(taskId, file) {
   const link = document.createElement('a');
   link.className = 'image-attachment';
@@ -705,13 +723,19 @@ function drawTaskCapabilities(panel,run) {
       if(items?.length)panel.append(text('p',label+'：'+items.join('；')));
     }
     const list=document.createElement('ol');
-    for(const step of brief.steps)list.append(text('li',step.title+' · '+(step.gap?'没有匹配的本地技能':step.candidates.map(item=>item.name).join('、'))));
+    const chain = run.taskSkillChain?.revision === brief.revision ? run.taskSkillChain.selections : [];
+    for (const step of brief.steps) {
+      const selected = chain.filter(item=>item.step_id===step.id);
+      const status = selected.length ? selected.map(item=>item.name+(item.status==='loaded'?'（已加载）':'（加载受阻：'+item.message+'）')).join('、')
+        : step.gap ? '本机暂无匹配，待补搜' : '本机候选：'+step.candidates.map(item=>item.name).join('、');
+      list.append(text('li',step.title+' · '+status));
+    }
     panel.append(list,text('p','依据 '+brief.sources.length+' 条本轮读取回执；原始用户要求保持不变。'));
   }
   if(run.skillSearchPending)panel.append(text('p','正在搜索本机及公开技能库 · '+run.skillSearchPending.query));
   for(const search of searches) {
     const details=text('details');
-    details.append(text('summary','技能搜索 · '+search.query));
+    details.append(text('summary','技能搜索 · '+(search.kind==='direct'?'直接相关':search.kind==='supporting'?'辅助相关':'未分类')+' · '+search.query));
     details.append(text('p','本机：'+(search.local.map(item=>item.name).join('、')||'无匹配')));
     details.append(text('p','公开来源：'+(search.sources?.join('、')||'未提供')));
     details.append(text('p','在线候选：'+(search.online.candidates.map(item=>item.name).join('、')||'无匹配')));
@@ -720,7 +744,9 @@ function drawTaskCapabilities(panel,run) {
     panel.append(details);
   }
   for(const item of external) {
-    const row=text('p',item.name+' · '+(item.status==='adopted'?'本轮采用方法，未验证':'外部候选')+' · '+item.license+' ');
+    const installation=run.installedSkills?.find(record=>record.externalId===item.id);
+    const row=text('p',item.name+' · '+(installation?'已安装到用户技能库，未验证':item.status==='adopted'?'本轮采用方法，未验证':'外部候选')+' · '+item.license+' ');
+    if (installation) row.append(text('span',installation.fileCount+' 个文件 · '+installation.reason+' '));
     const link=text('a','查看来源');link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';row.append(link);panel.append(row);
   }
 }
@@ -739,6 +765,18 @@ function showError(error) {
   $('error').textContent = error?.message ?? '';
 }
 
+function taskTime(value) {
+  const date = new Date(value);
+  if (!value || Number.isNaN(date.getTime())) return null;
+  const now = new Date();
+  const full = new Intl.DateTimeFormat('zh-CN', {year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(date);
+  const sameDay = date.getFullYear()===now.getFullYear() && date.getMonth()===now.getMonth() && date.getDate()===now.getDate();
+  const short = new Intl.DateTimeFormat('zh-CN', sameDay ? {hour:'2-digit',minute:'2-digit',hourCycle:'h23'} :
+    {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
+  return {date,full,short};
+}
+
 function drawTaskRow(item) {
   const row = document.createElement('div');
   row.className = 'task-row';
@@ -747,9 +785,17 @@ function drawTaskRow(item) {
   const label = document.createElement('span');
   label.className = 'glass-label';
   label.textContent = item.title;
-  button.append(label);
-  button.title = item.title;
-  if (item.status === 'running') { label.textContent = `● ${item.title}`; button.title = `${item.title} · 执行中`; }
+  const time = taskTime(item.updated);
+  if (time) {
+    const stamp = document.createElement('time');
+    stamp.className = 'task-time';
+    stamp.dateTime = time.date.toISOString();
+    stamp.textContent = time.short;
+    stamp.title = '最近提交：'+time.full;
+    button.append(label,stamp);
+  } else button.append(label);
+  button.title = item.title + (time ? ' · 最近提交：'+time.full : '');
+  if (item.status === 'running') { label.textContent = `● ${item.title}`; button.title += ' · 执行中'; }
   if (item.id === task?.id) button.setAttribute('aria-current', 'true');
   button.onclick = () => void selectTask(item.id);
   const options = document.createElement('button');
@@ -1187,6 +1233,7 @@ function fillPreferences(data) {
   $('environment-option').hidden = !data.environmentModel;
   $('model-mode').value = data.mode === 'environment' ? 'environment' : 'api';
   $('max-steps').value = data.maxSteps;
+  $('auto-approve-execution').checked = data.autoApproveExecution !== false;
   $('model-connection').replaceChildren(...(data.connections ?? []).map(profile =>
     new Option(profile.name + (data.mode === 'api' && profile.id === data.connectionId ? ' · 当前使用' : ''),profile.id)),
     new Option('＋ 新增配置',''));
@@ -1481,10 +1528,54 @@ function showTestApproval(panel, run, proposal) {
   panel.hidden = false;
 }
 
+function showBudgetApproval(panel, run, proposal) {
+  panel.dataset.approval = proposal.id;
+  panel.dataset.run = run.id;
+  const title = document.createElement('strong');
+  title.textContent = ['tool','engine'].includes(proposal.kind) ? '继续增加 200 次工具调用？' : '继续使用下一个 3000 万' + (proposal.kind === 'output' ? '输出' : '输入') + ' token？';
+  const description = document.createElement('p');
+  description.textContent = '本轮累计已用 '+proposal.used.toLocaleString()+'，当前额度 '+proposal.currentLimit.toLocaleString()+'。同意后额度增加至 '+proposal.nextLimit.toLocaleString()+'，任务会从当前位置继续。';
+  const note = document.createElement('p');
+  note.textContent = '增加额度可能产生额外模型费用。';
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const buttons = [['继续执行',true],['结束任务',false]].map(([label,approve]) => {
+    const button=document.createElement('button');
+    button.type='button';button.textContent=label;
+    if(approve)button.className='primary-action';
+    button.onclick=async()=>{
+      buttons.forEach(item=>item.disabled=true);
+      try {await api('/api/runs/'+run.id+'/budget-decision',{id:proposal.id,approve});}
+      catch(error) {
+        if(panel.dataset.approval!==proposal.id)return;
+        note.textContent=error.message;
+        buttons.forEach(item=>item.disabled=false);
+      }
+    };
+    return button;
+  });
+  actions.append(...buttons);
+  panel.replaceChildren(title,description,note,actions);
+  panel.hidden=false;
+}
+
 function drawTranscript() {
   subscription?.close();
+  const composerApproval = $('composer-approval');
+  composerApproval.hidden = true;
+  composerApproval.replaceChildren();
+  delete composerApproval.dataset.approval;
+  delete composerApproval.dataset.run;
   clockLabels.clear();
   $('title').textContent = task?.title ?? '新任务';
+  const updated = taskTime(task?.updated);
+  const headerTime = $('task-updated');
+  headerTime.hidden = !updated;
+  if (updated) {
+    headerTime.dateTime = updated.date.toISOString();
+    headerTime.textContent = '最近提交 '+updated.full;
+    headerTime.title = headerTime.textContent;
+  }
   transcriptContent.replaceChildren();
   if (!task?.runs.length) {
     const empty = document.createElement('p');
@@ -1499,9 +1590,40 @@ function drawTranscript() {
     prompt.className = 'prompt';
     prompt.textContent = run.prompt;
     prompt.hidden = !run.prompt;
+    const started = taskTime(run.config?.started);
+    const runTime = document.createElement('time');
+    runTime.className = 'run-time';
+    runTime.hidden = !started;
+    if (started) {
+      runTime.dateTime = started.date.toISOString();
+      runTime.textContent = '提交于 '+started.full;
+    }
     const answer = document.createElement('div');
     answer.className = 'answer';
-    answer.textContent = [run.answer, run.error].filter(Boolean).join('\n\n') || statusText[run.status];
+    const answerToggle = document.createElement('button');
+    answerToggle.type = 'button'; answerToggle.className = 'answer-toggle';
+    let answerExpanded = false;
+    const answerError = document.createElement('p'); answerError.className = 'answer-error';
+    const drawAnswer = () => {
+      answer.textContent = run.answer || (!run.error ? statusText[run.status] : '');
+      answerError.textContent = run.error || '';
+      answerError.hidden = !run.error;
+      const long = run.status !== 'running' && (run.answer?.length > 700 || (run.answer?.split('\n').length ?? 0) > 12);
+      answer.classList.toggle('answer-collapsed', long && !answerExpanded);
+      answerToggle.hidden = !long;
+      answerToggle.textContent = answerExpanded ? '收起详细回复' : '展开完整回复（含核验和局限）';
+      answerToggle.setAttribute('aria-expanded', String(answerExpanded));
+    };
+    answerToggle.onclick = () => { answerExpanded = !answerExpanded; drawAnswer(); };
+    drawAnswer();
+    const deliverables = document.createElement('div');
+    deliverables.className = 'deliverable-list';
+    const drawDeliverables = () => {
+      const files = (run.artifacts ?? []).filter(file => file.kind === 'deliverable');
+      deliverables.replaceChildren(...files.map(file => deliverableCard(taskId, file)));
+      deliverables.hidden = !files.length;
+    };
+    drawDeliverables();
     const details = document.createElement('details');
     const summary = document.createElement('summary');
     details.className = 'execution-record';
@@ -1553,10 +1675,7 @@ function drawTranscript() {
     clockLabels.set(runStatus, run);
     const guidance = document.createElement('div');
     guidance.className = 'run-guidance';
-    const testPanel = document.createElement('section');
-    testPanel.className = 'project-test-panel';
-    testPanel.hidden = true;
-    testPanel.setAttribute('aria-live', 'polite');
+    const testPanel = composerApproval;
     const guideRows = new Map();
     function showGuidance(item) {
       let line = guideRows.get(item.request);
@@ -1570,13 +1689,13 @@ function drawTranscript() {
       images.append(imagePreview(taskId, sourceFile));
       row.append(images);
     }
-    row.append(prompt);
+    row.append(prompt,runTime);
     if (run.inputFolders?.length) {
       const folders = document.createElement('div'); folders.className = 'message-folders';
       for (const folder of run.inputFolders) folders.append(folderCard(folder,task.folders?.find(item => item.id === folder.id),true));
       row.append(folders);
     }
-    row.append(runStatus, guidance, taskCapabilities, skillPanel, planPanel, capabilityFit, testPanel, answer, citationPanel, evidence, details);
+    row.append(runStatus, guidance, taskCapabilities, skillPanel, planPanel, capabilityFit, answer, answerToggle, answerError, deliverables, citationPanel, evidence, details);
     const actions = document.createElement('div');
     actions.className = 'reply-actions';
     const copy = document.createElement('button');
@@ -1619,6 +1738,52 @@ function drawTranscript() {
     const usedSkill = () => run.config?.customSkill ?? run.skillApplications?.findLast(item => item.status === 'applied') ?? run.loadedSkills?.[0];
     improveSkill.onclick = () => studio?.openFromRun(run, usedSkill());
     const experience=document.createElement('button');experience.type='button';experience.onclick=()=>studio?.openExperiences(run);
+    const feedbackPanel = document.createElement('details');
+    feedbackPanel.className = 'task-plan';
+    const feedbackTitle = document.createElement('summary');
+    const feedbackNote = document.createElement('textarea');
+    feedbackNote.placeholder = '哪些步骤有用，哪些需要改进？（选填）';
+    feedbackNote.setAttribute('aria-label','本轮反馈备注');
+    feedbackNote.maxLength = 2000;
+    feedbackNote.value = run.skillFeedback?.note ?? '';
+    const feedbackStatus = document.createElement('p');
+    feedbackStatus.setAttribute('role','status');
+    const feedbackActions = document.createElement('div');
+    feedbackActions.className = 'actions';
+    const feedbackButtons = [];
+    let feedbackPending = false;
+    for (const [rating,label] of [['helpful','满意，沉淀经验'],['improve','需要改进']]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      feedbackButtons.push({button,rating});
+      button.onclick = async () => {
+        feedbackPending = true;
+        drawStudioActions();
+        feedbackStatus.textContent = '正在根据本轮流程起草参与技能的改进候选…';
+        const note = feedbackNote.value.trim();
+        try {
+          const result = await api('/api/runs/'+run.id+'/skill-feedback',{taskId,rating,note});
+          run.skillFeedback = {rating,note};
+          const successes = result.results.filter(item=>item.candidateId).map(item=>item.name);
+          const failures = result.results.filter(item=>item.error).map(item=>item.name+'（'+item.error+'）');
+          feedbackStatus.textContent = successes.length ? '已保存候选：'+successes.join('、')+'。请在经验或候选中心验证。' : '已保存反馈。';
+          if (!result.results.length) feedbackStatus.textContent += ' 本轮没有实际执行的本地技能。';
+          if (failures.length) feedbackStatus.textContent += ' 未生成：'+failures.join('、');
+          if (result.experienceId) {
+            const data = await api('/api/skill-studio/experiences?task='+encodeURIComponent(taskId)+'&run='+encodeURIComponent(run.id));
+            run.experience = data.experiences[0] ?? run.experience;
+          }
+        } catch (error) {
+          feedbackStatus.textContent = error.message;
+        } finally {
+          feedbackPending = false;
+          drawStudioActions();
+        }
+      };
+      feedbackActions.append(button);
+    }
+    feedbackPanel.append(feedbackTitle,feedbackNote,feedbackActions,feedbackStatus);
     function drawStudioActions() {
       const available = studio && (outcomeModule?.canDraftFromRun(run) ??
         (run.status === 'completed' && Boolean(run.answer?.trim())));
@@ -1627,10 +1792,19 @@ function drawTranscript() {
       saveSkill.textContent = run.status === 'completed' ? '保存为技能' : '从执行记录提炼技能';
       experience.hidden=!studio||!run.experience;
       experience.textContent=run.experience?'发现可提炼经验 · '+run.experience.signals.length+' 条线索':'';
+      feedbackPanel.hidden = !studio || run.status !== 'completed';
+      feedbackTitle.textContent = run.skillFeedback ? '本轮反馈已保存' : '这轮执行效果怎么样？';
+      if (!feedbackPanel.hidden && !run.skillFeedback && task?.runs?.at(-1)?.id === run.id) feedbackPanel.open = true;
+      feedbackNote.disabled = feedbackPending || Boolean(run.skillFeedback);
+      for (const {button,rating} of feedbackButtons) {
+        button.hidden = Boolean(run.skillFeedback && run.skillFeedback.rating !== rating);
+        button.disabled = feedbackPending;
+        if (run.skillFeedback?.rating === rating) button.textContent = '查看或补齐改进候选';
+      }
     }
     drawStudioActions();
     actions.append(copy, quote, retry, saveSkill, improveSkill,experience);
-    row.append(actions);
+    row.append(actions,feedbackPanel);
     transcriptContent.append(row);
 
     function watch() {
@@ -1645,6 +1819,11 @@ function drawTranscript() {
         }
         appendEvent(list, event);
         if(event.type==='task_brief'){run.taskBrief=event.payload;taskCapabilities.open=true;drawTaskCapabilities(taskCapabilities,run);}
+        if(event.type==='task_skill_chain'){run.taskSkillChain=event.payload;drawTaskCapabilities(taskCapabilities,run);}
+        if(event.type==='external_skill_installed'){
+          run.installedSkills=[...(run.installedSkills??[]).filter(item=>item.externalId!==event.payload.externalId),event.payload];
+          drawTaskCapabilities(taskCapabilities,run);
+        }
         if(event.type==='skill_library_search_started'){run.skillSearchPending=event.payload;taskCapabilities.open=true;drawTaskCapabilities(taskCapabilities,run);}
         if(event.type==='skill_library_search'){
           run.skillSearchPending=null;run.skillLibrarySearches??=[];
@@ -1660,19 +1839,20 @@ function drawTranscript() {
           run.capabilityFit = event.payload;
           drawCapabilityFit(capabilityFit, run.capabilityFit);
         }
-        if (event.type === 'project_test_request' && run.status === 'running') showTestApproval(testPanel, run, event.payload);
-        if (event.type === 'project_test_decision' && testPanel.dataset.approval === event.payload.id) {
+        if (event.type === 'project_test_request' && run.status === 'running') {
+          testPanel.dataset.run = run.id;
+          showTestApproval(testPanel, run, event.payload);
+        }
+        if (event.type === 'budget_extension_request' && run.status === 'running') showBudgetApproval(testPanel,run,event.payload);
+        if (event.type === 'budget_extension_decision' && testPanel.dataset.run === run.id && testPanel.dataset.approval === event.payload.id) {
           delete testPanel.dataset.approval;
+          delete testPanel.dataset.run;
+          testPanel.hidden=true;
+        }
+        if (event.type === 'project_test_decision' && testPanel.dataset.run === run.id && testPanel.dataset.approval === event.payload.id) {
+          delete testPanel.dataset.approval;
+          delete testPanel.dataset.run;
           testPanel.hidden = true;
-        }
-        if (event.type === 'project_test_started' && run.status === 'running') {
-          testPanel.textContent = `${event.payload.purpose==='python_execution'?'正在运行 Python':'正在运行项目测试'} · ${event.payload.command}`;
-          testPanel.hidden = false;
-        }
-        if (event.type === 'tool_result' && ['run_project_tests','run_python'].includes(event.payload.name) && run.status === 'running') {
-          const {output} = event.payload;
-          testPanel.textContent = output.ok ? `${output.data.summary??('Python '+(output.data.status==='passed'?'进程完成':'执行失败'))} 耗时 ${(output.data.volatile.elapsedMs / 1000).toFixed(1)} 秒。` : output.error.message;
-          testPanel.hidden = false;
         }
         if (event.type === 'skill_route') { run.skillRoute = event.payload; skillPanel.open = true; drawSkillRuntime(); }
         if (event.type === 'skill_runtime') { run.skillTrace = event.payload; drawSkillRuntime();
@@ -1681,6 +1861,11 @@ function drawTranscript() {
         if (event.type === 'skill_application') { run.skillApplications ??= []; run.skillApplications.push(event.payload); drawSkillRuntime(); }
         if (event.type === 'skill_applicability') { run.skillApplicability ??= []; run.skillApplicability.push(event.payload); drawSkillRuntime(); }
         if (event.type === 'skill_delivery') { run.skillDeliveries ??= []; run.skillDeliveries.push(event.payload); drawSkillRuntime(); }
+        if (event.type === 'deliverable_added') {
+          run.artifacts ??= [];
+          if (!run.artifacts.some(file => file.id === event.payload.artifact.id)) run.artifacts.push(event.payload.artifact);
+          drawDeliverables();
+        }
         if (event.type === 'skill_session_completed') {
           run.skillTrace = event.payload.trace;
           run.artifacts ??= [];
@@ -1746,11 +1931,15 @@ function drawTranscript() {
         if (event.type !== 'finished') return;
         stream.close();
         Object.assign(run, event.payload);
-        testPanel.hidden = true;
+        if (testPanel.dataset.run === run.id) {
+          testPanel.hidden = true;
+          delete testPanel.dataset.approval;
+          delete testPanel.dataset.run;
+        }
         drawPlan();
         drawSkillRuntime();
         for (const item of run.guidance ?? []) showGuidance(item);
-        answer.textContent = [run.answer, run.error].filter(Boolean).join('\n\n') || statusText[run.status];
+        drawAnswer();
         drawRunStatus(runStatus, run);
         copy.disabled = quote.disabled = false;
         drawStudioActions();
@@ -2074,6 +2263,7 @@ $('test-model').onclick = () => void applyPreferences(true);
 $('model-form').onsubmit = event => { event.preventDefault(); void applyPreferences(false); };
 $('reset-run').onclick = () => {
   $('max-steps').value = preferences.defaultSteps;
+  $('auto-approve-execution').checked = true;
   settingsMessage('run-feedback', '已填入默认值，保存后生效。');
 };
 $('run-form').onsubmit = async event => {
@@ -2083,7 +2273,8 @@ $('run-form').onsubmit = async event => {
   drawModelMode();
   settingsMessage('run-feedback', '正在保存…');
   try {
-    preferences = await api('/api/settings', {revision: preferences.revision, maxSteps: $('max-steps').valueAsNumber}, 'PATCH');
+    preferences = await api('/api/settings', {revision: preferences.revision, maxSteps: $('max-steps').valueAsNumber,
+      autoApproveExecution:$('auto-approve-execution').checked}, 'PATCH');
     $('max-steps').value = preferences.maxSteps;
     settingsMessage('run-feedback', '已保存，从下一轮执行起生效。');
   } catch (error) { settingsMessage('run-feedback', error.message, 'error'); }

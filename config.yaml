@@ -5,10 +5,10 @@
   "skillSources": ["anthropics/skills", "openai/skills", "lym2128094758/my-skill-library"],
   "runBudget": {
     "maxSeconds": 900,
-    "maxToolCalls": 128,
+    "maxToolCalls": null,
     "maxConcurrent": 2,
-    "maxInputTokens": 1200000,
-    "maxOutputTokens": 98304,
+    "maxInputTokens": 30000000,
+    "maxOutputTokens": 30000000,
     "contextTokens": 131072,
     "historyTokens": 16000,
     "toolResultBytes": 8192,

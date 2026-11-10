@@ -14,6 +14,8 @@ import {executeRun} from './src/runner.mjs';
 import {validate} from './src/schema.mjs';
 import {createTaskCapabilities,taskCapabilityTools} from './src/task-capabilities.mjs';
 import {createGithubAccess} from './src/github-access.mjs';
+import {createSkillStudio} from './src/skill-studio.mjs';
+import {createSkillRegistry} from './src/skill-registry.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 async function fixture(t) {
@@ -71,8 +73,10 @@ test('DOCX and XLSX extraction preserves paragraphs, tables and coordinates with
 
 test('task preparation rejects invented receipts and cycles, creates per-step candidates and preserves the original goal',async t=>{
   const f=await fixture(t),args={objective:'按题目求解',constraints:['保留输入'],deliverables:['分析结果'],assumptions:[],questions:[],source_receipts:[999],
-    steps:[{id:'read',title:'审题',depends_on:[],skill_query:'research'},{id:'solve',title:'求解',depends_on:['read'],skill_query:'math'}]};
-  const search=async query=>query==='math'?[{id:'skill-1',label:'求解方法',version:1,executable:true,tool:'load_skill'}]:[];
+    steps:[{id:'read',title:'审题',depends_on:[],skill_query:'research'},{id:'solve',title:'求解',depends_on:['read'],skill_query:'math'},
+      {id:'plot',title:'绘图',depends_on:['solve'],skill_query:'unmatched-visual-query'}]};
+  const search=async query=>query==='math'?[{id:'skill-1',label:'求解方法',version:1,executable:true,tool:'load_skill'}]:
+    query==='绘图'?[{id:'skill-2',label:'科研绘图',version:1,executable:true,tool:'load_skill'}]:[];
   assert.equal((await prepareTask(args,{...f,search})).error.code,'SOURCE_NOT_READ');
   await writeFile(join(f.workspace,'problem.txt'),'problem');
   const seq=f.store.record(f.run,'tool_result',{name:'read_document',output:{ok:true,data:{path:'problem.txt',sourceSha256:hash('problem')}}});
@@ -81,6 +85,7 @@ test('task preparation rejects invented receipts and cycles, creates per-step ca
   assert.equal(f.store.events(f.run,0).filter(e=>e.type==='task_plan').length,0);
   args.steps[0].depends_on=[];const result=await prepareTask(args,{...f,search});assert.equal(result.ok,true);
   assert.equal(result.data.originalGoal,f.prompt);assert.equal(result.data.steps[0].gap,true);assert.equal(result.data.steps[1].candidates[0].id,'skill-1');
+  assert.equal(result.data.steps[2].candidates[0].id,'skill-2');
   assert.deepEqual(validate(prepareTaskTool.returns,result),[]);assert.equal(f.store.task(f.task).runs[0].taskBrief.objective,'按题目求解');
   await writeFile(join(f.workspace,'problem.txt'),'changed');
   assert.equal((await prepareTask(args,{...f,search})).error.code,'SOURCE_CHANGED');
@@ -137,29 +142,77 @@ test('online discovery continues past unreadable candidates until it fills the r
   await engine.close();
 });
 
-test('combined skill search returns local and online results and records adoption',async t=>{
-  const f=await fixture(t),text='---\nname: math-online\ndescription: Mathematical modeling\nlicense: MIT\n---\nUse the method.';
-  const blob=createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex');
-  const commit='a'.repeat(40),events=[];
+test('slow repository does not prevent a healthy repository from returning usable candidates',async()=>{
+  const commit='a'.repeat(40);
+  const text='---\nname: data-analysis\ndescription: Data analysis\nlicense: MIT\n---\nAnalyze data.';
+  const sha=createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex');
+  const fetcher=async(url,{signal}={})=>{
+    if(url.includes('/search/repositories?'))return Response.json({items:[]});
+    if(url.includes('/repos/slow/repo/'))return await new Promise((resolve,reject)=>{
+      if(signal.aborted)return reject(signal.reason);
+      signal.addEventListener('abort',()=>reject(signal.reason),{once:true});
+    });
+    if(url.endsWith('/commits/HEAD'))return Response.json({sha:commit});
+    if(url.includes('/license?'))return Response.json({license:{spdx_id:'MIT'}});
+    if(url.includes('/git/trees/'))return Response.json({sha:'b'.repeat(40),tree:[{type:'blob',path:'data/SKILL.md',sha,size:Buffer.byteLength(text)}]});
+    if(url.endsWith('/git/blobs/'+sha))return Response.json({encoding:'base64',size:Buffer.byteLength(text),content:Buffer.from(text).toString('base64')});
+    throw Error('Unexpected request');
+  };
+  const engine=createOnlineSkills({sources:['slow/repo','fast/repo'],signal:new AbortController().signal,fetcher});
+  const result=await engine.execute('discover_skills',{query:'data',limit:1});
+  assert.equal(result.ok,true);
+  assert.equal(result.data.candidates[0].name,'data-analysis');
+  assert(result.data.unavailable.includes('slow/repo'));
+  await engine.close();
+});
+
+test('combined skill search meets each category minimum when possible and allows more results',async t=>{
+  const f=await fixture(t),commit='a'.repeat(40),events=[],localLimits=[];
+  const records=['math','plot','niche'].flatMap(query=>Array.from({length:query==='niche'?1:5},(_,i)=>{
+    const name=`${query}-online-${i}`;
+    const text=`---\nname: ${name}\ndescription: Skill for ${query}\nlicense: MIT\n---\nUse the method.`;
+    const sha=createHash('sha1').update('blob '+Buffer.byteLength(text)+'\0').update(text).digest('hex');
+    return {name,text,sha};
+  }));
   const fetcher=async url=>{
     let body;
     if(url.includes('/search/repositories?'))body={items:[]};
     else if(url.endsWith('/commits/HEAD'))body={sha:commit};
     else if(url.includes('/license?'))body={license:{spdx_id:'MIT'}};
-    else if(url.includes('/git/trees/'))body={sha:'b'.repeat(40),tree:[{type:'blob',path:'math/SKILL.md',sha:blob,size:Buffer.byteLength(text)}]};
-    else if(url.endsWith('/git/blobs/'+blob))body={encoding:'base64',size:Buffer.byteLength(text),content:Buffer.from(text).toString('base64')};
-    else throw Error('unexpected request');
+    else if(url.includes('/git/trees/'))body={sha:'b'.repeat(40),tree:records.map(({name,text,sha})=>({type:'blob',path:`${name}/SKILL.md`,sha,size:Buffer.byteLength(text)}))};
+    else {
+      const record=records.find(item=>url.endsWith('/git/blobs/'+item.sha));
+      if(!record)throw Error('unexpected request');
+      body={encoding:'base64',size:Buffer.byteLength(record.text),content:Buffer.from(record.text).toString('base64')};
+    }
     return new Response(JSON.stringify(body));
   };
-  const capabilities=createTaskCapabilities({...f,signal:new AbortController().signal,skillSources:['owner/repo'],githubAccess:{fetch:fetcher},
-    store:{record:(_run,type,data)=>events.push({type,data})},search:async()=>[{id:'local-id',label:'local-math',version:1,description:'数学建模'}]});
+  const capabilities=createTaskCapabilities({...f,skillSources:['owner/repo'],githubAccess:{fetch:fetcher},
+    store:{record:(_run,type,data)=>events.push({type,data})},search:async(query,_signal,limit)=>{
+      localLimits.push(limit);
+      return Array.from({length:Math.min(query==='niche'?1:5,limit)},(_,i)=>({id:`${query}-local-${i}`,label:`${query}-local-${i}`,version:1,description:query}));
+    }});
+  t.after(()=>capabilities.close());
   const call=(name,args)=>capabilities.execute({function:{name,arguments:JSON.stringify(args)}});
-  const result=await call('search_skill_libraries',{query:'math',limit:3});
-  assert.equal(result.ok,true);assert.equal(result.data.local[0].name,'local-math');assert.equal(result.data.online.candidates[0].name,'math-online');
-  assert.deepEqual(result.data.sources,['owner/repo']);
-  assert.equal((await call('adopt_discovered_skill',{id:result.data.online.candidates[0].id})).data.skill.status,'adopted');
-  assert(events.some(event=>event.type==='skill_library_search_started'));
-  assert(events.some(event=>event.type==='skill_library_search'));await capabilities.close();
+  for(const [args,kind,count] of [
+    [{query:'math',kind:'direct',limit:1},'direct',3],
+    [{query:'plot',kind:'supporting',limit:1},'supporting',2],
+    [{query:'math',kind:'direct',limit:5},'direct',5],
+    [{query:'plot',kind:'supporting',limit:4},'supporting',4],
+    [{query:'niche',limit:1},'direct',1],
+  ]) {
+    const result=await call('search_skill_libraries',args);
+    assert.equal(result.ok,true);
+    assert.equal(result.data.kind,kind);
+    assert.equal(result.data.onlineError,'');
+    assert.equal(result.data.local.length,count);
+    assert.equal(result.data.online.candidates.length,count);
+    assert.deepEqual(result.data.sources,['owner/repo']);
+    assert.equal((await call('adopt_discovered_skill',{id:result.data.online.candidates[0].id})).data.skill.status,'adopted');
+  }
+  assert.deepEqual(localLimits,[3,2,5,4,3]);
+  assert.deepEqual(events.filter(event=>event.type==='skill_library_search_started').map(event=>event.data.limit),localLimits);
+  assert.deepEqual(events.filter(event=>event.type==='skill_library_search').map(event=>event.data.kind),['direct','supporting','direct','supporting','direct']);
 });
 
 test('GitHub access reuses only host-bound credentials, never exposes secrets or forwards them to another origin',async()=>{
@@ -173,6 +226,52 @@ test('GitHub access reuses only host-bound credentials, never exposes secrets or
   await assert.rejects(access.fetch('https://example.invalid/'),/SOURCE_NOT_ALLOWED/);
   const wrong=createGithubAccess({runner:async()=>({exitCode:0,stdout:'protocol=https\nhost=other.example\npassword=wrong\n'})});
   assert.equal((await wrong.status()).connected,false);assert.equal((await wrong.status()).source,'anonymous');
+});
+
+test('AI-facing tools discover, read and install a complete package with repeat and conflict handling',async t=>{
+  const f=await fixture(t);
+  const studio=createSkillStudio(f.store,{userSkillsPath:join(f.root,'skills')});
+  const commit='a'.repeat(40);
+  const entries=[
+    {path:'math-eda/SKILL.md',text:'---\nname: math-eda\ndescription: Exploratory analysis and correlations\nlicense: MIT\n---\nRead references/method.md before analysis.'},
+    {path:'math-eda/references/method.md',text:'Inspect distributions and grouped correlations.\n'},
+    {path:'math-eda/scripts/analyze.py',text:'print("analysis")\n'},
+  ].map(item=>({...item,sha:createHash('sha1').update('blob '+Buffer.byteLength(item.text)+'\0').update(item.text).digest('hex')}));
+  const fetcher=async url=>{
+    if(url.includes('/search/repositories?'))return Response.json({items:[]});
+    if(url.endsWith('/commits/HEAD'))return Response.json({sha:commit});
+    if(url.includes('/license?'))return Response.json({license:{spdx_id:'MIT'}});
+    if(url.includes('/git/trees/'))return Response.json({sha:'b'.repeat(40),tree:entries.map(({path,text,sha})=>({type:'blob',mode:'100644',path,sha,size:Buffer.byteLength(text)}))});
+    const file=entries.find(item=>url.endsWith('/git/blobs/'+item.sha));
+    if(file)return Response.json({encoding:'base64',size:Buffer.byteLength(file.text),content:Buffer.from(file.text).toString('base64')});
+    throw Error('Unexpected GitHub request');
+  };
+  const capabilities=createTaskCapabilities({...f,skillSources:['owner/repo'],githubAccess:{fetch:fetcher},search:async()=>[],
+    installSkill:args=>studio.installDiscovered({context:f.task,...args})});
+  t.after(()=>capabilities.close());
+  const call=(name,args)=>capabilities.execute({function:{name,arguments:JSON.stringify(args)}});
+  const found=await call('discover_skills',{query:'math',limit:3});
+  assert.equal(found.ok,true);
+  const id=found.data.candidates[0].id;
+  assert.equal((await call('install_discovered_skill',{id,reason:'补齐探索分析'})).error.code,'SKILL_NOT_READ');
+  assert.equal((await call('adopt_discovered_skill',{id})).ok,true);
+  const installed=await call('install_discovered_skill',{id,reason:'补齐探索分析'});
+  assert.equal(installed.ok,true);
+  assert.equal(installed.data.fileCount,3);
+  assert.equal(await readFile(join(installed.data.path,'..','scripts','analyze.py'),'utf8'),entries[2].text);
+  const source=JSON.parse(await readFile(join(installed.data.path,'..','.sih-source.json'),'utf8'));
+  assert.equal(source.commit,commit);
+  assert.equal(source.sha256,found.data.candidates[0].sha256);
+  assert.equal(studio.enabled(f.task).filter(skill=>skill.name==='math-eda').length,1);
+  assert.equal((await call('install_discovered_skill',{id,reason:'重试'})).data.id,installed.data.id);
+  assert.equal(studio.enabled(f.task).find(skill=>skill.id===installed.data.id).version,1);
+  const history=f.store.task(f.task).runs[0].installedSkills;
+  assert.equal(history.length,1);
+  assert.equal(history[0].name,'math-eda');
+  const bundle=entries.map(item=>({path:item.path.replace('math-eda/',''),bytes:Buffer.from(item.text)}));
+  assert.equal(studio.installDiscovered({context:f.task,card:found.data.candidates[0],entries:bundle}).reused,true);
+  bundle[0].bytes=Buffer.from(entries[0].text+'\nChanged guide.');
+  assert.throws(()=>studio.installDiscovered({context:f.task,card:found.data.candidates[0],entries:bundle}),/同名/);
 });
 
 test('each user can save, restore and disconnect their own GitHub connection without exporting or copying a token',async t=>{
@@ -221,6 +320,22 @@ test('Python execution requires the reviewed script, per-call approval and proje
   const failed=await decide(runPython({...args,sha256:hash(fail)},f),'approve');assert.equal(failed.data.status,'failed');assert.notEqual(failed.data.exitCode,0);
 });
 
+test('automatic execution records the decision, runs the reviewed script, and still checks the hash',async t=>{
+  if(!await python(t))return;
+  const f=await fixture(t),code='print(42)\n';
+  await writeFile(join(f.workspace,'auto.py'),code);
+  f.entry.autoApproveExecution=true;
+  const args={path:'auto.py',sha256:hash(code),purpose:'自动执行验证'};
+  const result=await runPython(args,f);
+  assert.equal(result.ok,true);
+  assert.equal(result.data.status,'passed');
+  assert.match(result.data.stdout,/42/);
+  const events=f.store.events(f.run,0);
+  assert(events.some(event=>event.type==='project_test_decision'&&event.payload.automatic===true));
+  assert(!events.some(event=>event.type==='project_test_request'));
+  assert.equal((await runPython({...args,sha256:'0'.repeat(64)},f)).error.code,'FILE_CHANGED');
+});
+
 test('main chat automatically reads attached task text, prepares a visible brief, and rejects writes before preparation',async t=>{
   const f=await fixture(t);await writeFile(join(f.workspace,'problem.txt'),'Minimize x subject to x >= 2.');let count=0;
   const call=(name,args)=>({tool_calls:[{id:'call-'+count,type:'function',function:{name,arguments:JSON.stringify(args)}}]});
@@ -236,4 +351,36 @@ test('main chat automatically reads attached task text, prepares a visible brief
   const run=f.store.task(f.task).runs[0];assert.equal(run.status,'completed');assert.equal(run.taskBrief.objective,'求解最小值');
   await assert.rejects(readFile(join(f.workspace,'forbidden.txt')),{code:'ENOENT'});
   for(const tool of taskCapabilityTools)for(const key of ['parameters','returns','errors','timeoutMs','idempotent','authorization'])assert.ok(Object.hasOwn(tool,key));
+});
+
+test('selection-only chat blocks premature online search and batch-loads more than one guide',async t=>{
+  const f=await fixture(t),prompt='只做技能选择，覆盖回归和绘图。';
+  f.store.finish(f.run,'stopped');
+  const run=f.store.begin(f.task,crypto.randomUUID(),prompt,{mode:'api'}).id;
+  const studio=createSkillStudio(f.store,{userSkillsPath:join(f.root,'skills')});
+  const localSkills=[['regression-method','回归'],['plot-method','绘图']].map(([name,description])=>
+    studio.publish({targetScope:'global',baseVersion:0,draft:{name,description,instructions:description+'步骤说明',tests:[]}}));
+  const skillRegistrySnapshot=createSkillRegistry({store:f.store,studio,projectFor:()=>f.scope.projectId}).snapshot(f.task,localSkills);
+  let count=0;
+  const call=(name,args)=>({tool_calls:[{id:'selection-'+count,type:'function',function:{name,arguments:JSON.stringify(args)}}]});
+  const model={label:'fixture',async invoke({messages}){
+    count++;
+    if(count===1)return call('search_skill_libraries',{query:'regression',limit:3});
+    if(count===2){
+      assert.equal(JSON.parse(messages.at(-1).content).error.code,'SKILL_SELECTION_FIRST');
+      return call('prepare_task',{objective:'选择回归与绘图指南',constraints:[],deliverables:[],assumptions:[],questions:[],source_receipts:[],
+        steps:[{id:'model',title:'回归',depends_on:[],skill_query:'回归'},{id:'plot',title:'绘图',depends_on:['model'],skill_query:'绘图'}]});
+    }
+    if(count===3)return call('select_task_skill_chain',{selections:[
+      {step_id:'model',skill_id:localSkills[0].id},{step_id:'plot',skill_id:localSkills[1].id},
+    ],rationale:'逐项选择本机指南'});
+    return {content:'回归和绘图指南已加载。'};
+  }};
+  await executeRun({...f,run,id:run,prompt,model,skillAccess:true,maxSteps:5,localSkills,skillRegistrySnapshot});
+  const result=f.store.task(f.task).runs.find(item=>item.id===run);
+  assert.equal(result.status,'completed');
+  assert.deepEqual(result.taskSkillChain.selections.map(({name,status})=>[name,status]),[
+    ['regression-method','loaded'],['plot-method','loaded'],
+  ]);
+  assert(!f.store.events(run,0).some(event=>event.type==='skill_library_search_started'));
 });

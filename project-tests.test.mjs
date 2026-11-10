@@ -52,6 +52,8 @@ async function testFixture(t) {
     assert.equal(response.status, status, JSON.stringify(value));
     return value;
   }
+  const preferences = await api('/api/settings');
+  await api('/api/settings',{revision:preferences.revision,maxSteps:preferences.maxSteps,autoApproveExecution:false},200,'PATCH');
   const {id: projectId} = await api('/api/projects', {path: project}, 201);
   const {id: taskId} = await api('/api/tasks', {project_id: projectId}, 201);
   const taskPath = `/api/tasks/${taskId}`;

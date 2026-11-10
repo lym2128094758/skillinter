@@ -41,7 +41,7 @@ const definitions = [
   {name: 'verify_skill_output', description: '只读重读技能版本事先声明的项目产物，核对冻结的文本或 JSON 条件与原始输入指纹。返回 passed/failed/unknown/unspecified，只覆盖声明范围。条件未在文件操作前冻结则 unknown；不得把模型自行判断当作验收。',
     parameters: object({skill_id: string}), data: deliveryResultSchema},
   {name: 'revise_skill_route', description: '按任务需要换用已安装替代技能或移除不再采用的方法，必须解释依据。本轮冻结的硬依赖不可跳过；保留依赖技能时须保留或先完成其前置。不清除既有回执，不修改权限。',
-    parameters: object({skill_ids: {type: 'array', maxItems: 6, items: string}, rationale: {...string, minLength: 1}}),
+    parameters: object({skill_ids: {type: 'array', maxItems: 12, items: string}, rationale: {...string, minLength: 1}}),
     data: object({skills: strings, rationale: string})},
   {name:'select_task_skill_chain',description:'从 prepare_task 的各步骤候选中选择技能，按任务依赖顺序加入本轮技能链并实际加载指南。每项提供对应 step_id 和候选 skill_id；相同技能可以服务多个步骤。未通过适用性检查的技能会单独报告，不会冒充已加载或已执行。',
     parameters:object({selections:{type:'array',minItems:1,maxItems:12,items:object({step_id:string,skill_id:string})},rationale:{...string,minLength:1}}),
@@ -173,7 +173,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
     const python = tools.some(tool=>tool.function.name==='run_python');
     const discovery = tools.some(tool=>tool.function.name==='discover_skills');
     const readiness = {status: 'unspecified', checks: ['未声明可机器检查的执行条件；不代表工具或环境已验证',
-      '本轮文件权限：' + (scope?.mode ?? 'attachments'), python ? '项目 Python 执行需逐次用户确认' : projectTests ? '项目 Node.js 测试需用户确认' : '当前不能执行命令',
+      '本轮文件权限：' + (scope?.mode ?? 'attachments'), python ? '项目 Python 执行遵循运行设置' : projectTests ? '项目 Node.js 测试遵循运行设置' : '当前不能执行命令',
       discovery?'只能通过工具发现配置范围内的公开技能':'不能直接访问网络资源', ...issues].slice(0, 30), missing: []};
     if (resources.some(item => /\.(py|mjs|js|ps1|sh)$/i.test(item.path))) readiness.checks.push('包内脚本仅可读取；如任务依赖运行脚本，需要执行能力或改用已具备的工具');
     let requirementsHash = '', requiredFiles = [];
@@ -196,7 +196,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
       }
       for (const command of requirements.required_commands) {
         if (command === 'node --test' && projectTests) readiness.checks.push('项目 Node.js 测试可请求，运行需用户确认');
-        else if (['python','python -I'].includes(command)&&python) readiness.checks.push('可请求运行已审阅的Python脚本；环境须inspect_runtime检查，每次执行需确认');
+        else if (['python','python -I'].includes(command)&&python) readiness.checks.push('可运行已审阅的Python脚本；环境须inspect_runtime检查，确认方式遵循运行设置');
         else readiness.missing.push('当前 Harness 不支持执行命令：' + command);
       }
       readiness.status = readiness.missing.length ? 'blocked' : 'ready';
@@ -335,7 +335,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
     },
     receipt(seq, name, output) {
       if (!active || ['inspect_skill', 'read_skill_resource', 'verify_skill_output', 'start_skill', 'finish_skill', 'load_skill', 'search_skills', 'update_plan',
-        'prepare_task','select_task_skill_chain','search_skill_libraries','inspect_runtime','discover_skills','adopt_discovered_skill','read_discovered_resource'].includes(name)) return;
+        'prepare_task','select_task_skill_chain','search_skill_libraries','inspect_runtime','discover_skills','adopt_discovered_skill','install_discovered_skill','read_discovered_resource'].includes(name)) return;
       evidence.set(seq, {id: active, name, ok: output.ok &&
         (output.data?.kind !== 'project_tests' || output.data.status === 'passed') &&
         (output.data?.kind !== 'python_execution' || output.data.status === 'passed') &&
@@ -376,12 +376,37 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
           }
           for (const step of brief.steps) visit(step.id);
           const selections = [...args.selections].sort((a,b)=>ordered.indexOf(a.step_id)-ordered.indexOf(b.step_id));
-          const ids = [...new Set(selections.map(item=>item.skill_id))];
-          const revised = await this.execute('revise_skill_route',{skill_ids:ids,rationale:args.rationale});
-          if (!revised.ok) return revised;
+          const ids = new Set(selections.map(item=>item.skill_id));
+          const blocked = new Map();
+          if (registry) {
+            for (const id of ids) {
+              if (!registry.skills.some(ref=>ref.skillId===id&&ref.selectable) || registryBlocked(id)) {
+                ids.delete(id);
+                blocked.set(id,'DEPENDENCY_INCOMPLETE');
+              }
+            }
+            for (let changed = true; changed;) {
+              changed = false;
+              for (const id of ids) if (dependencies(id).some(dep=>!ids.has(dep)&&states.get(dep)?.state!=='applied')) {
+                ids.delete(id);
+                blocked.set(id,'DEPENDENCY_INCOMPLETE');
+                changed = true;
+              }
+            }
+          }
+          if (ids.size) {
+            const batchSignal = operationSignal;
+            const revised = await this.execute('revise_skill_route',{skill_ids:[...ids],rationale:args.rationale});
+            operationSignal = batchSignal;
+            if (!revised.ok) return revised;
+          }
           const loaded = new Map(), result = [];
           for (const item of selections) {
             const skill = skillFor(item.skill_id);
+            if (blocked.has(skill.id)) {
+              result.push({...item,name:skill.name,status:'blocked',instructions:'',message:sessionErrors[blocked.get(skill.id)]});
+              continue;
+            }
             if (!loaded.has(skill.id)) {
               try {
                 const guide = await load(skill.id);
@@ -393,7 +418,7 @@ export function createSkillSession({store, task, run, localSkills, route, scope,
             }
             result.push({...item,name:skill.name,...loaded.get(skill.id)});
           }
-          store.record(run,'task_skill_chain',{selections:result.map(({instructions,...item})=>item),rationale:args.rationale});
+          store.record(run,'task_skill_chain',{revision:brief.revision,selections:result.map(({instructions,...item})=>item),rationale:args.rationale});
           return success({selections:result});
         }
         if (name === 'revise_skill_route') {

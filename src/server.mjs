@@ -317,6 +317,23 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
       if (req.method === 'GET' && pathname === '/api/skill-studio/locations') {
         return json(res, 200, skillStudio.locations(skillContext(searchParams.get('task') || null, searchParams.get('project'))));
       }
+      if (req.method === 'POST' && pathname === '/api/skill-studio/organize') {
+        const body = await input(req);
+        if (studioController) throw new RequestError(409,'技能工坊有一项模型任务在运行。');
+        const context = skillContext(body?.taskId ?? null,body?.projectId);
+        const task = body?.taskId ? store.task(body.taskId) : null;
+        const {model} = settings.snapshot({model:task?.model_id,effort:task?.effort});
+        const controller = studioController = new AbortController();
+        const cancel = () => controller.abort();
+        res.once('close',cancel);
+        try {
+          const signal = AbortSignal.any([controller.signal,AbortSignal.timeout(120000)]);
+          return json(res,200,await skillStudio.organize({context,model,signal}));
+        } finally {
+          res.off('close',cancel);
+          studioController = undefined;
+        }
+      }
       const experienceRoute = /^\/api\/skill-studio\/experiences(?:\/([a-f\d-]{36})(?:\/(propose|state|regression-draft))?)?$/.exec(pathname);
       if (experienceRoute) {
         const [,id,action]=experienceRoute;
@@ -656,6 +673,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
           for(const run of current.runs) if(run.status!=='running'){
             const id=skillStudio.experiences.collect(run.id);
             run.experience=id?{id,signals:skillStudio.experiences.get(id,task).signals}:null;
+            run.skillFeedback=skillStudio.learning.feedback(run.id);
           }
           return json(res,200,current);
         }
@@ -743,12 +761,13 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
           const fileScope = !workflow && !diagnostic && !skill ? {mode: currentTask.file_access, projectId: currentTask.project_id,
             projectPath: currentTask.project_id && currentTask.file_access !== 'attachments' ? store.project(currentTask.project_id).path : null} : null;
           const limits = workflow ? auditLimits(config.model.label, undefined, body.expandedBudget === true) : null;
-          const localSkills = fileScope ? skillStudio.enabled(task) : [];
+          const learnedWeights = fileScope ? skillStudio.learning.weights(currentTask.project_id,prompt) : new Map();
+          const localSkills = fileScope ? skillStudio.enabled(task).map(skill => ({...skill,learningWeight: learnedWeights.get(skill.id) ?? 0})) : [];
           const customSkill = skillId ? localSkills.find(skill => skill.id === skillId) : null;
           if (skillId && !customSkill) throw new RequestError(404, '技能不存在或不属于当前项目');
           const runConfig = workflow ? {mode: ruleMode ? 'audit-rules' : 'audit', model: config.model.label, effort: config.effort ?? 'default', workflow, limits, expandedBudget: body.expandedBudget === true}
             : skill ? {mode: 'skill', model: '本地技能执行', maxSteps: 0}
-              : {mode: config.mode, model: config.model.label, maxSteps: config.maxSteps, effort: config.effort ?? 'default', ...(fileScope ? {fileScope} : {}),
+              : {mode: config.mode, model: config.model.label, maxSteps: config.maxSteps, effort: config.effort ?? 'default', autoApproveExecution:config.autoApproveExecution === true, ...(fileScope ? {fileScope} : {}),
                 ...(customSkill ? {customSkill: {id: customSkill.id, name: customSkill.name, version: customSkill.version}} : {})};
           for (const material of materials) if (store.file(task, material.id).detached) throw new RequestError(409,'附件列表已变化，请重新发送');
           const folders = fileScope ? [...store.taskFolders(task),...browserFolders.scope(task)] : [];
@@ -756,7 +775,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
           const run = store.begin(task, body.request, prompt, runConfig, fileId, skillVersion);
           if (run.started) {
             const controller = new AbortController();
-            const entry = {controller, interrupt: null, job: null};
+            const entry = {controller, interrupt: null, job: null, autoApproveExecution:config.autoApproveExecution === true};
             active.set(run.id, entry);
             entry.job = (workflow ? executeAudit({id: run.id, task, goal: prompt, request: workflow, store,
               file: attachment, model: config.model, limits, signal: controller.signal, entry}) : executeRun({id: run.id, task, prompt, store, workspace: taskWorkspace, ...config, skill, attachment,
@@ -766,6 +785,7 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
               projectMemories,
               skillSources:appConfig.skillSources,
               githubAccess,
+              installSkill:({card,entries})=>skillStudio.installDiscovered({context:task,card,entries}),
               context: {title: currentTask.title, goal: prompt, selectedFile: attachment ? {id: attachment.id, name: attachment.name, kind: attachment.kind} : null,
                 folders: folders.map(folder=>({name:folder.name,path:`folder:${folder.id}`})),
                 materials: materials.map(material => ({...material,
@@ -773,15 +793,62 @@ export async function createApp({state, env = {}, userSkillsPath, skillLibraryHo
                 fileAccess: fileScope, stage: '用户未提供', successCriteria: '用户未提供', deadline: '用户未提供'},
               signal: controller.signal, entry, skillAccess: !diagnostic, customSkill, localSkills}))
               .catch(error => { console.error('执行记录写入失败', error.message); })
-              .finally(() => {active.delete(run.id);skillStudio.experiences.collect(run.id);});
+              .finally(() => {
+                active.delete(run.id);
+                skillStudio.learning.recordRun(run.id);
+                skillStudio.experiences.collect(run.id);
+              });
           }
           return json(res, run.started ? 201 : 200, run);
         }
       }
-      const runRoute = /^\/api\/runs\/([a-f\d-]{36})\/(events|stop|guide|project-test-decision)$/.exec(pathname);
+      const runRoute = /^\/api\/runs\/([a-f\d-]{36})\/(events|stop|guide|project-test-decision|skill-feedback|budget-decision)$/.exec(pathname);
       if (runRoute) {
         const [, id, action] = runRoute;
         const run = store.run(id);
+        if (action === 'budget-decision' && req.method === 'POST') {
+          const body = await input(req);
+          const pending = active.get(id)?.inputBudgetApproval;
+          if (typeof body?.id !== 'string' || typeof body?.approve !== 'boolean') throw new RequestError(422,'预算确认无效。');
+          if (run.status !== 'running' || pending?.id !== body.id || !pending.decide(body.approve)) {
+            throw new RequestError(409,'预算确认已处理或任务已停止。');
+          }
+          return json(res,200,{ok:true});
+        }
+        if (action === 'skill-feedback' && req.method === 'POST') {
+          const body = await input(req,12000);
+          if (run.status !== 'completed' || body?.taskId !== run.task) throw new RequestError(409,'只能评价当前会话的已完成任务。');
+          const learning = skillStudio.learning;
+          const targets = learning.participants(id);
+          if (targets.length && studioController) throw new RequestError(409,'技能工坊正在生成候选，请稍后再试。');
+          learning.saveFeedback(id,body.rating,body.note ?? '');
+          learning.recordRun(id);
+          const experienceId = skillStudio.experiences.collect(id);
+          const results = [];
+          if (targets.length && experienceId) {
+            const task = store.task(run.task);
+            const {model} = settings.snapshot({model:task.model_id,effort:task.effort});
+            const controller = studioController = new AbortController();
+            const cancel = () => controller.abort();
+            res.once('close',cancel);
+            try {
+              for (const skill of targets) {
+                if (controller.signal.aborted) break;
+                try {
+                  const proposal = await skillStudio.experiences.propose({id:experienceId,context:run.task,skillId:skill.id,
+                    model,signal:controller.signal});
+                  results.push({name:skill.name,candidateId:proposal.candidateId});
+                } catch (error) {
+                  results.push({name:skill.name,error:error instanceof RequestError ? error.message : '候选生成失败。'});
+                }
+              }
+            } finally {
+              res.off('close',cancel);
+              studioController = undefined;
+            }
+          }
+          return json(res,200,{rating:body.rating,experienceId,results});
+        }
         if (action === 'guide' && req.method === 'POST') {
           const body = await input(req);
           const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';

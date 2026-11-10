@@ -28,7 +28,8 @@ test('installed-skill graph has deterministic mentions, scoped persistent manual
   assert.equal(data.nodes.find(node=>node.id===first.id).category,'文献与研究');
   assert.equal(data.nodes.find(node=>node.id===first.id).group,'用户技能');
   assert.equal(data.nodes.find(node=>node.id===next.id).category,'文档工程');
-  assert.equal(data.nodes.find(node=>node.id===samePrefix.id).category,'未分类');
+  assert.equal(data.nodes.find(node=>node.id===samePrefix.id).category,'测试与评估');
+  assert(data.nodes.find(node=>node.id===samePrefix.id).categories.includes('文档'));
   const mention=data.edges.find(edge=>edge.kind==='mention');
   assert.deepEqual(new Set([mention.source,mention.target]),new Set([first.id,next.id]));
   assert.equal(data.edges.filter(edge=>edge.kind==='mention').length,1);

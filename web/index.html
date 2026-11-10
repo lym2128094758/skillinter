@@ -36,6 +36,7 @@
     <header>
       <button id="toggle" type="button" aria-controls="task-panel" aria-expanded="true" aria-label="切换任务列表">☰</button>
       <h1 id="title">新任务</h1>
+      <time id="task-updated" class="task-header-time" hidden></time>
     </header>
     <section id="graph-panel" aria-label="技能图谱" hidden>
       <div class="graph-tools"><span id="graph-status" role="status">我的 Skill 图谱</span></div>
@@ -44,6 +45,7 @@
     </section>
     <section id="transcript" aria-label="任务记录" tabindex="0"><div id="transcript-content"></div></section>
     <form id="composer">
+      <section id="composer-approval" class="project-test-panel composer-approval" aria-live="polite" hidden></section>
       <button id="jump-to-latest" type="button" aria-label="跳到最新消息" title="跳到最新消息" aria-controls="transcript" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m-6-6 6 6 6-6"/></svg>
       </button>
@@ -313,6 +315,8 @@
         <div class="settings-card">
           <div class="settings-setting-row"><div><label for="max-steps">每轮最多模型请求次数</label><p id="steps-help" class="settings-hint">可设为 1 到 200 次。聊天、技能内部规划和供应商重试共用此额度。保存后从下一轮起生效。</p></div>
           <input id="max-steps" type="number" min="1" max="200" step="1" required aria-describedby="steps-help"></div>
+          <div class="settings-setting-row"><div><label for="auto-approve-execution">自动同意执行</label><p class="settings-hint">Python 脚本和项目测试直接运行，代码具有当前系统账号的文件与网络权限。保存后从下一轮起生效。</p></div>
+          <input id="auto-approve-execution" type="checkbox"></div>
         </div>
         <p id="run-feedback" class="settings-message" role="status" hidden></p>
         <div class="settings-actions"><button id="reset-run" type="button">恢复默认值</button><button class="primary-action" id="save-run" type="submit">保存运行设置</button></div>
@@ -366,6 +370,8 @@
       <div class="studio-toolbar">
         <input id="studio-search" type="search" placeholder="按名称或描述筛选" aria-label="搜索技能">
         <select id="studio-filter" aria-label="技能范围"><option value="all">所有范围</option><option value="global">用户技能</option><option value="project">项目技能</option></select>
+        <select id="studio-category" aria-label="技能分类"><option value="">所有分类</option></select>
+        <button id="studio-organize" type="button" title="让当前模型根据技能名称和描述整理分类">模型整理分类</button>
         <button id="studio-refresh" type="button">刷新</button><button id="studio-create" type="button">＋ 新建技能</button>
       </div>
       <p id="studio-count" class="status"></p>

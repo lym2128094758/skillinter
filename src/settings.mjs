@@ -110,7 +110,7 @@ export async function createSettings({store, env, previousConnection}) {
 
   function view() {
     return {revision, mode: mode(), endpoint: value.endpoint ?? '', model: value.model ?? '',
-      activeModel: snapshot().model?.label ?? '未连接模型', maxSteps: value.maxSteps ?? defaultSteps, defaultSteps,
+      activeModel: snapshot().model?.label ?? '未连接模型', maxSteps: value.maxSteps ?? defaultSteps, defaultSteps, autoApproveExecution:value.autoApproveExecution !== false,
       hasKey: Boolean(key), keyUnreadable: Boolean(value.secret && !key),
       connectionId: value.connectionId ?? null,
       connections: (value.connections ?? []).map(({id,name,endpoint,model,secret}) => ({id,name,endpoint,model,hasKey:Boolean(secret)})),
@@ -122,7 +122,7 @@ export async function createSettings({store, env, previousConnection}) {
     const selected = mode();
     const config = selected === 'api' ? {...value, key} : selected === 'environment' ? environment : null;
     const model = config ? apiModel({...config, model: providerModelId(config,selection.model), effort: selection.effort || 'default'}) : null;
-    return {model, maxSteps: value.maxSteps ?? defaultSteps, mode: selected, effort: selection.effort || 'default'};
+    return {model, maxSteps: value.maxSteps ?? defaultSteps, mode: selected, effort: selection.effort || 'default', autoApproveExecution:value.autoApproveExecution !== false};
   }
 
   async function models(refresh = false) {
@@ -251,10 +251,11 @@ export async function createSettings({store, env, previousConnection}) {
     const nextKey = secret ? (id===value.connectionId ? key : await windowsSecrets.open(secret)) : undefined;
     return activate(body.revision,{...value,mode:'api',connectionId:id,endpoint,model,secret},nextKey);
   }, saveBudget(body) {
-    const {revision: expected, maxSteps} = body ?? {};
+    const {revision: expected, maxSteps, autoApproveExecution} = body ?? {};
     if (expected !== revision) throw new RequestError(409, '设置已更新，请重新打开后再试');
     validateBudget(maxSteps);
-    commit(expected, {...value, maxSteps});
+    if (autoApproveExecution !== undefined && typeof autoApproveExecution !== 'boolean') throw new RequestError(422, '自动执行设置无效');
+    commit(expected, {...value, maxSteps, ...(autoApproveExecution === undefined ? {} : {autoApproveExecution})});
     return view();
   }, async test(body) {
     const update = await draft(body);

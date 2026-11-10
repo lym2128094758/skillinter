@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 
 // JSON is a YAML 1.2 subset and keeps this local application dependency-free.
 export const config = JSON.parse(readFileSync(new URL('../config.yaml', import.meta.url), 'utf8'));
-for (const key of ['maxSeconds', 'maxToolCalls', 'maxConcurrent', 'maxInputTokens', 'maxOutputTokens',
+for (const key of ['maxSeconds', 'maxConcurrent', 'maxInputTokens', 'maxOutputTokens',
   'contextTokens', 'historyTokens', 'toolResultBytes', 'imageTokens']) {
   if (!Number.isSafeInteger(config.runBudget?.[key]) || config.runBudget[key] < 1) throw new Error('Invalid root run budget: ' + key);
 }
+if (config.runBudget.maxToolCalls !== null && (!Number.isSafeInteger(config.runBudget.maxToolCalls) || config.runBudget.maxToolCalls < 1)) throw new Error('Invalid root run budget: maxToolCalls');
 if (config.runBudget.toolResultBytes < 512 || config.runBudget.historyTokens >= config.runBudget.contextTokens ||
     config.runBudget.maxSeconds > 86400) throw new Error('Invalid root run budget bounds');
 for (const key of ['maxModelCalls', 'maxToolCalls', 'maxReplans', 'maxSeconds', 'maxInputTokens', 'maxOutputTokens', 'maxRows',

@@ -26,7 +26,7 @@ const errors = {
 
 export const projectTestTool = {
   name: 'run_project_tests',
-  description: `请求在当前项目目录运行 ${command}。每次都须等待用户确认。根据实际 status、退出码和输出判断测试结果。`,
+  description: `在当前项目目录运行 ${command}。根据运行设置自动同意或等待用户确认。根据实际 status、退出码和输出判断测试结果。`,
   parameters: object({}),
   returns: resultSchema(object({
     kind: {enum: ['project_tests']}, status: {enum: ['passed', 'failed', 'no_tests']},
@@ -38,7 +38,7 @@ export const projectTestTool = {
   errors, timeoutMs, approvalTimeoutMs: approvalMs, idempotent: false,
   timeoutMode: '确认和执行分别计时。停止或执行超时时终止测试进程并记录已捕获的输出。',
   volatile: ['data.volatile.elapsedMs', 'data.stdout', 'data.stderr'],
-  authorization: '绑定项目且具备写入权限。每次执行使用独立的一次性本机用户确认。项目代码使用当前系统账号运行。',
+  authorization: '绑定项目且具备写入权限。按运行设置自动同意或逐次确认。项目代码使用当前系统账号运行。',
   ordering: '标准输出和标准错误分别按进程写入顺序保留末尾，超限标记 truncated。',
 };
 
@@ -71,6 +71,11 @@ export async function requestApproval({entry, signal, store, run, cwd, requested
   deadline.addEventListener('abort', expire, {once: true});
   try {
     if (signal.aborted) return 'aborted';
+    if (entry.autoApproveExecution === true) {
+      if (store.hasGuidance(run)) return 'superseded';
+      store.record(run, 'project_test_decision', {id, decision:'approve', automatic:true, command:requestedCommand, cwd, purpose});
+      return 'approve';
+    }
     store.record(run, 'project_test_request', {id, command:requestedCommand, executable, purpose, cwd, expires: Date.now() + waitMs});
     const decision = await approved.promise;
     store.record(run, 'project_test_decision', {id, decision});

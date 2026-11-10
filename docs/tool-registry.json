@@ -6019,7 +6019,7 @@
           "properties": {
             "skill_ids": {
               "type": "array",
-              "maxItems": 6,
+              "maxItems": 12,
               "items": {
                 "type": "string",
                 "maxLength": 1000
@@ -6546,7 +6546,7 @@
       },
       {
         "name": "run_project_tests",
-        "description": "请求在当前项目目录运行 node --test --test-reporter=tap。每次都须等待用户确认。根据实际 status、退出码和输出判断测试结果。",
+        "description": "在当前项目目录运行 node --test --test-reporter=tap。根据运行设置自动同意或等待用户确认。根据实际 status、退出码和输出判断测试结果。",
         "parameters": {
           "type": "object",
           "properties": {},
@@ -6741,7 +6741,7 @@
           "data.stdout",
           "data.stderr"
         ],
-        "authorization": "绑定项目且具备写入权限。每次执行使用独立的一次性本机用户确认。项目代码使用当前系统账号运行。",
+        "authorization": "绑定项目且具备写入权限。按运行设置自动同意或逐次确认。项目代码使用当前系统账号运行。",
         "ordering": "标准输出和标准错误分别按进程写入顺序保留末尾，超限标记 truncated。"
       },
       {
@@ -6943,7 +6943,7 @@
       },
       {
         "name": "prepare_task",
-        "description": "读过题目及材料后，保留原始用户目标，整理清晰目标、约束、交付要求、假设、必要问题与有依赖的子任务。为每步查询已安装技能，返回候选或缺口，并生成可见计划。source_receipts填本轮成功读取材料的回执序号。不能把假设或优化后的措辞当成用户已确认约束。",
+        "description": "读过题目及材料后，保留原始用户目标，整理目标、约束、交付要求和有依赖的子任务。将本轮需要的能力分开成步骤，为每个步骤给出聚焦该能力的 skill_query。逐步搜索本机技能并返回候选或缺口。source_receipts 填本轮成功读取材料的回执序号。不能把假设当成用户已确认的约束。",
         "parameters": {
           "type": "object",
           "properties": {
@@ -7273,6 +7273,7 @@
         "errors": {
           "INVALID_ARGUMENT": "任务整理参数无效。",
           "SOURCE_NOT_READ": "任务说明引用了本轮未读取的材料回执。",
+          "SKILL_SELECTION_FIRST": "请先用 prepare_task 按维度找本机候选。有候选时先尝试 select_task_skill_chain，再为缺口联网。",
           "SOURCE_CHANGED": "材料在读取后变化或当前不可读，请重新读取再整理任务。",
           "INVALID_PLAN": "任务步骤存在无效依赖、重名或循环。",
           "TASK_NOT_PREPARED": "请先读取任务材料并调用 prepare_task，再开始写文件或运行计算。",
@@ -7849,8 +7850,188 @@
         "timeoutMode": "整次发现20秒；固定域名请求、限响应体、停止传递到请求。"
       },
       {
+        "name": "install_discovered_skill",
+        "description": "安装本轮搜索到并已通过 adopt_discovered_skill 阅读的公开技能。按任务缺口选择适用方法，reason说明对应能力。保存固定提交的完整技能目录和来源到 SIH 用户技能库，重复安装复用，不覆盖同名不同内容。安装成功返回指南供本轮采用，下一轮可作为本机技能检索。配套脚本按普通资源保存，执行仍须使用获准工具。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    true
+                  ]
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "reused": {
+                      "type": "boolean"
+                    },
+                    "fileCount": {
+                      "type": "integer"
+                    },
+                    "instructions": {
+                      "type": "string",
+                      "maxLength": 200000
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "commit": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "type": "string"
+                        },
+                        "license": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "url",
+                        "commit",
+                        "sha256",
+                        "license"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "version",
+                    "path",
+                    "reused",
+                    "fileCount",
+                    "instructions",
+                    "source"
+                  ],
+                  "additionalProperties": false
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "message": {
+                      "enum": [
+                        ""
+                      ]
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "ok": {
+                  "enum": [
+                    false
+                  ]
+                },
+                "data": {
+                  "enum": [
+                    null
+                  ]
+                },
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "ok",
+                "data",
+                "error"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "errors": {
+          "INVALID_ARGUMENT": "技能安装参数无效。",
+          "SKILL_NOT_FOUND": "本轮未找到该外部技能。",
+          "SKILL_NOT_READ": "请先用 adopt_discovered_skill 阅读指南，再决定安装。",
+          "NAME_CONFLICT": "已有同名技能且内容不同，请在技能中心处理。",
+          "INSTALL_FAILED": "技能安装失败，未确认安装成功。",
+          "ABORTED": "技能安装已停止。"
+        },
+        "timeoutMs": 25000,
+        "idempotent": true,
+        "volatile": [
+          "data.id",
+          "data.path"
+        ],
+        "ordering": "单个固定版本的技能包。",
+        "authorization": "用户授权 Agent 按任务自行寻找并安装技能。仅写 SIH 用户技能目录，采用外部指南遵守本轮权限。",
+        "timeoutMode": "包下载20秒上限并继承任务停止，完整读取校验后原子写入。"
+      },
+      {
         "name": "search_skill_libraries",
-        "description": "同时搜索当前会话可用的已安装技能，以及配置和按检索词发现的公开 GitHub 技能库。检索词会发送给 GitHub，不要包含项目正文或密钥。模型自主选择直接及辅助能力的查询词，使用 limit=5，分别争取五个本机和五个在线候选，各包含三个直接相关及两个辅助相关技能；不足时换词，仍不足则说明。读取失败时继续尝试后续候选。",
+        "description": "同时搜索本机可用技能和公开 GitHub 技能库。query 会发送到 GitHub，请使用通用能力词。按任务分别发起直接相关（kind=direct，默认）和辅助相关（kind=supporting）查询，本机和在线每侧至少找3个直接相关、2个辅助相关的候选。limit 是单次每侧的返回量，直接类最低按3请求，辅助类最低按2请求，每次最多取5个。去重后不足时换词继续搜，读取失败会尝试后续候选。",
         "parameters": {
           "type": "object",
           "properties": {
@@ -7858,6 +8039,12 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 500
+            },
+            "kind": {
+              "enum": [
+                "direct",
+                "supporting"
+              ]
             },
             "limit": {
               "type": "integer",
@@ -7884,6 +8071,12 @@
                 "data": {
                   "type": "object",
                   "properties": {
+                    "kind": {
+                      "enum": [
+                        "direct",
+                        "supporting"
+                      ]
+                    },
                     "local": {
                       "type": "array",
                       "items": {
@@ -8018,6 +8211,7 @@
                     }
                   },
                   "required": [
+                    "kind",
                     "local",
                     "sources",
                     "online",
@@ -8236,7 +8430,7 @@
       },
       {
         "name": "run_python",
-        "description": "运行已经写入并读取确认的项目 Python 脚本，用于计算、求解、绘图或文档处理。必须提供脚本当前 SHA-256，每次由用户在界面确认；使用固定 python -I，冻结脚本字节，无 shell，最长60秒。代码有当前系统账号权限，不是沙箱。退出码0不代表业务结果正确。",
+        "description": "运行已经写入并读取确认的项目 Python 脚本，用于计算、求解、绘图或文档处理。必须提供脚本当前 SHA-256，按运行设置自动同意或等待用户确认；使用固定 python -I，冻结脚本字节，无 shell，最长60秒。代码有当前系统账号权限，不是沙箱。退出码0不代表业务结果正确。",
         "parameters": {
           "type": "object",
           "properties": {
@@ -8452,7 +8646,7 @@
           "data.volatile.elapsedMs"
         ],
         "ordering": "stdout和stderr分别按进程写入顺序，保留前16000字节并注明截断。",
-        "authorization": "项目读写且每次经用户明确确认。最小环境不含模型密钥；Python仍有操作系统账号权限。",
+        "authorization": "项目读写，按运行设置自动同意或逐次确认。最小环境不含模型密钥；Python仍有操作系统账号权限。",
         "timeoutMode": "确认和运行各60秒，父停止或超时终止进程树。"
       }
     ],

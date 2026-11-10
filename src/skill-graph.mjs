@@ -18,7 +18,7 @@ function terms(text) {
 // relationships still require their explicit registry binding.
 function categoryFor(skill) {
   const declared = /^\s*(?:>\s*)?(?:领域|分类|Domain|Category)\s*[:：]\s*([^|｜\r\n]+)/im.exec((skill.instructions ?? '').slice(0, 4000));
-  return declared?.[1].trim().split('　')[0].trim().slice(0, 100) || catalogueCategories.get(skill.name) || '未分类';
+  return declared?.[1].trim().split('　')[0].trim().slice(0, 100) || catalogueCategories.get(skill.name) || skill.categories?.[0] || '未分类';
 }
 
 export function createSkillGraph({store, studio, projectFor,registry=createSkillRegistry({store,studio,projectFor})}) {
@@ -34,7 +34,7 @@ export function createSkillGraph({store, studio, projectFor,registry=createSkill
   function snapshot(context) {
     const installed = skills(context);
     const registered=registry.snapshot(context,installed);
-    const key = JSON.stringify([scopeFor(context),installed.map(skill=>[skill.id,skill.version,skill.storagePath,skill.projectId])]);
+    const key = JSON.stringify([scopeFor(context),installed.map(skill=>[skill.id,skill.version,skill.storagePath,skill.projectId,skill.categories])]);
     const manualEdges = nodes => {
       const ids = new Set(nodes.map(node=>node.id));
       return store.query('SELECT source,target FROM skill_graph_relations WHERE scope=? ORDER BY source,target','all',scopeFor(context))
@@ -45,7 +45,7 @@ export function createSkillGraph({store, studio, projectFor,registry=createSkill
     if (cachedGraph && cachedKey === key) return {...cachedGraph,edges:[...cachedGraph.edges,...manualEdges(cachedGraph.nodes)],issues:studio.issues()};
     const nodes = installed.map(skill => ({id:skill.id, name:skill.name, slug:skill.name,
       description:skill.description, version:skill.version, path:skill.storagePath ?? '',
-      category:categoryFor(skill),
+      category:categoryFor(skill), categories:skill.categories ?? [],
       source:skill.projectId ? '项目技能' : '用户技能', group:skill.projectId ? '当前项目' : '用户技能'}));
     const aliases = new Map();
     for (const skill of installed) {

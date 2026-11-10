@@ -21,6 +21,71 @@ function fixture(t, limits, signal = new AbortController().signal) {
 
 const messages = [{role: 'user', content: '检查本地项目'}];
 
+test('input budget prompts before the next request and resumes only after consent', async t => {
+  const store=new Store(':memory:');t.after(()=>store.db.close());
+  const task=store.createTask().id;
+  const run=store.begin(task,'extension','检查本地项目',{}).id;
+  const entry={};const controller=new AbortController();let calls=0;
+  const model={label:'fixture',async invoke(){calls++;return {content:'完成',usage:{prompt_tokens:1,completion_tokens:1}};}};
+  const work=executeRun({id:run,task,prompt:'检查本地项目',store,workspace:tmpdir(),model,signal:controller.signal,
+    entry,budgetLimits:{maxInputTokens:10},maxSteps:2});
+  for(let i=0;i<100&&!entry.inputBudgetApproval;i++)await sleep(5);
+  assert.ok(entry.inputBudgetApproval);
+  assert.equal(calls,0);
+  assert.equal(entry.inputBudgetApproval.decide(true),true);
+  await work;
+  assert.equal(calls,1);
+  assert.equal(store.run(run).status,'completed');
+  assert.equal(readRunBudget(store,run).limits.maxInputTokens,30000010);
+  const events=store.events(run,0);
+  assert.equal(events.filter(event=>event.type==='budget_extension_request').length,1);
+  assert.equal(events.filter(event=>event.type==='budget_extended').length,1);
+});
+
+test('declining an input budget increase ends the task without sending the model request',async t=>{
+  const store=new Store(':memory:');t.after(()=>store.db.close());
+  const task=store.createTask().id,run=store.begin(task,'decline','检查本地项目',{}).id;
+  const entry={};let calls=0;
+  const work=executeRun({id:run,task,prompt:'检查本地项目',store,workspace:tmpdir(),entry,
+    signal:new AbortController().signal,budgetLimits:{maxInputTokens:10},model:{label:'fixture',async invoke(){calls++;return {content:'完成'};}}});
+  for(let i=0;i<100&&!entry.inputBudgetApproval;i++)await sleep(5);
+  assert.ok(entry.inputBudgetApproval);
+  entry.inputBudgetApproval.decide(false);
+  await work;
+  assert.equal(calls,0);
+  assert.equal(store.run(run).status,'failed');
+  assert.equal(store.events(run,0).some(event=>event.type==='budget_extended'),false);
+});
+
+test('output budget asks for approval and resumes the pending request', async t => {
+  const store=new Store(':memory:'); t.after(()=>store.db.close());
+  const task=store.createTask().id, run=store.begin(task,'output-extension','检查本地项目',{}).id;
+  const entry={}; let calls=0;
+  const work=executeRun({id:run,task,prompt:'检查本地项目',store,workspace:tmpdir(),entry,
+    signal:new AbortController().signal,budgetLimits:{maxOutputTokens:10},maxSteps:2,
+    model:{label:'fixture',async invoke(){calls++;return {content:'完成',usage:{prompt_tokens:1,completion_tokens:1}};}}});
+  for(let i=0;i<100&&!entry.inputBudgetApproval;i++) await sleep(5);
+  assert.ok(entry.inputBudgetApproval); assert.equal(calls,0);
+  assert.equal(store.events(run,0).find(event=>event.type==='budget_extension_request').payload.kind,'output');
+  entry.inputBudgetApproval.decide(true); await work;
+  assert.equal(calls,1); assert.equal(store.run(run).status,'completed');
+  assert.equal(readRunBudget(store,run).limits.maxOutputTokens,30000010);
+});
+
+test('tool budget asks before the next tool and continues after approval', async t => {
+  const store=new Store(':memory:'); t.after(()=>store.db.close());
+  const task=store.createTask().id, run=store.begin(task,'tool-extension','检查',{}).id;
+  const controller=new AbortController(); let decide, count=0;
+  const budget=createRunBudget({store,rootRunId:run,signal:controller.signal,limits:{maxToolCalls:1},
+    requestInputExtension: proposal => new Promise(resolve => { decide=resolve; assert.equal(proposal.kind,'tool'); })});
+  await budget.tool('test','first',async()=>{count++;return {ok:true};});
+  const pending=budget.tool('test','second',async()=>{count++;return {ok:true};});
+  for(let i=0;i<100&&!decide;i++) await sleep(5);
+  assert.ok(decide); assert.equal(count,1); decide(true); await pending;
+  assert.equal(count,2); assert.equal(readRunBudget(store,run).limits.maxToolCalls,201);
+  budget.finish();
+});
+
 test('each HTTP attempt reserves root capacity; 429 retry is denied before sending when allowance is exhausted', async t => {
   let hits = 0;
   const server = createServer((req, res) => {
